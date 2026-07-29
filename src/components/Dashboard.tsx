@@ -13,7 +13,7 @@ export function Dashboard() {
   const { userType, profile, items, removeItem } = useBuddy();
 
   useEffect(() => {
-    if (!userType) router.replace("/");
+    if (!userType) router.replace("/kom-igang");
   }, [userType, router]);
 
   if (!userType) return null;

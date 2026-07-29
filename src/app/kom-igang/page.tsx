@@ -2,7 +2,7 @@ import Link from "next/link";
 import { Building2, ChevronRight, User } from "lucide-react";
 import { Logo } from "@/components/Logo";
 
-export default function Home() {
+export default function KomIgangPage() {
   return (
     <div className="min-h-screen w-full flex flex-col">
       <div className="w-full flex items-center justify-center px-6 py-6">
@@ -28,7 +28,7 @@ export default function Home() {
               </div>
               <div className="flex-1">
                 <div className="font-semibold text-[15px]">Privatperson</div>
-                <div className="text-sm text-slate">Hem, bil, villa eller olycksfall</div>
+                <div className="text-sm text-slate">Boende, fordon, person eller djur</div>
               </div>
               <ChevronRight size={18} className="text-slate" />
             </Link>

@@ -9,7 +9,7 @@ export default async function LoginPage({
 }) {
   const { type } = await searchParams;
   if (type !== "privat" && type !== "foretag") {
-    redirect("/");
+    redirect("/kom-igang");
   }
 
   return <BankIdLogin userType={type as UserType} />;

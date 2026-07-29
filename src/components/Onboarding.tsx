@@ -396,7 +396,7 @@ export function Onboarding({ mode = "full" }: { mode?: "full" | "add" }) {
   const [activeCategory, setActiveCategory] = useState<ItemKind | null>(null);
 
   useEffect(() => {
-    if (!userType) router.replace("/");
+    if (!userType) router.replace("/kom-igang");
   }, [userType, router]);
 
   if (!userType) return null;

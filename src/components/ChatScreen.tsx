@@ -12,7 +12,7 @@ export function ChatScreen() {
   const { userType, profile } = useBuddy();
 
   useEffect(() => {
-    if (!userType) router.replace("/");
+    if (!userType) router.replace("/kom-igang");
   }, [userType, router]);
 
   const [messages, setMessages] = useState<ChatMessage[]>([

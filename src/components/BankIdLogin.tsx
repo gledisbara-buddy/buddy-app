@@ -46,7 +46,7 @@ export function BankIdLogin({ userType }: { userType: UserType }) {
         <div className="w-full max-w-md bd-fade">
           {phase === "idle" && (
             <button
-              onClick={() => router.push("/")}
+              onClick={() => router.push("/kom-igang")}
               className="flex items-center gap-1.5 text-sm mb-5 opacity-60 hover:opacity-100"
             >
               <ArrowLeft size={15} /> Tillbaka
