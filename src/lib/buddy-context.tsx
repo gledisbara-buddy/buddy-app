@@ -2,6 +2,7 @@
 
 import { createContext, useContext, useMemo, useState, type ReactNode } from "react";
 import type { UserType } from "@/lib/types";
+import type { Quote } from "@/lib/quote";
 
 export type OnboardData = {
   selected: string[];
@@ -14,6 +15,8 @@ type BuddyState = {
   setUserType: (userType: UserType) => void;
   onboardData: OnboardData | null;
   setOnboardData: (data: OnboardData) => void;
+  policies: Record<string, Quote>;
+  setPolicy: (insuranceId: string, quote: Quote) => void;
 };
 
 const BuddyContext = createContext<BuddyState | null>(null);
@@ -21,10 +24,14 @@ const BuddyContext = createContext<BuddyState | null>(null);
 export function BuddyProvider({ children }: { children: ReactNode }) {
   const [userType, setUserType] = useState<UserType | null>(null);
   const [onboardData, setOnboardData] = useState<OnboardData | null>(null);
+  const [policies, setPolicies] = useState<Record<string, Quote>>({});
+
+  const setPolicy = (insuranceId: string, quote: Quote) =>
+    setPolicies((prev) => ({ ...prev, [insuranceId]: quote }));
 
   const value = useMemo(
-    () => ({ userType, setUserType, onboardData, setOnboardData }),
-    [userType, onboardData]
+    () => ({ userType, setUserType, onboardData, setOnboardData, policies, setPolicy }),
+    [userType, onboardData, policies]
   );
 
   return <BuddyContext.Provider value={value}>{children}</BuddyContext.Provider>;
