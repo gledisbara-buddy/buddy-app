@@ -2,78 +2,92 @@
 
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowRight, CalendarDays, MessageCircle, ShieldAlert, Star } from "lucide-react";
+import { CalendarDays, MessageCircle, Plus, ShieldAlert, Star, Trash2 } from "lucide-react";
 import { TopBar } from "@/components/TopBar";
 import { useBuddy } from "@/lib/buddy-context";
-import { INSURANCE_META, PRIORITY_OPTIONS, type InsuranceId } from "@/lib/insurance";
+import { PRIORITY_OPTIONS } from "@/lib/insurance";
+import { ITEM_CATEGORIES, itemSummary, itemTitle } from "@/lib/items";
 
 export function Dashboard() {
   const router = useRouter();
-  const { userType, onboardData, policies } = useBuddy();
+  const { userType, profile, items, removeItem } = useBuddy();
 
   useEffect(() => {
-    if (!userType || !onboardData) router.replace("/");
-  }, [userType, onboardData, router]);
+    if (!userType) router.replace("/");
+  }, [userType, router]);
 
-  if (!userType || !onboardData) return null;
+  if (!userType) return null;
 
-  const chosen = onboardData.selected.map((id) => ({
-    id: id as InsuranceId,
-    ...INSURANCE_META[id as InsuranceId],
-  }));
-  const priorityLabel = PRIORITY_OPTIONS.find((p) => p.id === onboardData.priority)?.label;
+  const priorityLabel = PRIORITY_OPTIONS.find((p) => p.id === profile?.priority)?.label;
 
   return (
     <div className="min-h-screen w-full">
       <TopBar
         right={
           <div className="w-9 h-9 rounded-full flex items-center justify-center text-white text-sm font-semibold bd-display bg-forest">
-            {onboardData.name?.[0]?.toUpperCase() || "?"}
+            {profile?.name?.[0]?.toUpperCase() || "?"}
           </div>
         }
       />
       <div className="max-w-4xl mx-auto px-5 md:px-10 py-10 bd-fade">
         <span className="bd-eyebrow">Din översikt</span>
-        <h1 className="bd-display text-3xl mt-2 mb-1">Hej {onboardData.name || "där"} 👋</h1>
+        <h1 className="bd-display text-3xl mt-2 mb-1">Hej {profile?.name || "där"} 👋</h1>
         <p className="text-sm mb-8 text-slate">
-          Fokus just nu: <b className="text-ink">{priorityLabel}</b>. Här är läget på dina
-          försäkringar.
+          {priorityLabel ? (
+            <>
+              Fokus just nu: <b className="text-ink">{priorityLabel}</b>. Här är läget på dina saker.
+            </>
+          ) : (
+            "Här är läget på dina saker."
+          )}
         </p>
 
+        <div className="flex items-center justify-between mb-4">
+          <div className="text-sm font-semibold text-slate">Dina saker</div>
+          <button
+            onClick={() => router.push("/onboarding?mode=add")}
+            className="bd-btn flex items-center gap-1.5 text-sm font-semibold px-3.5 py-2 rounded-full text-white bg-forest"
+          >
+            <Plus size={14} /> Lägg till en sak
+          </button>
+        </div>
+
+        {items.length > 0 && (
+          <div className="grid md:grid-cols-3 gap-4 mb-4">
+            {items.map((item) => (
+              <div key={item.id} className="bg-white rounded-2xl border border-line p-5">
+                <div className="flex items-start justify-between mb-4">
+                  <div className="w-10 h-10 rounded-xl flex items-center justify-center bg-frost-2">
+                    {(() => {
+                      const Icon = ITEM_CATEGORIES.find((c) => c.kind === item.kind)!.icon;
+                      return <Icon size={18} className="text-forest" />;
+                    })()}
+                  </div>
+                  <button onClick={() => removeItem(item.id)} className="opacity-40 hover:opacity-100">
+                    <Trash2 size={15} />
+                  </button>
+                </div>
+                <div className="font-semibold text-[15px] mb-1">{itemTitle(item)}</div>
+                <div className="text-xs text-slate">{itemSummary(item)}</div>
+              </div>
+            ))}
+          </div>
+        )}
+
         <div className="grid md:grid-cols-3 gap-4 mb-8">
-          {chosen.map((c) => {
-            const Icon = c.icon;
-            const signed = policies[c.id];
+          {ITEM_CATEGORIES.filter((cat) => !items.some((i) => i.kind === cat.kind)).map((cat) => {
+            const Icon = cat.icon;
             return (
-              <div key={c.id} className="bg-white rounded-2xl border border-line p-5">
-                <div className="w-10 h-10 rounded-xl flex items-center justify-center mb-4 bg-frost-2">
+              <button
+                key={cat.kind}
+                onClick={() => router.push("/onboarding?mode=add")}
+                className="bd-card rounded-2xl border border-dashed border-line p-5 flex items-center gap-3 text-left bg-transparent"
+              >
+                <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-none bg-frost">
                   <Icon size={18} className="text-forest" />
                 </div>
-                <div className="font-semibold text-[15px] mb-1">{c.label}</div>
-                {signed ? (
-                  <>
-                    <div className="text-xs mb-4 text-forest">
-                      ● Tecknad hos {signed.name} — {signed.price} kr/mån
-                    </div>
-                    <button
-                      onClick={() => router.push(`/compare/${c.id}`)}
-                      className="text-sm font-semibold flex items-center gap-1 text-forest"
-                    >
-                      Jämför igen <ArrowRight size={14} />
-                    </button>
-                  </>
-                ) : (
-                  <>
-                    <div className="text-xs mb-4 text-amber-deep">● Ej jämförd ännu</div>
-                    <button
-                      onClick={() => router.push(`/compare/${c.id}`)}
-                      className="text-sm font-semibold flex items-center gap-1 text-forest"
-                    >
-                      Jämför nu <ArrowRight size={14} />
-                    </button>
-                  </>
-                )}
-              </div>
+                <div className="text-sm font-medium text-slate">Lägg till {cat.label.toLowerCase()}</div>
+              </button>
             );
           })}
         </div>
@@ -141,9 +155,9 @@ export function Dashboard() {
           <Star size={16} className="mt-0.5 flex-none text-amber-deep" />
           <p className="text-sm text-ink">
             <b>Tips från Buddy:</b>{" "}
-            {Object.keys(policies).length === 0
-              ? "du har inte jämfört några avtal än — det tar ~3 minuter och du bestämmer själv om du vill teckna."
-              : "bra jobbat, fortsätt jämföra dina övriga försäkringar för att se om du kan spara mer."}
+            {items.length === 0
+              ? "du har inte lagt in något än — börja med det som känns viktigast, t.ex. ditt boende eller din bil."
+              : "bra jobbat! Fortsätt lägga till fler saker så får du en komplett bild av vad du behöver skydda."}
           </p>
         </div>
       </div>

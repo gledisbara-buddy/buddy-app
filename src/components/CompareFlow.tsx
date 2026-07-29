@@ -35,8 +35,8 @@ export function CompareFlow({
   insuranceLabel: string;
 }) {
   const router = useRouter();
-  const { onboardData, setPolicy } = useBuddy();
-  const priority = onboardData?.priority ?? null;
+  const { profile, setPolicy } = useBuddy();
+  const priority = profile?.priority ?? null;
 
   const [step, setStep] = useState(0);
   const [housing, setHousing] = useState<HousingId | null>(null);

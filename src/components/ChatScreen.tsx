@@ -9,14 +9,14 @@ import { CHAT_SUGGESTIONS, getCannedReply, randomDelay, type ChatMessage } from 
 
 export function ChatScreen() {
   const router = useRouter();
-  const { userType, onboardData } = useBuddy();
+  const { userType, profile } = useBuddy();
 
   useEffect(() => {
-    if (!userType || !onboardData) router.replace("/");
-  }, [userType, onboardData, router]);
+    if (!userType) router.replace("/");
+  }, [userType, router]);
 
   const [messages, setMessages] = useState<ChatMessage[]>([
-    { role: "assistant", content: `Hej ${onboardData?.name ?? ""}. Vad kan jag hjälpa dig med?` },
+    { role: "assistant", content: `Hej ${profile?.name || "där"}. Vad kan jag hjälpa dig med?` },
   ]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
@@ -26,7 +26,7 @@ export function ChatScreen() {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
   }, [messages, loading]);
 
-  if (!userType || !onboardData) return null;
+  if (!userType) return null;
 
   const send = (text?: string) => {
     const content = (text ?? input).trim();
