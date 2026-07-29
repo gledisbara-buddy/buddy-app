@@ -11,6 +11,7 @@ import { useBuddy } from "@/lib/buddy-context";
 import { PRIORITY_OPTIONS } from "@/lib/insurance";
 import { lookupVehicle } from "@/lib/vehicle-lookup";
 import {
+  BAT_MOTOR_LABELS,
   DJUR_TYP_LABELS,
   FORDON_TYP_LABELS,
   INNE_UTE_LABELS,
@@ -20,6 +21,7 @@ import {
   SYSSELSATTNING_LABELS,
   createItemId,
   itemSummary,
+  type BatMotorTyp,
   type DjurTyp,
   type FordonTyp,
   type InneUte,
@@ -119,8 +121,35 @@ function OvrigtFordonForm({ onSave, onCancel }: { onSave: (item: InsuranceItem) 
   const [fordonstyp, setFordonstyp] = useState<FordonTyp | null>(null);
   const [regnummer, setRegnummer] = useState("");
   const [markeModell, setMarkeModell] = useState("");
+  const [arsmodell, setArsmodell] = useState("");
+  const [lookingUp, setLookingUp] = useState(false);
+  const lookupToken = useRef(0);
+
+  // mc
+  const [cylindervolymCc, setCylindervolymCc] = useState("");
+  const [effektHk, setEffektHk] = useState("");
+  // husvagn
+  const [totalviktKg, setTotalviktKg] = useState("");
+  const [langdM, setLangdM] = useState("");
+  // bat
+  const [motortyp, setMotortyp] = useState<BatMotorTyp | null>(null);
+  // slap
+  const [maxlastKg, setMaxlastKg] = useState("");
 
   const valid = !!fordonstyp;
+
+  const runLookup = async (value: string) => {
+    if (value.trim().length < 5 || markeModell.trim() || arsmodell.trim()) return;
+    const token = ++lookupToken.current;
+    setLookingUp(true);
+    const info = await lookupVehicle(value);
+    if (token !== lookupToken.current) return;
+    setLookingUp(false);
+    if (info) {
+      setMarkeModell(info.markeModell);
+      setArsmodell(String(info.arsmodell));
+    }
+  };
 
   return (
     <>
@@ -133,16 +162,72 @@ function OvrigtFordonForm({ onSave, onCancel }: { onSave: (item: InsuranceItem) 
         />
       </Field>
       <Field label="Registrerings- eller ID-nummer (valfritt)">
-        <input
-          className={inputClass}
-          value={regnummer}
-          onChange={(e) => setRegnummer(e.target.value.toUpperCase())}
-          placeholder="ABC123"
-        />
+        <div className="relative">
+          <input
+            className={inputClass}
+            value={regnummer}
+            onChange={(e) => setRegnummer(e.target.value.toUpperCase())}
+            onBlur={(e) => runLookup(e.target.value)}
+            placeholder="ABC123"
+          />
+          {lookingUp && (
+            <Loader2 size={15} className="bd-spin absolute right-3 top-1/2 -translate-y-1/2 text-slate" />
+          )}
+        </div>
       </Field>
-      <Field label="Märke & modell (valfritt)">
-        <input className={inputClass} value={markeModell} onChange={(e) => setMarkeModell(e.target.value)} placeholder="" />
-      </Field>
+      <div className="grid grid-cols-2 gap-3">
+        <Field label="Märke & modell (valfritt)">
+          <input className={inputClass} value={markeModell} onChange={(e) => setMarkeModell(e.target.value)} />
+        </Field>
+        <Field label="Årsmodell (valfritt)">
+          <input type="number" className={inputClass} value={arsmodell} onChange={(e) => setArsmodell(e.target.value)} placeholder="2019" />
+        </Field>
+      </div>
+
+      {fordonstyp === "mc" && (
+        <div className="grid grid-cols-2 gap-3">
+          <Field label="Cylindervolym (cc, valfritt)">
+            <input type="number" className={inputClass} value={cylindervolymCc} onChange={(e) => setCylindervolymCc(e.target.value)} placeholder="600" />
+          </Field>
+          <Field label="Effekt (hk, valfritt)">
+            <input type="number" className={inputClass} value={effektHk} onChange={(e) => setEffektHk(e.target.value)} placeholder="75" />
+          </Field>
+        </div>
+      )}
+
+      {fordonstyp === "husvagn" && (
+        <div className="grid grid-cols-2 gap-3">
+          <Field label="Totalvikt (kg, valfritt)">
+            <input type="number" className={inputClass} value={totalviktKg} onChange={(e) => setTotalviktKg(e.target.value)} placeholder="1500" />
+          </Field>
+          <Field label="Längd (m, valfritt)">
+            <input type="number" className={inputClass} value={langdM} onChange={(e) => setLangdM(e.target.value)} placeholder="6" />
+          </Field>
+        </div>
+      )}
+
+      {fordonstyp === "bat" && (
+        <>
+          <Field label="Längd (m, valfritt)">
+            <input type="number" className={inputClass} value={langdM} onChange={(e) => setLangdM(e.target.value)} placeholder="7" />
+          </Field>
+          <Field label="Motortyp (valfritt)">
+            <PillGroup
+              options={["inombordare", "utombordare", "segel", "ingen"] as const}
+              labels={BAT_MOTOR_LABELS}
+              value={motortyp}
+              onChange={setMotortyp}
+            />
+          </Field>
+        </>
+      )}
+
+      {fordonstyp === "slap" && (
+        <Field label="Max last (kg, valfritt)">
+          <input type="number" className={inputClass} value={maxlastKg} onChange={(e) => setMaxlastKg(e.target.value)} placeholder="750" />
+        </Field>
+      )}
+
       <FormActions
         valid={valid}
         onCancel={onCancel}
@@ -153,6 +238,13 @@ function OvrigtFordonForm({ onSave, onCancel }: { onSave: (item: InsuranceItem) 
             fordonstyp: fordonstyp!,
             regnummer: regnummer.trim() || undefined,
             markeModell: markeModell.trim() || undefined,
+            arsmodell: arsmodell ? Number(arsmodell) : undefined,
+            cylindervolymCc: cylindervolymCc ? Number(cylindervolymCc) : undefined,
+            effektHk: effektHk ? Number(effektHk) : undefined,
+            totalviktKg: totalviktKg ? Number(totalviktKg) : undefined,
+            langdM: langdM ? Number(langdM) : undefined,
+            motortyp: motortyp ?? undefined,
+            maxlastKg: maxlastKg ? Number(maxlastKg) : undefined,
           })
         }
       />

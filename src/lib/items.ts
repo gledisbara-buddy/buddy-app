@@ -85,12 +85,25 @@ export type BilItem = {
   forvaring?: "garage" | "uppfart" | "gata";
 };
 
+export type BatMotorTyp = "inombordare" | "utombordare" | "segel" | "ingen";
+
 export type OvrigtFordonItem = {
   id: string;
   kind: "ovrigt_fordon";
   fordonstyp: FordonTyp;
   regnummer?: string;
   markeModell?: string;
+  arsmodell?: number;
+  // mc
+  cylindervolymCc?: number;
+  effektHk?: number;
+  // husvagn
+  totalviktKg?: number;
+  langdM?: number;
+  // bat
+  motortyp?: BatMotorTyp;
+  // slap
+  maxlastKg?: number;
 };
 
 export type PersonItem = {
@@ -150,6 +163,13 @@ export const FORDON_TYP_LABELS: Record<FordonTyp, string> = {
   bat: "Båt",
   slap: "Släp",
   annat: "Annat",
+};
+
+export const BAT_MOTOR_LABELS: Record<BatMotorTyp, string> = {
+  inombordare: "Inombordare",
+  utombordare: "Utombordare",
+  segel: "Segel",
+  ingen: "Ingen motor",
 };
 
 export const DJUR_TYP_LABELS: Record<DjurTyp, string> = {
