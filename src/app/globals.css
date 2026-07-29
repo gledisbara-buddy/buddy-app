@@ -1,26 +1,167 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --color-ink: #16283d;
+  --color-frost: #eff4f3;
+  --color-frost-2: #e4ecea;
+  --color-forest: #1f4d3e;
+  --color-forest-light: #2e6b57;
+  --color-amber: #e2a33b;
+  --color-amber-deep: #c6842a;
+  --color-slate: #66788a;
+  --color-line: rgba(22, 40, 61, 0.12);
 }
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
+  --color-ink: var(--color-ink);
+  --color-frost: var(--color-frost);
+  --color-frost-2: var(--color-frost-2);
+  --color-forest: var(--color-forest);
+  --color-forest-light: var(--color-forest-light);
+  --color-amber: var(--color-amber);
+  --color-amber-deep: var(--color-amber-deep);
+  --color-slate: var(--color-slate);
+  --color-line: var(--color-line);
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+  --font-display: var(--font-fraunces);
+  --font-sans: var(--font-inter);
+  --font-mono: var(--font-ibm-plex-mono);
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: var(--color-frost);
+  color: var(--color-ink);
+}
+
+/* Buddy design primitives, ported from BuddyApp.jsx */
+.bd-display {
+  font-family: var(--font-display), serif;
+  font-weight: 650;
+  letter-spacing: -0.01em;
+}
+
+.bd-eyebrow {
+  font-family: var(--font-mono), monospace;
+  font-size: 12px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--color-forest);
+  font-weight: 500;
+}
+
+.bd-fade {
+  animation: bdFade 0.4s ease both;
+}
+@keyframes bdFade {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.bd-btn {
+  transition:
+    transform 0.15s ease,
+    background 0.15s ease,
+    opacity 0.15s ease;
+}
+.bd-btn:hover {
+  transform: translateY(-1px);
+}
+
+.bd-card {
+  transition:
+    border-color 0.15s ease,
+    background 0.15s ease,
+    transform 0.15s ease;
+}
+.bd-card:hover {
+  transform: translateY(-2px);
+}
+
+.bd-dot {
+  animation: bdBounce 1.1s ease-in-out infinite;
+}
+.bd-dot:nth-child(2) {
+  animation-delay: 0.15s;
+}
+.bd-dot:nth-child(3) {
+  animation-delay: 0.3s;
+}
+@keyframes bdBounce {
+  0%,
+  60%,
+  100% {
+    transform: translateY(0);
+    opacity: 0.4;
+  }
+  30% {
+    transform: translateY(-4px);
+    opacity: 1;
+  }
+}
+
+.bd-pulse {
+  animation: bdPulse 1.8s ease-out infinite;
+}
+@keyframes bdPulse {
+  0% {
+    box-shadow: 0 0 0 0 rgba(31, 77, 62, 0.35);
+  }
+  70% {
+    box-shadow: 0 0 0 18px rgba(31, 77, 62, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(31, 77, 62, 0);
+  }
+}
+
+.bd-pulsedot {
+  animation: bdPulseDot 1.6s ease-in-out infinite;
+}
+@keyframes bdPulseDot {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 rgba(31, 77, 62, 0.35);
+  }
+  50% {
+    box-shadow: 0 0 0 8px rgba(31, 77, 62, 0);
+  }
+}
+
+.bd-spin {
+  animation: spin 1.1s linear infinite;
+}
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.bd-scroll::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+.bd-scroll::-webkit-scrollbar-thumb {
+  background: var(--color-line);
+  border-radius: 3px;
+}
+
+.bd-dropzone {
+  transition:
+    border-color 0.15s ease,
+    background 0.15s ease;
+}
+.bd-dropzone:hover {
+  border-color: var(--color-forest);
+  background: var(--color-frost-2);
+}
+
+textarea:focus,
+input:focus {
+  outline: none;
 }

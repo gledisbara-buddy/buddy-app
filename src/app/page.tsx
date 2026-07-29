@@ -1,65 +1,55 @@
-import Image from "next/image";
+import Link from "next/link";
+import { Building2, ChevronRight, User } from "lucide-react";
+import { Logo } from "@/components/Logo";
 
 export default function Home() {
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
+    <div className="min-h-screen w-full flex flex-col">
+      <div className="w-full flex items-center justify-center px-6 py-6">
+        <Logo />
+      </div>
+      <div className="flex-1 flex items-center justify-center px-5 pb-16">
+        <div className="w-full max-w-md bd-fade">
+          <div className="text-center mb-8">
+            <span className="bd-eyebrow">Kom igång</span>
+            <h1 className="bd-display text-3xl mt-3 mb-2">Vem loggar in idag?</h1>
+            <p className="text-sm text-slate">
+              Vi anpassar frågorna beroende på om du är privatperson eller företräder ett
+              företag.
+            </p>
+          </div>
+          <div className="flex flex-col gap-3">
+            <Link
+              href="/login?type=privat"
+              className="bd-card w-full text-left p-5 rounded-2xl border border-line bg-white flex items-center gap-4"
             >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
+              <div className="w-11 h-11 rounded-xl flex items-center justify-center flex-none bg-frost-2">
+                <User size={20} className="text-forest" />
+              </div>
+              <div className="flex-1">
+                <div className="font-semibold text-[15px]">Privatperson</div>
+                <div className="text-sm text-slate">Hem, bil, villa eller olycksfall</div>
+              </div>
+              <ChevronRight size={18} className="text-slate" />
+            </Link>
+            <Link
+              href="/login?type=foretag"
+              className="bd-card w-full text-left p-5 rounded-2xl border border-line bg-white flex items-center gap-4"
             >
-              Learning
-            </a>{" "}
-            center.
-          </p>
+              <div className="w-11 h-11 rounded-xl flex items-center justify-center flex-none bg-frost-2">
+                <Building2 size={20} className="text-forest" />
+              </div>
+              <div className="flex-1">
+                <div className="font-semibold text-[15px]">Företag</div>
+                <div className="text-sm text-slate">
+                  Företagsförsäkring och dedikerad rådgivare
+                </div>
+              </div>
+              <ChevronRight size={18} className="text-slate" />
+            </Link>
+          </div>
         </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
-        </div>
-      </main>
+      </div>
     </div>
   );
 }
