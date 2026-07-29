@@ -1,21 +1,22 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, ArrowRight, Check, Trash2 } from "lucide-react";
+import { ArrowLeft, ArrowRight, Loader2, Trash2 } from "lucide-react";
 import { Logo } from "@/components/Logo";
 import { ProgressDots } from "@/components/ProgressDots";
+import { BoendeForm } from "@/components/onboarding/BoendeForm";
+import { Field, FormActions, PillGroup, inputClass } from "@/components/onboarding/shared";
 import { useBuddy } from "@/lib/buddy-context";
 import { PRIORITY_OPTIONS } from "@/lib/insurance";
+import { lookupVehicle } from "@/lib/vehicle-lookup";
 import {
-  BOENDE_TYP_LABELS,
   DJUR_TYP_LABELS,
   FORDON_TYP_LABELS,
   ITEM_CATEGORIES,
   PERSON_RELATION_LABELS,
   createItemId,
   itemSummary,
-  type BoendeTyp,
   type DjurTyp,
   type FordonTyp,
   type InsuranceItem,
@@ -23,146 +24,64 @@ import {
   type PersonRelation,
 } from "@/lib/items";
 
-function PillGroup<T extends string>({
-  options,
-  labels,
-  value,
-  onChange,
-}: {
-  options: readonly T[];
-  labels: Record<T, string>;
-  value: T | null;
-  onChange: (v: T) => void;
-}) {
-  return (
-    <div className="flex flex-wrap gap-2 mb-4">
-      {options.map((opt) => {
-        const active = value === opt;
-        return (
-          <button
-            key={opt}
-            type="button"
-            onClick={() => onChange(opt)}
-            className="px-3.5 py-2 rounded-full border text-sm font-medium"
-            style={{
-              borderColor: active ? "var(--color-forest)" : "var(--color-line)",
-              background: active ? "var(--color-frost-2)" : "white",
-              color: active ? "var(--color-forest)" : "var(--color-ink)",
-            }}
-          >
-            {labels[opt]}
-          </button>
-        );
-      })}
-    </div>
-  );
-}
-
-function Field({ label, children }: { label: string; children: React.ReactNode }) {
-  return (
-    <div className="mb-4">
-      <label className="text-sm font-medium mb-2 block">{label}</label>
-      {children}
-    </div>
-  );
-}
-
-const inputClass = "w-full px-4 py-3 rounded-xl border border-line text-[15px]";
-
-function BoendeForm({ onSave, onCancel }: { onSave: (item: InsuranceItem) => void; onCancel: () => void }) {
-  const [typ, setTyp] = useState<BoendeTyp | null>(null);
-  const [adress, setAdress] = useState("");
-  const [postnummer, setPostnummer] = useState("");
-  const [ort, setOrt] = useState("");
-  const [boyta, setBoyta] = useState("");
-  const [byggar, setByggar] = useState("");
-  const [hushallsstorlek, setHushallsstorlek] = useState("1");
-
-  const valid = typ && adress.trim().length > 1 && ort.trim().length > 0 && Number(boyta) > 0;
-
-  return (
-    <>
-      <Field label="Typ av boende">
-        <PillGroup
-          options={["villa", "lagenhet", "radhus", "fritidshus"] as const}
-          labels={BOENDE_TYP_LABELS}
-          value={typ}
-          onChange={setTyp}
-        />
-      </Field>
-      <Field label="Adress">
-        <input className={inputClass} value={adress} onChange={(e) => setAdress(e.target.value)} placeholder="Storgatan 4" />
-      </Field>
-      <div className="grid grid-cols-2 gap-3">
-        <Field label="Postnummer">
-          <input className={inputClass} value={postnummer} onChange={(e) => setPostnummer(e.target.value)} placeholder="123 45" />
-        </Field>
-        <Field label="Ort">
-          <input className={inputClass} value={ort} onChange={(e) => setOrt(e.target.value)} placeholder="Stockholm" />
-        </Field>
-      </div>
-      <div className="grid grid-cols-2 gap-3">
-        <Field label="Boyta (m²)">
-          <input type="number" className={inputClass} value={boyta} onChange={(e) => setBoyta(e.target.value)} placeholder="78" />
-        </Field>
-        <Field label="Byggår (valfritt)">
-          <input type="number" className={inputClass} value={byggar} onChange={(e) => setByggar(e.target.value)} placeholder="1998" />
-        </Field>
-      </div>
-      <Field label="Antal personer i hushållet">
-        <input
-          type="number"
-          min={1}
-          className={inputClass}
-          value={hushallsstorlek}
-          onChange={(e) => setHushallsstorlek(e.target.value)}
-        />
-      </Field>
-      <FormActions
-        valid={!!valid}
-        onCancel={onCancel}
-        onSave={() =>
-          onSave({
-            id: createItemId(),
-            kind: "boende",
-            typ: typ!,
-            adress: adress.trim(),
-            postnummer: postnummer.trim(),
-            ort: ort.trim(),
-            boyta: Number(boyta),
-            byggar: byggar ? Number(byggar) : undefined,
-            hushallsstorlek: Number(hushallsstorlek) || 1,
-          })
-        }
-      />
-    </>
-  );
-}
-
 function BilForm({ onSave, onCancel }: { onSave: (item: InsuranceItem) => void; onCancel: () => void }) {
   const [regnummer, setRegnummer] = useState("");
   const [markeModell, setMarkeModell] = useState("");
   const [arsmodell, setArsmodell] = useState("");
+  const [arligKorstracka, setArligKorstracka] = useState("");
   const [forvaring, setForvaring] = useState<"garage" | "uppfart" | "gata" | null>(null);
+  const [lookingUp, setLookingUp] = useState(false);
+  const lookupToken = useRef(0);
 
   const valid = regnummer.trim().length >= 2;
+
+  const runLookup = async (value: string) => {
+    if (value.trim().length < 5 || markeModell.trim() || arsmodell.trim()) return;
+    const token = ++lookupToken.current;
+    setLookingUp(true);
+    const info = await lookupVehicle(value);
+    if (token !== lookupToken.current) return;
+    setLookingUp(false);
+    if (info) {
+      setMarkeModell(info.markeModell);
+      setArsmodell(String(info.arsmodell));
+    }
+  };
 
   return (
     <>
       <Field label="Registreringsnummer">
-        <input
-          className={inputClass}
-          value={regnummer}
-          onChange={(e) => setRegnummer(e.target.value.toUpperCase())}
-          placeholder="ABC123"
-        />
+        <div className="relative">
+          <input
+            className={inputClass}
+            value={regnummer}
+            onChange={(e) => setRegnummer(e.target.value.toUpperCase())}
+            onBlur={(e) => runLookup(e.target.value)}
+            placeholder="ABC123"
+          />
+          {lookingUp && (
+            <Loader2 size={15} className="bd-spin absolute right-3 top-1/2 -translate-y-1/2 text-slate" />
+          )}
+        </div>
+        {lookingUp && <p className="text-xs mt-1.5 text-slate">Hämtar fordonsinformation…</p>}
       </Field>
       <Field label="Märke & modell (valfritt)">
         <input className={inputClass} value={markeModell} onChange={(e) => setMarkeModell(e.target.value)} placeholder="Volvo XC60" />
       </Field>
-      <Field label="Årsmodell (valfritt)">
-        <input type="number" className={inputClass} value={arsmodell} onChange={(e) => setArsmodell(e.target.value)} placeholder="2019" />
-      </Field>
+      <div className="grid grid-cols-2 gap-3">
+        <Field label="Årsmodell (valfritt)">
+          <input type="number" className={inputClass} value={arsmodell} onChange={(e) => setArsmodell(e.target.value)} placeholder="2019" />
+        </Field>
+        <Field label="Körsträcka per år (mil, valfritt)">
+          <input
+            type="number"
+            className={inputClass}
+            value={arligKorstracka}
+            onChange={(e) => setArligKorstracka(e.target.value)}
+            placeholder="1500"
+          />
+        </Field>
+      </div>
       <Field label="Var förvaras bilen? (valfritt)">
         <PillGroup
           options={["garage", "uppfart", "gata"] as const}
@@ -181,6 +100,7 @@ function BilForm({ onSave, onCancel }: { onSave: (item: InsuranceItem) => void; 
             regnummer: regnummer.trim(),
             markeModell: markeModell.trim() || undefined,
             arsmodell: arsmodell ? Number(arsmodell) : undefined,
+            arligKorstracka: arligKorstracka ? Number(arligKorstracka) : undefined,
             forvaring: forvaring ?? undefined,
           })
         }
@@ -318,23 +238,6 @@ function DjurForm({ onSave, onCancel }: { onSave: (item: InsuranceItem) => void;
         }
       />
     </>
-  );
-}
-
-function FormActions({ valid, onSave, onCancel }: { valid: boolean; onSave: () => void; onCancel: () => void }) {
-  return (
-    <div className="flex flex-col gap-2 mt-2">
-      <button
-        onClick={onSave}
-        disabled={!valid}
-        className="bd-btn w-full flex items-center justify-center gap-2 py-3.5 rounded-full font-semibold text-white text-[15px] bg-forest disabled:opacity-40"
-      >
-        Spara <Check size={16} />
-      </button>
-      <button onClick={onCancel} className="text-sm font-semibold py-2 text-slate">
-        Avbryt
-      </button>
-    </div>
   );
 }
 

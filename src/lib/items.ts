@@ -1,21 +1,76 @@
 import { Car, Caravan, Home, PawPrint, UserRound, type LucideIcon } from "lucide-react";
 
-export type BoendeTyp = "villa" | "lagenhet" | "radhus" | "fritidshus";
+export type BoendeTyp = "hyresratt" | "bostadsratt" | "villa" | "fritidshus" | "fritidsbostadsratt" | "magasinering";
 export type FordonTyp = "mc" | "husvagn" | "bat" | "slap" | "annat";
 export type DjurTyp = "hund" | "katt" | "annat";
 export type PersonRelation = "mig-sjalv" | "partner" | "barn" | "annan";
+export type ForvaringsTyp = "forrad" | "kallarforrad" | "container" | "boxlager" | "annat";
 
-export type BoendeItem = {
+type BostadBase = {
   id: string;
   kind: "boende";
-  typ: BoendeTyp;
   adress: string;
   postnummer: string;
   ort: string;
   boyta: number;
-  byggar?: number;
   hushallsstorlek: number;
 };
+
+export type HyresrattItem = BostadBase & {
+  typ: "hyresratt";
+  biarea?: number;
+  sakerhetsdorr: boolean;
+  larm: boolean;
+};
+
+export type BostadsrattItem = BostadBase & {
+  typ: "bostadsratt";
+  biarea?: number;
+  sakerhetsdorr: boolean;
+  larm: boolean;
+  bostadsrattstillagg: boolean;
+};
+
+export type FritidsbostadsrattItem = BostadBase & {
+  typ: "fritidsbostadsratt";
+  biarea?: number;
+  sakerhetsdorr: boolean;
+  larm: boolean;
+  bostadsrattstillagg: boolean;
+};
+
+export type OvrigByggnad = { id: string; typ: string; byggyta: number };
+
+export type VillaItem = BostadBase & {
+  typ: "villa" | "fritidshus";
+  antalBadDusch: number;
+  skorsten: boolean;
+  ovrigaByggnader: OvrigByggnad[];
+  indragetVatten: boolean;
+  antalPlan: number;
+  kallare: boolean;
+  larm: boolean;
+};
+
+export type MagasineringItem = {
+  id: string;
+  kind: "boende";
+  typ: "magasinering";
+  adress: string;
+  postnummer: string;
+  ort: string;
+  forvaringstyp: ForvaringsTyp;
+  storlekM2: number;
+  innehall: string;
+  uppskattatVarde: number;
+};
+
+export type BoendeItem =
+  | HyresrattItem
+  | BostadsrattItem
+  | FritidsbostadsrattItem
+  | VillaItem
+  | MagasineringItem;
 
 export type BilItem = {
   id: string;
@@ -23,6 +78,7 @@ export type BilItem = {
   regnummer: string;
   markeModell?: string;
   arsmodell?: number;
+  arligKorstracka?: number;
   forvaring?: "garage" | "uppfart" | "gata";
 };
 
@@ -63,10 +119,20 @@ export const ITEM_CATEGORIES: { kind: ItemKind; label: string; icon: LucideIcon 
 ];
 
 export const BOENDE_TYP_LABELS: Record<BoendeTyp, string> = {
+  hyresratt: "Hyresrätt",
+  bostadsratt: "Bostadsrätt",
   villa: "Villa",
-  lagenhet: "Lägenhet",
-  radhus: "Radhus / Kedjehus",
   fritidshus: "Fritidshus",
+  fritidsbostadsratt: "Fritidsbostadsrätt",
+  magasinering: "Magasinering",
+};
+
+export const FORVARINGS_TYP_LABELS: Record<ForvaringsTyp, string> = {
+  forrad: "Förråd",
+  kallarforrad: "Källarförråd",
+  container: "Container",
+  boxlager: "Boxlager",
+  annat: "Annat",
 };
 
 export const FORDON_TYP_LABELS: Record<FordonTyp, string> = {
@@ -97,6 +163,9 @@ export function createItemId(): string {
 export function itemSummary(item: InsuranceItem): string {
   switch (item.kind) {
     case "boende":
+      if (item.typ === "magasinering") {
+        return `${FORVARINGS_TYP_LABELS[item.forvaringstyp]}, ${item.ort} · ${item.storlekM2} m²`;
+      }
       return `${item.adress}, ${item.ort} · ${item.boyta} m²`;
     case "bil":
       return item.markeModell ? `${item.markeModell} · ${item.regnummer}` : item.regnummer;
