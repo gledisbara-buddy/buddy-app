@@ -5,6 +5,9 @@ export type FordonTyp = "mc" | "husvagn" | "bat" | "slap" | "annat";
 export type DjurTyp = "hund" | "katt" | "annat";
 export type PersonRelation = "mig-sjalv" | "partner" | "barn" | "annan";
 export type ForvaringsTyp = "forrad" | "kallarforrad" | "container" | "boxlager" | "annat";
+export type Sysselsattning = "anstalld" | "egenforetagare" | "student" | "arbetssokande" | "pensionar";
+export type OnskatSkydd = "olycksfall" | "sjukdom" | "liv" | "barnforsakring";
+export type InneUte = "inne" | "ute" | "bade";
 
 type BostadBase = {
   id: string;
@@ -96,6 +99,8 @@ export type PersonItem = {
   namn: string;
   personnummer: string;
   relation: PersonRelation;
+  sysselsattning?: Sysselsattning;
+  onskatSkydd: OnskatSkydd[];
 };
 
 export type DjurItem = {
@@ -105,6 +110,10 @@ export type DjurItem = {
   namn: string;
   ras?: string;
   fodelsear?: number;
+  viktKg?: number;
+  kastrerad?: boolean;
+  inneUte?: InneUte;
+  reserUtomlands?: boolean;
 };
 
 export type InsuranceItem = BoendeItem | BilItem | OvrigtFordonItem | PersonItem | DjurItem;
@@ -154,6 +163,27 @@ export const PERSON_RELATION_LABELS: Record<PersonRelation, string> = {
   partner: "Partner",
   barn: "Barn",
   annan: "Annan",
+};
+
+export const SYSSELSATTNING_LABELS: Record<Sysselsattning, string> = {
+  anstalld: "Anställd",
+  egenforetagare: "Egenföretagare",
+  student: "Student",
+  arbetssokande: "Arbetssökande",
+  pensionar: "Pensionär",
+};
+
+export const ONSKAT_SKYDD_LABELS: Record<OnskatSkydd, string> = {
+  olycksfall: "Olycksfall",
+  sjukdom: "Sjuk- och efterlevandeskydd",
+  liv: "Livförsäkring",
+  barnforsakring: "Barnförsäkring",
+};
+
+export const INNE_UTE_LABELS: Record<InneUte, string> = {
+  inne: "Innedjur",
+  ute: "Utedjur",
+  bade: "Både och",
 };
 
 export function createItemId(): string {

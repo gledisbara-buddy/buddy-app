@@ -37,6 +37,43 @@ export function PillGroup<T extends string>({
   );
 }
 
+export function MultiPillGroup<T extends string>({
+  options,
+  labels,
+  value,
+  onChange,
+}: {
+  options: readonly T[];
+  labels: Record<T, string>;
+  value: T[];
+  onChange: (v: T[]) => void;
+}) {
+  const toggle = (opt: T) =>
+    onChange(value.includes(opt) ? value.filter((v) => v !== opt) : [...value, opt]);
+  return (
+    <div className="flex flex-wrap gap-2 mb-4">
+      {options.map((opt) => {
+        const active = value.includes(opt);
+        return (
+          <button
+            key={opt}
+            type="button"
+            onClick={() => toggle(opt)}
+            className="px-3.5 py-2 rounded-full border text-sm font-medium"
+            style={{
+              borderColor: active ? "var(--color-forest)" : "var(--color-line)",
+              background: active ? "var(--color-frost-2)" : "white",
+              color: active ? "var(--color-forest)" : "var(--color-ink)",
+            }}
+          >
+            {labels[opt]}
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
 export function BoolPill({
   value,
   onChange,

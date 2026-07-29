@@ -6,22 +6,28 @@ import { ArrowLeft, ArrowRight, Loader2, Trash2 } from "lucide-react";
 import { Logo } from "@/components/Logo";
 import { ProgressDots } from "@/components/ProgressDots";
 import { BoendeForm } from "@/components/onboarding/BoendeForm";
-import { Field, FormActions, PillGroup, inputClass } from "@/components/onboarding/shared";
+import { BoolPill, Field, FormActions, MultiPillGroup, PillGroup, inputClass } from "@/components/onboarding/shared";
 import { useBuddy } from "@/lib/buddy-context";
 import { PRIORITY_OPTIONS } from "@/lib/insurance";
 import { lookupVehicle } from "@/lib/vehicle-lookup";
 import {
   DJUR_TYP_LABELS,
   FORDON_TYP_LABELS,
+  INNE_UTE_LABELS,
   ITEM_CATEGORIES,
+  ONSKAT_SKYDD_LABELS,
   PERSON_RELATION_LABELS,
+  SYSSELSATTNING_LABELS,
   createItemId,
   itemSummary,
   type DjurTyp,
   type FordonTyp,
+  type InneUte,
   type InsuranceItem,
   type ItemKind,
+  type OnskatSkydd,
   type PersonRelation,
+  type Sysselsattning,
 } from "@/lib/items";
 
 function BilForm({ onSave, onCancel }: { onSave: (item: InsuranceItem) => void; onCancel: () => void }) {
@@ -159,7 +165,12 @@ function PersonForm({ onSave, onCancel }: { onSave: (item: InsuranceItem) => voi
   const [personnummer, setPersonnummer] = useState("");
   const [relation, setRelation] = useState<PersonRelation | null>(null);
 
+  const [sysselsattning, setSysselsattning] = useState<Sysselsattning | null>(null);
+  const [onskatSkydd, setOnskatSkydd] = useState<OnskatSkydd[]>([]);
+
   const valid = namn.trim().length > 0 && personnummer.trim().length >= 10 && relation;
+  const skyddOptions: OnskatSkydd[] =
+    relation === "barn" ? ["barnforsakring", "olycksfall"] : ["olycksfall", "sjukdom", "liv"];
 
   return (
     <>
@@ -182,6 +193,17 @@ function PersonForm({ onSave, onCancel }: { onSave: (item: InsuranceItem) => voi
           onChange={setRelation}
         />
       </Field>
+      <Field label="Sysselsättning (valfritt)">
+        <PillGroup
+          options={["anstalld", "egenforetagare", "student", "arbetssokande", "pensionar"] as const}
+          labels={SYSSELSATTNING_LABELS}
+          value={sysselsattning}
+          onChange={setSysselsattning}
+        />
+      </Field>
+      <Field label="Vad vill du skydda? (valfritt, flera val möjliga)">
+        <MultiPillGroup options={skyddOptions} labels={ONSKAT_SKYDD_LABELS} value={onskatSkydd} onChange={setOnskatSkydd} />
+      </Field>
       <FormActions
         valid={!!valid}
         onCancel={onCancel}
@@ -192,6 +214,8 @@ function PersonForm({ onSave, onCancel }: { onSave: (item: InsuranceItem) => voi
             namn: namn.trim(),
             personnummer: personnummer.trim(),
             relation: relation!,
+            sysselsattning: sysselsattning ?? undefined,
+            onskatSkydd,
           })
         }
       />
@@ -204,6 +228,10 @@ function DjurForm({ onSave, onCancel }: { onSave: (item: InsuranceItem) => void;
   const [namn, setNamn] = useState("");
   const [ras, setRas] = useState("");
   const [fodelsear, setFodelsear] = useState("");
+  const [viktKg, setViktKg] = useState("");
+  const [kastrerad, setKastrerad] = useState<boolean | null>(null);
+  const [inneUte, setInneUte] = useState<InneUte | null>(null);
+  const [reserUtomlands, setReserUtomlands] = useState<boolean | null>(null);
 
   const valid = !!djurtyp && namn.trim().length > 0;
 
@@ -223,6 +251,20 @@ function DjurForm({ onSave, onCancel }: { onSave: (item: InsuranceItem) => void;
           <input type="number" className={inputClass} value={fodelsear} onChange={(e) => setFodelsear(e.target.value)} placeholder="2020" />
         </Field>
       </div>
+      <Field label="Vikt (kg, valfritt)">
+        <input type="number" className={inputClass} value={viktKg} onChange={(e) => setViktKg(e.target.value)} placeholder="12" />
+      </Field>
+      {(djurtyp === "hund" || djurtyp === "katt") && (
+        <Field label="Inne- eller utedjur? (valfritt)">
+          <PillGroup options={["inne", "ute", "bade"] as const} labels={INNE_UTE_LABELS} value={inneUte} onChange={setInneUte} />
+        </Field>
+      )}
+      <Field label="Kastrerad/steriliserad? (valfritt)">
+        <BoolPill value={kastrerad} onChange={setKastrerad} />
+      </Field>
+      <Field label="Reser du utomlands med djuret? (valfritt)">
+        <BoolPill value={reserUtomlands} onChange={setReserUtomlands} />
+      </Field>
       <FormActions
         valid={valid}
         onCancel={onCancel}
@@ -234,6 +276,10 @@ function DjurForm({ onSave, onCancel }: { onSave: (item: InsuranceItem) => void;
             namn: namn.trim(),
             ras: ras.trim() || undefined,
             fodelsear: fodelsear ? Number(fodelsear) : undefined,
+            viktKg: viktKg ? Number(viktKg) : undefined,
+            kastrerad: kastrerad ?? undefined,
+            inneUte: inneUte ?? undefined,
+            reserUtomlands: reserUtomlands ?? undefined,
           })
         }
       />
