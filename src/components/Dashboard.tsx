@@ -2,7 +2,7 @@
 
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { CalendarDays, MessageCircle, Plus, ShieldAlert, Star, Trash2 } from "lucide-react";
+import { ArrowRight, CalendarDays, MessageCircle, Plus, ShieldAlert, Star, Trash2 } from "lucide-react";
 import { TopBar } from "@/components/TopBar";
 import { useBuddy } from "@/lib/buddy-context";
 import { PRIORITY_OPTIONS } from "@/lib/insurance";
@@ -10,7 +10,7 @@ import { ITEM_CATEGORIES, itemSummary, itemTitle } from "@/lib/items";
 
 export function Dashboard() {
   const router = useRouter();
-  const { userType, profile, items, removeItem } = useBuddy();
+  const { userType, profile, items, removeItem, policies } = useBuddy();
 
   useEffect(() => {
     if (!userType) router.replace("/kom-igang");
@@ -54,23 +54,49 @@ export function Dashboard() {
 
         {items.length > 0 && (
           <div className="grid md:grid-cols-3 gap-4 mb-4">
-            {items.map((item) => (
-              <div key={item.id} className="bg-white rounded-2xl border border-line p-5">
-                <div className="flex items-start justify-between mb-4">
-                  <div className="w-10 h-10 rounded-xl flex items-center justify-center bg-frost-2">
-                    {(() => {
-                      const Icon = ITEM_CATEGORIES.find((c) => c.kind === item.kind)!.icon;
-                      return <Icon size={18} className="text-forest" />;
-                    })()}
+            {items.map((item) => {
+              const signed = policies[item.id];
+              return (
+                <div key={item.id} className="bg-white rounded-2xl border border-line p-5">
+                  <div className="flex items-start justify-between mb-4">
+                    <div className="w-10 h-10 rounded-xl flex items-center justify-center bg-frost-2">
+                      {(() => {
+                        const Icon = ITEM_CATEGORIES.find((c) => c.kind === item.kind)!.icon;
+                        return <Icon size={18} className="text-forest" />;
+                      })()}
+                    </div>
+                    <button onClick={() => removeItem(item.id)} className="opacity-40 hover:opacity-100">
+                      <Trash2 size={15} />
+                    </button>
                   </div>
-                  <button onClick={() => removeItem(item.id)} className="opacity-40 hover:opacity-100">
-                    <Trash2 size={15} />
-                  </button>
+                  <div className="font-semibold text-[15px] mb-1">{itemTitle(item)}</div>
+                  <div className="text-xs mb-4 text-slate">{itemSummary(item)}</div>
+                  {signed ? (
+                    <>
+                      <div className="text-xs mb-3 text-forest">
+                        ● Tecknad hos {signed.name} — {signed.price} kr/mån
+                      </div>
+                      <button
+                        onClick={() => router.push(`/compare/${item.id}`)}
+                        className="text-sm font-semibold flex items-center gap-1 text-forest"
+                      >
+                        Jämför igen <ArrowRight size={14} />
+                      </button>
+                    </>
+                  ) : (
+                    <>
+                      <div className="text-xs mb-3 text-amber-deep">● Ej jämförd ännu</div>
+                      <button
+                        onClick={() => router.push(`/compare/${item.id}`)}
+                        className="text-sm font-semibold flex items-center gap-1 text-forest"
+                      >
+                        Jämför nu <ArrowRight size={14} />
+                      </button>
+                    </>
+                  )}
                 </div>
-                <div className="font-semibold text-[15px] mb-1">{itemTitle(item)}</div>
-                <div className="text-xs text-slate">{itemSummary(item)}</div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         )}
 
@@ -157,7 +183,11 @@ export function Dashboard() {
             <b>Tips från Buddy:</b>{" "}
             {items.length === 0
               ? "du har inte lagt in något än — börja med det som känns viktigast, t.ex. ditt boende eller din bil."
-              : "bra jobbat! Fortsätt lägga till fler saker så får du en komplett bild av vad du behöver skydda."}
+              : Object.keys(policies).length === 0
+                ? "du har inte jämfört några avtal än — det tar ~1 minut per sak och du bestämmer själv om du vill teckna."
+                : Object.keys(policies).length < items.length
+                  ? "bra jobbat, fortsätt jämföra dina övriga saker för att se om du kan spara mer."
+                  : "snyggt — allt du lagt in är jämfört. Lägg gärna till fler saker för en komplett bild."}
           </p>
         </div>
       </div>

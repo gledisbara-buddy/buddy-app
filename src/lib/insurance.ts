@@ -1,18 +1,3 @@
-import { Briefcase, Car, HeartPulse, Home, type LucideIcon } from "lucide-react";
-
-export type InsuranceId = "hem" | "bil" | "villa" | "olycksfall" | "foretag";
-
-export const INSURANCE_META: Record<
-  InsuranceId,
-  { label: string; icon: LucideIcon; forCompany: boolean }
-> = {
-  hem: { label: "Hemförsäkring", icon: Home, forCompany: false },
-  bil: { label: "Bilförsäkring", icon: Car, forCompany: false },
-  villa: { label: "Villaförsäkring", icon: Home, forCompany: false },
-  olycksfall: { label: "Olycksfall / Person", icon: HeartPulse, forCompany: false },
-  foretag: { label: "Företagsförsäkring", icon: Briefcase, forCompany: true },
-};
-
 export const PRIORITY_OPTIONS = [
   { id: "pris", label: "Lägre pris", desc: "Jag vill inte betala mer än jag behöver." },
   {
