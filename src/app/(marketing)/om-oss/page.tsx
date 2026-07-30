@@ -1,3 +1,4 @@
+import Image from "next/image";
 import { Heart, Lightbulb, ShieldCheck } from "lucide-react";
 
 const VALUES = [
@@ -28,10 +29,33 @@ export default function OmOssPage() {
         skydda på ett och samma ställe — utan att behöva logga in på fem olika bolags hemsidor
         eller läsa villkor skrivna för jurister.
       </p>
-      <p className="text-base mb-10 text-slate">
+      <p className="text-base mb-12 text-slate">
         Vi hjälper dig lägga in dina saker, jämföra skydd och pris, och finns kvar genom hela
         resan — från första frågan till en skadeanmälan mitt i natten.
       </p>
+
+      <div className="rounded-3xl border border-line bg-white p-6 md:p-8 mb-12 flex flex-col sm:flex-row gap-6 items-center sm:items-start">
+        <div className="w-32 h-32 sm:w-36 sm:h-36 rounded-2xl overflow-hidden flex-none relative">
+          <Image
+            src="/founder.jpg"
+            alt="Gledis Bara, grundare och VD för Buddy"
+            fill
+            sizes="144px"
+            className="object-cover"
+            style={{ objectPosition: "50% 15%" }}
+          />
+        </div>
+        <div className="text-center sm:text-left">
+          <div className="font-semibold text-lg">Gledis Bara</div>
+          <div className="text-sm mb-3 text-forest">Grundare & VD</div>
+          <p className="text-sm text-slate">
+            Gledis har jobbat i försäkringsbranschen som villkorsspecialist, rådgivare och
+            jämförare — och har sett samma sak om och om igen: bra skydd finns, men det är
+            nästan omöjligt för vanliga kunder att hitta det själva. Buddy är byggt för att
+            ge alla samma överblick som en personlig rådgivare annars ger.
+          </p>
+        </div>
+      </div>
 
       <div className="grid md:grid-cols-3 gap-4 mb-12">
         {VALUES.map((v) => (
