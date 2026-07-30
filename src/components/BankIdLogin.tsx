@@ -11,7 +11,7 @@ type Phase = "idle" | "waiting" | "success";
 
 export function BankIdLogin({ userType }: { userType: UserType }) {
   const router = useRouter();
-  const { setUserType } = useBuddy();
+  const { setUserType, updateProfile } = useBuddy();
   const [phase, setPhase] = useState<Phase>("idle");
   const [idNumber, setIdNumber] = useState("");
   const timeoutsRef = useRef<ReturnType<typeof setTimeout>[]>([]);
@@ -26,6 +26,7 @@ export function BankIdLogin({ userType }: { userType: UserType }) {
     timeoutsRef.current.push(
       setTimeout(() => {
         setUserType(userType);
+        updateProfile({ personnummer: idNumber.trim() });
         router.push("/onboarding");
       }, 2900)
     );

@@ -389,7 +389,7 @@ const CATEGORY_FORMS: Record<ItemKind, React.ComponentType<{ onSave: (item: Insu
 
 export function Onboarding({ mode = "full" }: { mode?: "full" | "add" }) {
   const router = useRouter();
-  const { userType, items, addItem, removeItem, setProfile } = useBuddy();
+  const { userType, items, addItem, removeItem, updateProfile } = useBuddy();
   const [phase, setPhase] = useState<"name" | "hub" | "priority">(mode === "add" ? "hub" : "name");
   const [name, setName] = useState("");
   const [priority, setPriority] = useState<string | null>(null);
@@ -404,7 +404,7 @@ export function Onboarding({ mode = "full" }: { mode?: "full" | "add" }) {
   const goToDashboard = () => router.push("/dashboard");
 
   const finishFull = (chosenPriority: string | null) => {
-    setProfile({ name: name.trim(), priority: chosenPriority });
+    updateProfile({ name: name.trim(), priority: chosenPriority });
     goToDashboard();
   };
 

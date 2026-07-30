@@ -8,18 +8,22 @@ import type { InsuranceItem } from "@/lib/items";
 export type Profile = {
   name: string;
   priority: string | null;
+  personnummer?: string;
+  email?: string;
+  phone?: string;
 };
 
 type BuddyState = {
   userType: UserType | null;
   setUserType: (userType: UserType) => void;
   profile: Profile | null;
-  setProfile: (profile: Profile) => void;
+  updateProfile: (patch: Partial<Profile>) => void;
   items: InsuranceItem[];
   addItem: (item: InsuranceItem) => void;
   removeItem: (id: string) => void;
   policies: Record<string, Quote>;
   setPolicy: (insuranceId: string, quote: Quote) => void;
+  logout: () => void;
 };
 
 const BuddyContext = createContext<BuddyState | null>(null);
@@ -30,22 +34,31 @@ export function BuddyProvider({ children }: { children: ReactNode }) {
   const [items, setItems] = useState<InsuranceItem[]>([]);
   const [policies, setPolicies] = useState<Record<string, Quote>>({});
 
+  const updateProfile = (patch: Partial<Profile>) =>
+    setProfile((prev) => ({ name: "", priority: null, ...prev, ...patch }));
   const addItem = (item: InsuranceItem) => setItems((prev) => [...prev, item]);
   const removeItem = (id: string) => setItems((prev) => prev.filter((i) => i.id !== id));
   const setPolicy = (insuranceId: string, quote: Quote) =>
     setPolicies((prev) => ({ ...prev, [insuranceId]: quote }));
+  const logout = () => {
+    setUserType(null);
+    setProfile(null);
+    setItems([]);
+    setPolicies({});
+  };
 
   const value = useMemo(
     () => ({
       userType,
       setUserType,
       profile,
-      setProfile,
+      updateProfile,
       items,
       addItem,
       removeItem,
       policies,
       setPolicy,
+      logout,
     }),
     [userType, profile, items, policies]
   );

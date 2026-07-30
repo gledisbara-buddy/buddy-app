@@ -4,6 +4,7 @@ import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { ArrowRight, CalendarDays, MessageCircle, Plus, ShieldAlert, Star, Trash2 } from "lucide-react";
 import { TopBar } from "@/components/TopBar";
+import { ProfileMenu } from "@/components/ProfileMenu";
 import { useBuddy } from "@/lib/buddy-context";
 import { PRIORITY_OPTIONS } from "@/lib/insurance";
 import { ITEM_CATEGORIES, itemSummary, itemTitle } from "@/lib/items";
@@ -22,13 +23,7 @@ export function Dashboard() {
 
   return (
     <div className="min-h-screen w-full">
-      <TopBar
-        right={
-          <div className="w-9 h-9 rounded-full flex items-center justify-center text-white text-sm font-semibold bd-display bg-forest">
-            {profile?.name?.[0]?.toUpperCase() || "?"}
-          </div>
-        }
-      />
+      <TopBar right={<ProfileMenu />} />
       <div className="max-w-4xl mx-auto px-5 md:px-10 py-10 bd-fade">
         <span className="bd-eyebrow">Din översikt</span>
         <h1 className="bd-display text-3xl mt-2 mb-1">Hej {profile?.name || "där"} 👋</h1>
