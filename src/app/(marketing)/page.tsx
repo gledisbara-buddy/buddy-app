@@ -3,11 +3,22 @@ import Link from "next/link";
 import {
   ArrowRight,
   CalendarDays,
+  Clock,
   MessageCircle,
   ShieldAlert,
   ShieldCheck,
   Sparkles,
+  Star,
 } from "lucide-react";
+import { FaqAccordion } from "@/components/marketing/FaqAccordion";
+import { FAQ_ITEMS } from "@/lib/faq";
+import { GUIDES } from "@/lib/guides";
+import { NEWS_ARTICLES } from "@/lib/news";
+import { TOP_LIST } from "@/lib/top-list";
+
+function formatDate(iso: string) {
+  return new Date(iso).toLocaleDateString("sv-SE", { year: "numeric", month: "long", day: "numeric" });
+}
 
 const FEATURES = [
   {
@@ -86,6 +97,69 @@ export default function MarketingHome() {
         </div>
       </section>
 
+      <section className="max-w-4xl mx-auto px-5 md:px-10 py-16 border-t border-line">
+        <div className="flex items-end justify-between mb-8 flex-wrap gap-3">
+          <div>
+            <span className="bd-eyebrow">Topplista</span>
+            <h2 className="bd-display text-3xl mt-3">Så rankar vi bolagen i vår jämförelse</h2>
+          </div>
+          <Link href="/forsakringar" className="text-sm font-semibold flex items-center gap-1 text-forest">
+            Så jämför vi <ArrowRight size={14} />
+          </Link>
+        </div>
+        <div className="flex flex-col gap-3">
+          {TOP_LIST.map((entry) => (
+            <div key={entry.name} className="bg-white rounded-2xl border border-line p-5 flex items-start gap-5">
+              <div className="bd-display text-2xl w-8 text-center flex-none text-forest">{entry.rank}</div>
+              <div className="flex-1">
+                <div className="flex items-center gap-2 mb-1 flex-wrap">
+                  <div className="font-semibold text-[15px]">{entry.name}</div>
+                  <div className="flex items-center gap-1 text-xs text-amber-deep">
+                    <Star size={12} fill="currentColor" /> {entry.rating}{" "}
+                    <span className="text-slate">({entry.reviews} omdömen)</span>
+                  </div>
+                </div>
+                <p className="text-sm mb-2.5 text-slate">{entry.tagline}</p>
+                <div className="flex flex-wrap gap-2">
+                  {entry.strengths.map((s) => (
+                    <span key={s} className="text-xs px-2.5 py-1 rounded-full bg-frost text-forest">
+                      {s}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+        <p className="text-xs text-center mt-6 text-slate">
+          Exempeldata i den här prototypen — bolagsnamn, betyg och omdömen är fiktiva.
+        </p>
+      </section>
+
+      <section className="max-w-6xl mx-auto px-5 md:px-10 py-16 border-t border-line">
+        <div className="flex items-end justify-between mb-8 flex-wrap gap-3">
+          <div>
+            <span className="bd-eyebrow">Nyheter & aktuellt</span>
+            <h2 className="bd-display text-3xl mt-3">Vad som är aktuellt just nu</h2>
+          </div>
+          <Link href="/nyheter" className="text-sm font-semibold flex items-center gap-1 text-forest">
+            Alla nyheter <ArrowRight size={14} />
+          </Link>
+        </div>
+        <div className="grid sm:grid-cols-3 gap-4">
+          {NEWS_ARTICLES.slice(0, 3).map((a) => (
+            <Link key={a.slug} href={`/nyheter/${a.slug}`} className="bd-card block bg-white rounded-2xl border border-line p-5">
+              <span className="text-xs font-medium px-2.5 py-1 rounded-full bg-frost-2 text-forest">
+                {a.category}
+              </span>
+              <div className="font-semibold text-[15px] mt-3 mb-1.5 leading-snug">{a.title}</div>
+              <p className="text-sm mb-3 text-slate">{a.excerpt}</p>
+              <div className="text-xs text-slate">{formatDate(a.date)}</div>
+            </Link>
+          ))}
+        </div>
+      </section>
+
       <section className="max-w-5xl mx-auto px-5 md:px-10 py-16 border-t border-line">
         <div className="rounded-3xl bg-white border border-line overflow-hidden grid md:grid-cols-2">
           <div className="relative min-h-[260px]">
@@ -115,6 +189,29 @@ export default function MarketingHome() {
         </div>
       </section>
 
+      <section className="max-w-6xl mx-auto px-5 md:px-10 py-16 border-t border-line">
+        <div className="flex items-end justify-between mb-8 flex-wrap gap-3">
+          <div>
+            <span className="bd-eyebrow">Guider</span>
+            <h2 className="bd-display text-3xl mt-3">Lär dig mer innan du väljer</h2>
+          </div>
+          <Link href="/guider" className="text-sm font-semibold flex items-center gap-1 text-forest">
+            Alla guider <ArrowRight size={14} />
+          </Link>
+        </div>
+        <div className="grid sm:grid-cols-2 gap-4">
+          {GUIDES.map((g) => (
+            <Link key={g.slug} href={`/guider/${g.slug}`} className="bd-card block bg-white rounded-2xl border border-line p-5">
+              <div className="font-semibold text-[15px] mb-1.5">{g.title}</div>
+              <p className="text-sm mb-3 text-slate">{g.excerpt}</p>
+              <div className="flex items-center gap-1.5 text-xs text-slate">
+                <Clock size={13} /> {g.readMinutes} min läsning
+              </div>
+            </Link>
+          ))}
+        </div>
+      </section>
+
       <section className="bg-frost-2 py-16 border-t border-line">
         <div className="max-w-4xl mx-auto px-5 md:px-10">
           <div className="text-center mb-10">
@@ -137,7 +234,20 @@ export default function MarketingHome() {
         </div>
       </section>
 
-      <section className="max-w-4xl mx-auto px-5 md:px-10 py-20 text-center">
+      <section className="max-w-2xl mx-auto px-5 md:px-10 py-16 border-t border-line">
+        <div className="text-center mb-8">
+          <span className="bd-eyebrow">Vanliga frågor</span>
+          <h2 className="bd-display text-3xl mt-3">Kort svar på det vanligaste</h2>
+        </div>
+        <FaqAccordion items={FAQ_ITEMS.slice(0, 4)} />
+        <div className="text-center mt-6">
+          <Link href="/vanliga-fragor" className="text-sm font-semibold text-forest">
+            Se alla frågor →
+          </Link>
+        </div>
+      </section>
+
+      <section className="max-w-4xl mx-auto px-5 md:px-10 py-20 text-center border-t border-line">
         <Sparkles size={22} className="text-amber-deep mx-auto mb-4" />
         <h2 className="bd-display text-2xl md:text-3xl mb-3">Redo att komma igång?</h2>
         <p className="text-sm mb-7 text-slate">

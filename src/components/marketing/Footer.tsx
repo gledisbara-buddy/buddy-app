@@ -12,18 +12,19 @@ const COLUMNS: { title: string; links: { href: string; label: string }[] }[] = [
     ],
   },
   {
+    title: "Innehåll",
+    links: [
+      { href: "/guider", label: "Guider" },
+      { href: "/nyheter", label: "Nyheter" },
+      { href: "/vanliga-fragor", label: "Vanliga frågor" },
+    ],
+  },
+  {
     title: "Om Buddy",
     links: [
       { href: "/om-oss", label: "Om oss" },
       { href: "/jobb", label: "Jobba hos oss" },
       { href: "/kontakt", label: "Kontakta oss" },
-    ],
-  },
-  {
-    title: "Support",
-    links: [
-      { href: "/vanliga-fragor", label: "Vanliga frågor" },
-      { href: "/kontakt", label: "Kundtjänst" },
     ],
   },
 ];

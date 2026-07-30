@@ -7,6 +7,8 @@ import { Logo } from "@/components/Logo";
 const LINKS = [
   { href: "/", label: "Hem" },
   { href: "/forsakringar", label: "Försäkringar" },
+  { href: "/guider", label: "Guider" },
+  { href: "/nyheter", label: "Nyheter" },
   { href: "/om-oss", label: "Om oss" },
   { href: "/jobb", label: "Jobb" },
   { href: "/vanliga-fragor", label: "Vanliga frågor" },
@@ -24,7 +26,7 @@ export function MarketingNav() {
       <Logo />
       <nav className="flex items-center gap-1 flex-wrap">
         {LINKS.map((link) => {
-          const active = pathname === link.href;
+          const active = link.href === "/" ? pathname === "/" : pathname.startsWith(link.href);
           return (
             <Link
               key={link.href}
