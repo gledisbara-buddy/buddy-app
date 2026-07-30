@@ -11,6 +11,7 @@ import {
   Star,
 } from "lucide-react";
 import { FaqAccordion } from "@/components/marketing/FaqAccordion";
+import { StartCta } from "@/components/marketing/StartCta";
 import { FAQ_ITEMS } from "@/lib/faq";
 import { GUIDES } from "@/lib/guides";
 import { NEWS_ARTICLES } from "@/lib/news";
@@ -68,12 +69,7 @@ export default function MarketingHome() {
           när något händer.
         </p>
         <div className="flex flex-col sm:flex-row gap-3 justify-center">
-          <Link
-            href="/kom-igang"
-            className="bd-btn px-6 py-3.5 rounded-full font-semibold text-white text-[15px] bg-forest flex items-center justify-center gap-2"
-          >
-            Kom igång <ArrowRight size={16} />
-          </Link>
+          <StartCta className="bd-btn px-6 py-3.5 rounded-full font-semibold text-white text-[15px] bg-forest flex items-center justify-center gap-2" />
           <Link
             href="/forsakringar"
             className="bd-btn px-6 py-3.5 rounded-full font-semibold text-[15px] border border-line bg-white flex items-center justify-center gap-2"
@@ -253,12 +249,7 @@ export default function MarketingHome() {
         <p className="text-sm mb-7 text-slate">
           Det tar bara ett par minuter att få en första överblick.
         </p>
-        <Link
-          href="/kom-igang"
-          className="bd-btn inline-flex items-center gap-2 px-6 py-3.5 rounded-full font-semibold text-white text-[15px] bg-forest"
-        >
-          Kom igång <ArrowRight size={16} />
-        </Link>
+        <StartCta className="bd-btn inline-flex items-center gap-2 px-6 py-3.5 rounded-full font-semibold text-white text-[15px] bg-forest" />
       </section>
     </div>
   );

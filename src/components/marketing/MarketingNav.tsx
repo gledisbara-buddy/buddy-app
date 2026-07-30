@@ -3,6 +3,8 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Logo } from "@/components/Logo";
+import { ProfileMenu } from "@/components/ProfileMenu";
+import { useBuddy } from "@/lib/buddy-context";
 
 const LINKS = [
   { href: "/", label: "Hem" },
@@ -17,6 +19,7 @@ const LINKS = [
 
 export function MarketingNav() {
   const pathname = usePathname();
+  const { userType } = useBuddy();
 
   return (
     <header
@@ -42,12 +45,16 @@ export function MarketingNav() {
           );
         })}
       </nav>
-      <Link
-        href="/kom-igang"
-        className="bd-btn px-4 py-2 rounded-full text-sm font-semibold text-white bg-forest flex-none"
-      >
-        Logga in
-      </Link>
+      {userType ? (
+        <ProfileMenu />
+      ) : (
+        <Link
+          href="/kom-igang"
+          className="bd-btn px-4 py-2 rounded-full text-sm font-semibold text-white bg-forest flex-none"
+        >
+          Logga in
+        </Link>
+      )}
     </header>
   );
 }

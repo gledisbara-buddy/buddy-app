@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { HelpCircle, LogOut, Settings, User } from "lucide-react";
+import { HelpCircle, LayoutDashboard, LogOut, Settings, User } from "lucide-react";
 import { useBuddy } from "@/lib/buddy-context";
 
 export function ProfileMenu() {
@@ -54,6 +54,12 @@ export function ProfileMenu() {
             {profile?.email && <div className="text-xs text-slate">{profile.email}</div>}
           </div>
           <div className="py-1.5">
+            <button
+              onClick={() => go("/dashboard")}
+              className="w-full flex items-center gap-3 px-4 py-2.5 text-sm hover:bg-frost text-left"
+            >
+              <LayoutDashboard size={16} className="text-forest" /> Min översikt
+            </button>
             <button
               onClick={() => go("/profil")}
               className="w-full flex items-center gap-3 px-4 py-2.5 text-sm hover:bg-frost text-left"
