@@ -8,7 +8,7 @@ import { useBuddy } from "@/lib/buddy-context";
 
 const LINKS = [
   { href: "/", label: "Hem" },
-  { href: "/forsakringar", label: "Försäkringar" },
+  { href: "/jamfor", label: "Jämför" },
   { href: "/guider", label: "Guider" },
   { href: "/nyheter", label: "Nyheter" },
   { href: "/om-oss", label: "Om oss" },

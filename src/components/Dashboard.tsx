@@ -7,7 +7,7 @@ import { TopBar } from "@/components/TopBar";
 import { ProfileMenu } from "@/components/ProfileMenu";
 import { useBuddy } from "@/lib/buddy-context";
 import { PRIORITY_OPTIONS } from "@/lib/insurance";
-import { ITEM_CATEGORIES, itemSummary, itemTitle } from "@/lib/items";
+import { isComparableItem, ITEM_CATEGORIES, itemSummary, itemTitle } from "@/lib/items";
 
 export function Dashboard() {
   const router = useRouter();
@@ -66,7 +66,9 @@ export function Dashboard() {
                   </div>
                   <div className="font-semibold text-[15px] mb-1">{itemTitle(item)}</div>
                   <div className="text-xs mb-4 text-slate">{itemSummary(item)}</div>
-                  {signed ? (
+                  {!isComparableItem(item) ? (
+                    <div className="text-xs text-slate">● Sparad — jämförelse kommer snart</div>
+                  ) : signed ? (
                     <>
                       <div className="text-xs mb-3 text-forest">
                         ● Tecknad hos {signed.name} — {signed.price} kr/mån
@@ -178,11 +180,20 @@ export function Dashboard() {
             <b>Tips från Buddy:</b>{" "}
             {items.length === 0
               ? "du har inte lagt in något än — börja med det som känns viktigast, t.ex. ditt boende eller din bil."
-              : Object.keys(policies).length === 0
-                ? "du har inte jämfört några avtal än — det tar ~1 minut per sak och du bestämmer själv om du vill teckna."
-                : Object.keys(policies).length < items.length
-                  ? "bra jobbat, fortsätt jämföra dina övriga saker för att se om du kan spara mer."
-                  : "snyggt — allt du lagt in är jämfört. Lägg gärna till fler saker för en komplett bild."}
+              : (() => {
+                  const comparableCount = items.filter(isComparableItem).length;
+                  const signedCount = Object.keys(policies).length;
+                  if (comparableCount === 0) {
+                    return "bra jobbat! Fortsätt lägga till fler saker så får du en komplett bild av vad du betalar för.";
+                  }
+                  if (signedCount === 0) {
+                    return "du har inte jämfört några avtal än — det tar ~1 minut per sak och du bestämmer själv om du vill teckna.";
+                  }
+                  if (signedCount < comparableCount) {
+                    return "bra jobbat, fortsätt jämföra dina övriga saker för att se om du kan spara mer.";
+                  }
+                  return "snyggt — allt du lagt in är jämfört. Lägg gärna till fler saker för en komplett bild.";
+                })()}
           </p>
         </div>
       </div>

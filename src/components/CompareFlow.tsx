@@ -6,13 +6,14 @@ import { ArrowLeft, ArrowRight, Check, ChevronDown, ChevronUp, Loader2, ShieldCh
 import { Logo } from "@/components/Logo";
 import { useBuddy } from "@/lib/buddy-context";
 import { computeItemQuotes } from "@/lib/item-quotes";
-import { itemSummary, itemTitle } from "@/lib/items";
+import { isComparableItem, itemSummary, itemTitle } from "@/lib/items";
 import { BIL_EXTRA_OPTIONS, EXTRA_OPTIONS, pickWinner, type Quote } from "@/lib/quote";
 
 export function CompareFlow({ itemId }: { itemId: string }) {
   const router = useRouter();
   const { items, profile, setPolicy } = useBuddy();
-  const item = items.find((i) => i.id === itemId);
+  const found = items.find((i) => i.id === itemId);
+  const item = found && isComparableItem(found) ? found : undefined;
 
   useEffect(() => {
     if (!item) router.replace("/dashboard");

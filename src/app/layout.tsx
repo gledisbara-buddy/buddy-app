@@ -23,7 +23,7 @@ const ibmPlexMono = IBM_Plex_Mono({
 
 export const metadata: Metadata = {
   title: "Buddy",
-  description: "Din digitala försäkringsassistent",
+  description: "Din digitala assistent för allt du betalar för",
 };
 
 export default function RootLayout({

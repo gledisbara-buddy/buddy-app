@@ -5,12 +5,12 @@ const VALUES = [
   {
     icon: Lightbulb,
     title: "Enkelt före krångligt",
-    desc: "Försäkringsvillkor ska gå att förstå. Vi översätter krångliga begrepp till vanlig svenska.",
+    desc: "Villkor och avtal ska gå att förstå. Vi översätter krångliga begrepp till vanlig svenska — oavsett om det handlar om försäkring, mobilabonnemang eller kreditkort.",
   },
   {
     icon: ShieldCheck,
     title: "På din sida",
-    desc: "Buddy jobbar för dig, inte för ett enskilt försäkringsbolag. Vi visar alternativen ärligt.",
+    desc: "Buddy jobbar för dig, inte för en enskild leverantör. Vi visar alternativen ärligt.",
   },
   {
     icon: Heart,
@@ -23,15 +23,17 @@ export default function OmOssPage() {
   return (
     <div className="max-w-3xl mx-auto px-5 md:px-10 py-16 bd-fade">
       <span className="bd-eyebrow">Om oss</span>
-      <h1 className="bd-display text-3xl md:text-4xl mt-3 mb-6">Vi tycker försäkring ska vara enkelt</h1>
+      <h1 className="bd-display text-3xl md:text-4xl mt-3 mb-6">Vi tycker det du betalar för ska vara enkelt att överblicka</h1>
       <p className="text-base mb-4 text-slate">
-        Buddy startades med en enkel idé: du ska kunna se allt du äger och allt du behöver
-        skydda på ett och samma ställe — utan att behöva logga in på fem olika bolags hemsidor
-        eller läsa villkor skrivna för jurister.
+        Buddy startades med en enkel idé inom försäkring: du ska kunna se allt du äger och allt
+        du behöver skydda på ett och samma ställe — utan att behöva logga in på fem olika bolags
+        hemsidor eller läsa villkor skrivna för jurister.
       </p>
       <p className="text-base mb-12 text-slate">
-        Vi hjälper dig lägga in dina saker, jämföra skydd och pris, och finns kvar genom hela
-        resan — från första frågan till en skadeanmälan mitt i natten.
+        Vi insåg snabbt att samma problem gäller nästan allt man betalar löpande för — mobil,
+        bredband, kreditkort, el. Idag hjälper Buddy dig lägga in allt det du äger och
+        prenumererar på, jämföra skydd och pris där det går, och finns kvar genom hela resan —
+        från första frågan till en skadeanmälan mitt i natten.
       </p>
 
       <div className="rounded-3xl border border-line bg-white p-6 md:p-8 mb-12 flex flex-col sm:flex-row gap-6 items-center sm:items-start">
@@ -50,9 +52,10 @@ export default function OmOssPage() {
           <div className="text-sm mb-3 text-forest">Grundare & VD</div>
           <p className="text-sm text-slate">
             Gledis har jobbat i försäkringsbranschen som villkorsspecialist, rådgivare och
-            jämförare — och har sett samma sak om och om igen: bra skydd finns, men det är
-            nästan omöjligt för vanliga kunder att hitta det själva. Buddy är byggt för att
-            ge alla samma överblick som en personlig rådgivare annars ger.
+            jämförare — och har sett samma sak om och om igen: bra avtal finns, men det är
+            nästan omöjligt för vanliga kunder att hitta dem själva. Han startade Buddy för att
+            ge alla samma överblick som en personlig rådgivare annars ger — och insåg snabbt att
+            principen gäller lika mycket för mobilabonnemang och kreditkort som för försäkring.
           </p>
         </div>
       </div>
@@ -72,8 +75,7 @@ export default function OmOssPage() {
       <div className="rounded-2xl border border-line p-6 bg-frost-2">
         <p className="text-sm text-ink">
           <b>Bra att veta:</b> Buddy är i det här skedet en designprototyp. Bolagsnamn, priser
-          och offerter i appen är fiktiva exempel och ska inte tolkas som riktiga
-          försäkringserbjudanden.
+          och offerter i appen är fiktiva exempel och ska inte tolkas som riktiga erbjudanden.
         </p>
       </div>
     </div>

@@ -1,4 +1,4 @@
-import type { InsuranceItem } from "@/lib/items";
+import type { ComparableItem } from "@/lib/items";
 import type { Quote } from "@/lib/quote";
 
 const RATING = { klarsaker: 4.6, hemgrund: 4.2, nordvakt: 4.4 };
@@ -10,7 +10,7 @@ function build(id: "klarsaker" | "hemgrund" | "nordvakt", name: string, price: n
 
 const currentYear = new Date().getFullYear();
 
-function boendeQuotes(item: Extract<InsuranceItem, { kind: "boende" }>, extras: string[]): Quote[] {
+function boendeQuotes(item: Extract<ComparableItem, { kind: "boende" }>, extras: string[]): Quote[] {
   const extrasCost = extras.length * 14;
 
   if (item.typ === "magasinering") {
@@ -63,7 +63,7 @@ function boendeQuotes(item: Extract<InsuranceItem, { kind: "boende" }>, extras: 
   ].sort((a, b) => a.price - b.price);
 }
 
-function bilQuotes(item: Extract<InsuranceItem, { kind: "bil" }>, extras: string[]): Quote[] {
+function bilQuotes(item: Extract<ComparableItem, { kind: "bil" }>, extras: string[]): Quote[] {
   const age = item.arsmodell ? currentYear - item.arsmodell : 5;
   const ageMult = age < 3 ? 1.3 : age < 8 ? 1.1 : 0.9;
   const korMult = !item.arligKorstracka
@@ -98,7 +98,7 @@ function bilQuotes(item: Extract<InsuranceItem, { kind: "bil" }>, extras: string
   ].sort((a, b) => a.price - b.price);
 }
 
-function ovrigtFordonQuotes(item: Extract<InsuranceItem, { kind: "ovrigt_fordon" }>): Quote[] {
+function ovrigtFordonQuotes(item: Extract<ComparableItem, { kind: "ovrigt_fordon" }>): Quote[] {
   const typMult = { mc: 1.2, husvagn: 1.1, bat: 1.4, slap: 0.6, annat: 1 }[item.fordonstyp];
   const effektMult = item.fordonstyp === "mc" && item.effektHk && item.effektHk > 80 ? 1.15 : 1;
   const mult = typMult * effektMult;
@@ -122,7 +122,7 @@ function ovrigtFordonQuotes(item: Extract<InsuranceItem, { kind: "ovrigt_fordon"
   ].sort((a, b) => a.price - b.price);
 }
 
-function personQuotes(item: Extract<InsuranceItem, { kind: "person" }>): Quote[] {
+function personQuotes(item: Extract<ComparableItem, { kind: "person" }>): Quote[] {
   const relationMult = item.relation === "barn" ? 0.7 : 1;
   const skyddAdd = item.onskatSkydd.length * 15;
   const base = (v: number) => v * relationMult + skyddAdd;
@@ -146,7 +146,7 @@ function personQuotes(item: Extract<InsuranceItem, { kind: "person" }>): Quote[]
   ].sort((a, b) => a.price - b.price);
 }
 
-function djurQuotes(item: Extract<InsuranceItem, { kind: "djur" }>): Quote[] {
+function djurQuotes(item: Extract<ComparableItem, { kind: "djur" }>): Quote[] {
   const typMult = { hund: 1.15, katt: 1, annat: 0.8 }[item.djurtyp];
   const viktMult = !item.viktKg ? 1 : item.viktKg < 10 ? 0.9 : item.viktKg < 25 ? 1.1 : 1.3;
   const age = item.fodelsear ? currentYear - item.fodelsear : 3;
@@ -173,7 +173,7 @@ function djurQuotes(item: Extract<InsuranceItem, { kind: "djur" }>): Quote[] {
   ].sort((a, b) => a.price - b.price);
 }
 
-export function computeItemQuotes(item: InsuranceItem, extras: string[]): Quote[] {
+export function computeItemQuotes(item: ComparableItem, extras: string[]): Quote[] {
   switch (item.kind) {
     case "boende":
       return boendeQuotes(item, extras);

@@ -24,8 +24,8 @@ function formatDate(iso: string) {
 const FEATURES = [
   {
     icon: ShieldCheck,
-    title: "Lägg in det du äger",
-    desc: "Boende, bil, fordon, person eller djur — en sak i taget, i din egen takt. Hoppa över och kom tillbaka när du vill.",
+    title: "Lägg in det du har",
+    desc: "Boende, bil, mobil & bredband, kreditkort, el — en sak i taget, i din egen takt. Hoppa över och kom tillbaka när du vill.",
   },
   {
     icon: MessageCircle,
@@ -46,7 +46,7 @@ const FEATURES = [
 
 const STEPS = [
   { n: "1", title: "Logga in med BankID", desc: "Säkert och snabbt, precis som du är van vid." },
-  { n: "2", title: "Lägg till dina saker", desc: "Boende, fordon, person eller djur — så mycket eller lite du vill." },
+  { n: "2", title: "Lägg till dina saker", desc: "Boende, fordon, mobil, kreditkort — så mycket eller lite du vill." },
   { n: "3", title: "Få en samlad överblick", desc: "Se allt på ett ställe och jämför när du är redo." },
 ];
 
@@ -57,24 +57,24 @@ export default function MarketingHome() {
         <span
           className="bd-eyebrow inline-block px-3 py-1.5 rounded-full bg-frost-2"
         >
-          Din digitala försäkringsassistent
+          Din digitala assistent för allt du betalar för
         </span>
         <h1 className="bd-display text-4xl md:text-6xl mt-6 mb-5 leading-[1.05]">
-          Försäkring,
+          Allt du betalar för,
           <br />
-          förenklad.
+          på ett ställe.
         </h1>
         <p className="text-base md:text-lg mb-9 max-w-xl mx-auto text-slate">
-          Buddy samlar allt du äger på ett ställe, hjälper dig jämföra och teckna, och finns kvar
-          när något händer.
+          Försäkring, mobil & bredband, kreditkort, el — Buddy samlar allt på ett ställe,
+          hjälper dig jämföra, och finns kvar när något händer.
         </p>
         <div className="flex flex-col sm:flex-row gap-3 justify-center">
           <StartCta className="bd-btn px-6 py-3.5 rounded-full font-semibold text-white text-[15px] bg-forest flex items-center justify-center gap-2" />
           <Link
-            href="/forsakringar"
+            href="/jamfor"
             className="bd-btn px-6 py-3.5 rounded-full font-semibold text-[15px] border border-line bg-white flex items-center justify-center gap-2"
           >
-            Se våra försäkringar
+            Se allt vi jämför
           </Link>
         </div>
       </section>
@@ -97,9 +97,9 @@ export default function MarketingHome() {
         <div className="flex items-end justify-between mb-8 flex-wrap gap-3">
           <div>
             <span className="bd-eyebrow">Topplista</span>
-            <h2 className="bd-display text-3xl mt-3">Så rankar vi bolagen i vår jämförelse</h2>
+            <h2 className="bd-display text-3xl mt-3">Så rankar vi bolagen i vår försäkringsjämförelse</h2>
           </div>
-          <Link href="/forsakringar" className="text-sm font-semibold flex items-center gap-1 text-forest">
+          <Link href="/jamfor" className="text-sm font-semibold flex items-center gap-1 text-forest">
             Så jämför vi <ArrowRight size={14} />
           </Link>
         </div>

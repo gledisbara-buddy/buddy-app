@@ -6,11 +6,14 @@ import { ArrowLeft, ArrowRight, Loader2, Trash2 } from "lucide-react";
 import { Logo } from "@/components/Logo";
 import { ProgressDots } from "@/components/ProgressDots";
 import { BoendeForm } from "@/components/onboarding/BoendeForm";
+import { TelekomForm } from "@/components/onboarding/TelekomForm";
+import { KreditkortForm } from "@/components/onboarding/KreditkortForm";
 import { BoolPill, Field, FormActions, MultiPillGroup, PillGroup, inputClass } from "@/components/onboarding/shared";
 import { useBuddy } from "@/lib/buddy-context";
 import { PRIORITY_OPTIONS } from "@/lib/insurance";
 import { lookupVehicle } from "@/lib/vehicle-lookup";
 import {
+  AVTALSTYP_LABELS,
   BAT_MOTOR_LABELS,
   DJUR_TYP_LABELS,
   FORDON_TYP_LABELS,
@@ -21,8 +24,10 @@ import {
   SYSSELSATTNING_LABELS,
   createItemId,
   itemSummary,
+  type Avtalstyp,
   type BatMotorTyp,
   type DjurTyp,
+  type Elomrade,
   type FordonTyp,
   type InneUte,
   type InsuranceItem,
@@ -379,12 +384,128 @@ function DjurForm({ onSave, onCancel }: { onSave: (item: InsuranceItem) => void;
   );
 }
 
+function ElForm({ onSave, onCancel }: { onSave: (item: InsuranceItem) => void; onCancel: () => void }) {
+  const [elbolag, setElbolag] = useState("");
+  const [avtalstyp, setAvtalstyp] = useState<Avtalstyp | null>(null);
+  const [elomrade, setElomrade] = useState<Elomrade | null>(null);
+  const [arsforbrukningKwh, setArsforbrukningKwh] = useState("");
+  const [bindningstidManader, setBindningstidManader] = useState("");
+
+  const valid = elbolag.trim().length > 0 && !!avtalstyp && !!elomrade;
+
+  return (
+    <>
+      <Field label="Elbolag">
+        <input className={inputClass} value={elbolag} onChange={(e) => setElbolag(e.target.value)} placeholder="T.ex. Vattenfall" />
+      </Field>
+      <Field label="Avtalstyp">
+        <PillGroup options={["rorligt", "fast", "mix"] as const} labels={AVTALSTYP_LABELS} value={avtalstyp} onChange={setAvtalstyp} />
+      </Field>
+      <Field label="Elområde">
+        <PillGroup
+          options={["SE1", "SE2", "SE3", "SE4"] as const}
+          labels={{ SE1: "SE1 (Norr)", SE2: "SE2", SE3: "SE3 (Stockholm)", SE4: "SE4 (Syd)" }}
+          value={elomrade}
+          onChange={setElomrade}
+        />
+      </Field>
+      <div className="grid grid-cols-2 gap-3">
+        <Field label="Årsförbrukning (kWh, valfritt)">
+          <input
+            type="number"
+            className={inputClass}
+            value={arsforbrukningKwh}
+            onChange={(e) => setArsforbrukningKwh(e.target.value)}
+            placeholder="5000"
+          />
+        </Field>
+        <Field label="Bindningstid (månader, valfritt)">
+          <input
+            type="number"
+            className={inputClass}
+            value={bindningstidManader}
+            onChange={(e) => setBindningstidManader(e.target.value)}
+            placeholder="12"
+          />
+        </Field>
+      </div>
+      <FormActions
+        valid={valid}
+        onCancel={onCancel}
+        onSave={() =>
+          onSave({
+            id: createItemId(),
+            kind: "el",
+            elbolag: elbolag.trim(),
+            avtalstyp: avtalstyp!,
+            elomrade: elomrade!,
+            arsforbrukningKwh: arsforbrukningKwh ? Number(arsforbrukningKwh) : undefined,
+            bindningstidManader: bindningstidManader ? Number(bindningstidManader) : undefined,
+          })
+        }
+      />
+    </>
+  );
+}
+
+function PrenumerationForm({ onSave, onCancel }: { onSave: (item: InsuranceItem) => void; onCancel: () => void }) {
+  const [namn, setNamn] = useState("");
+  const [leverantor, setLeverantor] = useState("");
+  const [prisPerManad, setPrisPerManad] = useState("");
+  const [bindningstidManader, setBindningstidManader] = useState("");
+
+  const valid = namn.trim().length > 0 && Number(prisPerManad) > 0;
+
+  return (
+    <>
+      <Field label="Namn på abonnemanget">
+        <input className={inputClass} value={namn} onChange={(e) => setNamn(e.target.value)} placeholder="T.ex. Gymkort" />
+      </Field>
+      <Field label="Leverantör (valfritt)">
+        <input className={inputClass} value={leverantor} onChange={(e) => setLeverantor(e.target.value)} placeholder="T.ex. SATS" />
+      </Field>
+      <div className="grid grid-cols-2 gap-3">
+        <Field label="Pris (kr/månad)">
+          <input type="number" className={inputClass} value={prisPerManad} onChange={(e) => setPrisPerManad(e.target.value)} placeholder="399" />
+        </Field>
+        <Field label="Bindningstid (månader, valfritt)">
+          <input
+            type="number"
+            className={inputClass}
+            value={bindningstidManader}
+            onChange={(e) => setBindningstidManader(e.target.value)}
+            placeholder="12"
+          />
+        </Field>
+      </div>
+      <FormActions
+        valid={valid}
+        onCancel={onCancel}
+        onSave={() =>
+          onSave({
+            id: createItemId(),
+            kind: "prenumeration",
+            namn: namn.trim(),
+            leverantor: leverantor.trim() || undefined,
+            prisPerManad: Number(prisPerManad),
+            bindningstidManader: bindningstidManader ? Number(bindningstidManader) : undefined,
+          })
+        }
+      />
+    </>
+  );
+}
+
 const CATEGORY_FORMS: Record<ItemKind, React.ComponentType<{ onSave: (item: InsuranceItem) => void; onCancel: () => void }>> = {
   boende: BoendeForm,
   bil: BilForm,
   ovrigt_fordon: OvrigtFordonForm,
   person: PersonForm,
   djur: DjurForm,
+  telekom: TelekomForm,
+  kreditkort: KreditkortForm,
+  el: ElForm,
+  prenumeration: PrenumerationForm,
 };
 
 export function Onboarding({ mode = "full" }: { mode?: "full" | "add" }) {

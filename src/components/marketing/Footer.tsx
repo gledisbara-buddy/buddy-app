@@ -3,12 +3,12 @@ import { Logo } from "@/components/Logo";
 
 const COLUMNS: { title: string; links: { href: string; label: string }[] }[] = [
   {
-    title: "Försäkringar",
+    title: "Jämför",
     links: [
-      { href: "/forsakringar", label: "Boende" },
-      { href: "/forsakringar", label: "Bil & fordon" },
-      { href: "/forsakringar", label: "Person" },
-      { href: "/forsakringar", label: "Djur" },
+      { href: "/jamfor", label: "Boende & bil" },
+      { href: "/jamfor", label: "Mobil & bredband" },
+      { href: "/jamfor", label: "Kreditkort" },
+      { href: "/jamfor", label: "El & energi" },
     ],
   },
   {
@@ -37,8 +37,8 @@ export function Footer() {
           <div>
             <Logo />
             <p className="text-sm mt-3 text-slate max-w-[220px]">
-              Din digitala försäkringsassistent — jämför, teckna och hantera dina försäkringar på
-              ett ställe.
+              Din digitala assistent — jämför och håll koll på allt du äger och betalar för,
+              på ett ställe.
             </p>
           </div>
           {COLUMNS.map((col) => (
@@ -67,8 +67,8 @@ export function Footer() {
             </Link>
           </div>
           <p className="text-xs text-slate">
-            © {new Date().getFullYear()} Buddy Försäkring. Det här är en designprototyp —
-            bolaget och innehållet är fiktivt.
+            © {new Date().getFullYear()} Buddy. Det här är en designprototyp — bolaget och
+            innehållet är fiktivt.
           </p>
         </div>
       </div>

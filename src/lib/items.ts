@@ -1,4 +1,4 @@
-import { Car, Caravan, Home, PawPrint, UserRound, type LucideIcon } from "lucide-react";
+import { Car, Caravan, CreditCard, Home, PawPrint, Repeat, UserRound, Wifi, Zap, type LucideIcon } from "lucide-react";
 
 export type BoendeTyp = "hyresratt" | "bostadsratt" | "villa" | "fritidshus" | "fritidsbostadsratt" | "magasinering";
 export type FordonTyp = "mc" | "husvagn" | "bat" | "slap" | "annat";
@@ -129,8 +129,101 @@ export type DjurItem = {
   reserUtomlands?: boolean;
 };
 
-export type InsuranceItem = BoendeItem | BilItem | OvrigtFordonItem | PersonItem | DjurItem;
+export type AnslutningTyp = "fiber" | "kabel" | "mobilt" | "dsl";
+
+export type MobilAbonnemangItem = {
+  id: string;
+  kind: "telekom";
+  typ: "mobil";
+  operator: string;
+  dataGb?: number;
+  obegransatData: boolean;
+  prisPerManad: number;
+  bindningstidManader?: number;
+};
+
+export type BredbandItem = {
+  id: string;
+  kind: "telekom";
+  typ: "bredband";
+  operator: string;
+  hastighetMbit?: number;
+  anslutning: AnslutningTyp;
+  prisPerManad: number;
+  bindningstidManader?: number;
+};
+
+export type TvStreamingItem = {
+  id: string;
+  kind: "telekom";
+  typ: "tv_streaming";
+  tjanst: string;
+  prisPerManad: number;
+  delatKonto: boolean;
+};
+
+export type TelekomItem = MobilAbonnemangItem | BredbandItem | TvStreamingItem;
+export type TelekomTyp = TelekomItem["typ"];
+
+export type OnskadKreditkortPrioritet = "lag_avgift" | "bonus" | "reseforsakring" | "hog_kreditgrans";
+
+export type KreditkortItem = {
+  id: string;
+  kind: "kreditkort";
+  harReddan: boolean;
+  // harReddan = true
+  utgivare?: string;
+  kortnamn?: string;
+  arsavgift?: number;
+  ranta?: number;
+  kreditgrans?: number;
+  bonusprogram?: boolean;
+  // harReddan = false (utforskar nytt kort)
+  onskadPrioritet?: OnskadKreditkortPrioritet;
+};
+
+export type Avtalstyp = "rorligt" | "fast" | "mix";
+export type Elomrade = "SE1" | "SE2" | "SE3" | "SE4";
+
+export type ElItem = {
+  id: string;
+  kind: "el";
+  elbolag: string;
+  avtalstyp: Avtalstyp;
+  elomrade: Elomrade;
+  arsforbrukningKwh?: number;
+  bindningstidManader?: number;
+};
+
+export type PrenumerationItem = {
+  id: string;
+  kind: "prenumeration";
+  namn: string;
+  leverantor?: string;
+  prisPerManad: number;
+  bindningstidManader?: number;
+};
+
+export type InsuranceItem =
+  | BoendeItem
+  | BilItem
+  | OvrigtFordonItem
+  | PersonItem
+  | DjurItem
+  | TelekomItem
+  | KreditkortItem
+  | ElItem
+  | PrenumerationItem;
 export type ItemKind = InsuranceItem["kind"];
+
+// Kinds with a working comparison/quote engine (lib/item-quotes.ts). The newer
+// categories (telekom/kreditkort/el/prenumeration) are data-collection only for now —
+// see the plan note on why comparison isn't wired up for them yet.
+export type ComparableItem = BoendeItem | BilItem | OvrigtFordonItem | PersonItem | DjurItem;
+const COMPARABLE_KINDS: ItemKind[] = ["boende", "bil", "ovrigt_fordon", "person", "djur"];
+export function isComparableItem(item: InsuranceItem): item is ComparableItem {
+  return COMPARABLE_KINDS.includes(item.kind);
+}
 
 export const ITEM_CATEGORIES: { kind: ItemKind; label: string; icon: LucideIcon }[] = [
   { kind: "boende", label: "Boende", icon: Home },
@@ -138,6 +231,10 @@ export const ITEM_CATEGORIES: { kind: ItemKind; label: string; icon: LucideIcon 
   { kind: "ovrigt_fordon", label: "Övrigt fordon", icon: Caravan },
   { kind: "person", label: "Person", icon: UserRound },
   { kind: "djur", label: "Djur", icon: PawPrint },
+  { kind: "telekom", label: "Mobil & bredband", icon: Wifi },
+  { kind: "kreditkort", label: "Kreditkort", icon: CreditCard },
+  { kind: "el", label: "El & energi", icon: Zap },
+  { kind: "prenumeration", label: "Övriga abonnemang", icon: Repeat },
 ];
 
 export const BOENDE_TYP_LABELS: Record<BoendeTyp, string> = {
@@ -206,6 +303,32 @@ export const INNE_UTE_LABELS: Record<InneUte, string> = {
   bade: "Både och",
 };
 
+export const TELEKOM_TYP_LABELS: Record<TelekomTyp, string> = {
+  mobil: "Mobilabonnemang",
+  bredband: "Bredband",
+  tv_streaming: "TV & streaming",
+};
+
+export const ANSLUTNING_LABELS: Record<AnslutningTyp, string> = {
+  fiber: "Fiber",
+  kabel: "Kabel",
+  mobilt: "Mobilt bredband",
+  dsl: "DSL/ADSL",
+};
+
+export const ONSKAD_KREDITKORT_LABELS: Record<OnskadKreditkortPrioritet, string> = {
+  lag_avgift: "Låg årsavgift",
+  bonus: "Bonusprogram",
+  reseforsakring: "Reseförsäkring ingår",
+  hog_kreditgrans: "Hög kreditgräns",
+};
+
+export const AVTALSTYP_LABELS: Record<Avtalstyp, string> = {
+  rorligt: "Rörligt pris",
+  fast: "Fast pris",
+  mix: "Mix (rörligt + fast)",
+};
+
 export function createItemId(): string {
   return crypto.randomUUID();
 }
@@ -227,6 +350,23 @@ export function itemSummary(item: InsuranceItem): string {
       return `${item.namn} · ${PERSON_RELATION_LABELS[item.relation]}`;
     case "djur":
       return `${item.namn} (${DJUR_TYP_LABELS[item.djurtyp]})`;
+    case "telekom":
+      if (item.typ === "mobil") {
+        return `${item.operator} · ${item.obegransatData ? "Obegränsat" : `${item.dataGb ?? "?"} GB`} · ${item.prisPerManad} kr/mån`;
+      }
+      if (item.typ === "bredband") {
+        return `${item.operator}${item.hastighetMbit ? ` · ${item.hastighetMbit} Mbit/s` : ""} · ${item.prisPerManad} kr/mån`;
+      }
+      return `${item.tjanst} · ${item.prisPerManad} kr/mån`;
+    case "kreditkort":
+      if (item.harReddan) {
+        return `${item.utgivare ?? "Okänd utgivare"}${item.kortnamn ? ` · ${item.kortnamn}` : ""}`;
+      }
+      return item.onskadPrioritet ? `Utforskar · ${ONSKAD_KREDITKORT_LABELS[item.onskadPrioritet]}` : "Utforskar nytt kort";
+    case "el":
+      return `${item.elbolag} · ${AVTALSTYP_LABELS[item.avtalstyp]} · ${item.elomrade}`;
+    case "prenumeration":
+      return `${item.leverantor ? `${item.leverantor} · ` : ""}${item.prisPerManad} kr/mån`;
   }
 }
 
@@ -242,5 +382,13 @@ export function itemTitle(item: InsuranceItem): string {
       return "Personförsäkring";
     case "djur":
       return DJUR_TYP_LABELS[item.djurtyp];
+    case "telekom":
+      return TELEKOM_TYP_LABELS[item.typ];
+    case "kreditkort":
+      return "Kreditkort";
+    case "el":
+      return "Elavtal";
+    case "prenumeration":
+      return item.namn;
   }
 }
