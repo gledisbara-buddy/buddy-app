@@ -1,4 +1,17 @@
-import { Car, Caravan, CreditCard, Home, PawPrint, Repeat, UserRound, Wifi, Zap, type LucideIcon } from "lucide-react";
+import {
+  Car,
+  Caravan,
+  CreditCard,
+  Home,
+  PawPrint,
+  Repeat,
+  ShieldCheck,
+  UserRound,
+  Wallet,
+  Wifi,
+  Zap,
+  type LucideIcon,
+} from "lucide-react";
 
 export type BoendeTyp = "hyresratt" | "bostadsratt" | "villa" | "fritidshus" | "fritidsbostadsratt" | "magasinering";
 export type FordonTyp = "mc" | "husvagn" | "bat" | "slap" | "annat";
@@ -236,6 +249,33 @@ export const ITEM_CATEGORIES: { kind: ItemKind; label: string; icon: LucideIcon 
   { kind: "el", label: "El & energi", icon: Zap },
   { kind: "prenumeration", label: "Övriga abonnemang", icon: Repeat },
 ];
+
+export type ItemGroupId = "forsakring" | "telekom" | "ekonomi";
+
+export const ITEM_GROUPS: { id: ItemGroupId; label: string; icon: LucideIcon; kinds: ItemKind[] }[] = [
+  {
+    id: "forsakring",
+    label: "Försäkring",
+    icon: ShieldCheck,
+    kinds: ["boende", "bil", "ovrigt_fordon", "person", "djur"],
+  },
+  {
+    id: "telekom",
+    label: "Telekom & prenumerationer",
+    icon: Wifi,
+    kinds: ["telekom", "prenumeration"],
+  },
+  {
+    id: "ekonomi",
+    label: "Ekonomi",
+    icon: Wallet,
+    kinds: ["kreditkort", "el"],
+  },
+];
+
+export function groupForKind(kind: ItemKind): ItemGroupId {
+  return ITEM_GROUPS.find((g) => g.kinds.includes(kind))!.id;
+}
 
 export const BOENDE_TYP_LABELS: Record<BoendeTyp, string> = {
   hyresratt: "Hyresrätt",
