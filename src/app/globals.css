@@ -1,19 +1,22 @@
 @import "tailwindcss";
 
 :root {
-  --color-ink: #16283d;
-  --color-frost: #eff4f3;
-  --color-frost-2: #e4ecea;
-  --color-forest: #1f4d3e;
-  --color-forest-light: #2e6b57;
-  --color-amber: #e2a33b;
-  --color-amber-deep: #c6842a;
-  --color-slate: #66788a;
-  --color-line: rgba(22, 40, 61, 0.12);
+  /* "Morgonljus" — ljus blågrå botten, mjuk marinblå text, himmelsblå accent */
+  --color-ink: #33465c;
+  --color-ink-deep: #1f3a5c;
+  --color-frost: #f5f7fa;
+  --color-frost-2: #e4ecf9;
+  --color-forest: #5b8def;
+  --color-forest-light: #7fa6f5;
+  --color-amber: #e0a94a;
+  --color-amber-deep: #bd8730;
+  --color-slate: #7c8896;
+  --color-line: rgba(51, 70, 92, 0.14);
 }
 
 @theme inline {
   --color-ink: var(--color-ink);
+  --color-ink-deep: var(--color-ink-deep);
   --color-frost: var(--color-frost);
   --color-frost-2: var(--color-frost-2);
   --color-forest: var(--color-forest);
@@ -23,7 +26,7 @@
   --color-slate: var(--color-slate);
   --color-line: var(--color-line);
 
-  --font-display: var(--font-fraunces);
+  --font-display: var(--font-inter);
   --font-sans: var(--font-inter);
   --font-mono: var(--font-ibm-plex-mono);
 }
@@ -35,9 +38,9 @@ body {
 
 /* Buddy design primitives, ported from BuddyApp.jsx */
 .bd-display {
-  font-family: var(--font-display), serif;
-  font-weight: 650;
-  letter-spacing: -0.01em;
+  font-family: var(--font-display), sans-serif;
+  font-weight: 700;
+  letter-spacing: -0.015em;
 }
 
 .bd-eyebrow {
@@ -110,13 +113,13 @@ body {
 }
 @keyframes bdPulse {
   0% {
-    box-shadow: 0 0 0 0 rgba(31, 77, 62, 0.35);
+    box-shadow: 0 0 0 0 rgba(91, 141, 239, 0.35);
   }
   70% {
-    box-shadow: 0 0 0 18px rgba(31, 77, 62, 0);
+    box-shadow: 0 0 0 18px rgba(91, 141, 239, 0);
   }
   100% {
-    box-shadow: 0 0 0 0 rgba(31, 77, 62, 0);
+    box-shadow: 0 0 0 0 rgba(91, 141, 239, 0);
   }
 }
 
@@ -126,10 +129,10 @@ body {
 @keyframes bdPulseDot {
   0%,
   100% {
-    box-shadow: 0 0 0 0 rgba(31, 77, 62, 0.35);
+    box-shadow: 0 0 0 0 rgba(91, 141, 239, 0.35);
   }
   50% {
-    box-shadow: 0 0 0 8px rgba(31, 77, 62, 0);
+    box-shadow: 0 0 0 8px rgba(91, 141, 239, 0);
   }
 }
 

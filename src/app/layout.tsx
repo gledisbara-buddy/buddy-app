@@ -1,13 +1,7 @@
 import type { Metadata } from "next";
-import { Fraunces, Inter, IBM_Plex_Mono } from "next/font/google";
+import { Inter, IBM_Plex_Mono } from "next/font/google";
 import { BuddyProvider } from "@/lib/buddy-context";
 import "./globals.css";
-
-const fraunces = Fraunces({
-  variable: "--font-fraunces",
-  subsets: ["latin"],
-  weight: "variable",
-});
 
 const inter = Inter({
   variable: "--font-inter",
@@ -34,7 +28,7 @@ export default function RootLayout({
   return (
     <html
       lang="sv"
-      className={`${fraunces.variable} ${inter.variable} ${ibmPlexMono.variable} h-full antialiased`}
+      className={`${inter.variable} ${ibmPlexMono.variable} h-full antialiased`}
     >
       <body className="font-sans min-h-full flex flex-col">
         <BuddyProvider>{children}</BuddyProvider>

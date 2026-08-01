@@ -100,14 +100,14 @@ export function CompareFlow({ itemId }: { itemId: string }) {
             </p>
 
             <div
-              className="rounded-3xl p-6 md:p-7 mb-5 relative bg-ink"
-              style={{ boxShadow: "0 18px 40px rgba(31,77,62,.14)" }}
+              className="rounded-3xl p-6 md:p-7 mb-5 relative bg-ink-deep"
+              style={{ boxShadow: "0 18px 40px rgba(91,141,239,.16)" }}
             >
               <div
-                className="absolute -top-3 left-6 px-3 py-1 rounded-full text-xs font-semibold flex items-center gap-1.5 bg-amber"
-                style={{ color: "var(--color-ink)" }}
+                className="absolute -top-3 left-6 px-3 py-1 rounded-full text-xs font-semibold flex items-center gap-1.5 bg-forest"
+                style={{ color: "var(--color-ink-deep)" }}
               >
-                <Star size={12} fill="var(--color-ink)" /> Bäst för dig
+                <Star size={12} fill="var(--color-ink-deep)" /> Bäst för dig
               </div>
               <div className="flex items-start justify-between mb-4 mt-2">
                 <div>
@@ -126,7 +126,7 @@ export function CompareFlow({ itemId }: { itemId: string }) {
               <div className="flex flex-col gap-2 mb-5">
                 {winner.highlights.map((h, i) => (
                   <div key={i} className="flex items-start gap-2 text-sm" style={{ color: "rgba(255,255,255,.85)" }}>
-                    <Check size={15} className="mt-0.5 flex-none text-amber" /> {h}
+                    <Check size={15} className="mt-0.5 flex-none text-forest-light" /> {h}
                   </div>
                 ))}
               </div>
@@ -138,7 +138,7 @@ export function CompareFlow({ itemId }: { itemId: string }) {
               <button
                 onClick={() => handleSign(winner)}
                 className="bd-btn w-full py-3.5 rounded-full font-semibold text-[15px] bg-white"
-                style={{ color: "var(--color-ink)" }}
+                style={{ color: "var(--color-ink-deep)" }}
               >
                 Teckna {winner.name} →
               </button>

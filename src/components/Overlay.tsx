@@ -4,7 +4,7 @@ export function Overlay({ children, onClose }: { children: React.ReactNode; onCl
   return (
     <div
       className="fixed inset-0 z-50 flex items-center justify-center p-5"
-      style={{ background: "rgba(22,40,61,0.45)" }}
+      style={{ background: "rgba(51,70,92,0.45)" }}
       onClick={onClose}
     >
       <div
