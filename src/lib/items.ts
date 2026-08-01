@@ -369,6 +369,15 @@ export const AVTALSTYP_LABELS: Record<Avtalstyp, string> = {
   mix: "Mix (rörligt + fast)",
 };
 
+// Kataloger för snabbval i formulären — "Annat" (hanterat av PillGroupWithOther)
+// täcker namn som inte finns i listan.
+export const TELEKOM_MOBIL_OPERATORER = ["Telia", "Tele2", "Telenor", "Tre", "Halebop", "Comviq"] as const;
+export const TELEKOM_BREDBAND_OPERATORER = ["Telia", "Bahnhof", "Bredbandsbolaget", "Tele2", "Telenor"] as const;
+export const TV_STREAMING_TJANSTER = ["Netflix", "HBO Max", "Viaplay", "Disney+", "SVT Play", "Amazon Prime Video"] as const;
+export const KREDITKORT_UTGIVARE = ["SEB", "Swedbank", "Handelsbanken", "Nordea", "ICA Banken", "Klarna", "Coop MedMera"] as const;
+export const EL_BOLAG = ["Vattenfall", "E.ON", "Fortum", "Telge Energi", "Bixia", "Skellefteå Kraft"] as const;
+export const PRENUMERATION_LEVERANTORER = ["SATS", "Fitness24Seven", "Storytel", "Audible"] as const;
+
 export function createItemId(): string {
   return crypto.randomUUID();
 }

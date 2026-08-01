@@ -2,8 +2,15 @@
 
 import { useState } from "react";
 import { ArrowLeft } from "lucide-react";
-import { BoolPill, Field, FormActions, inputClass, PillGroup } from "@/components/onboarding/shared";
-import { ANSLUTNING_LABELS, createItemId, TELEKOM_TYP_LABELS } from "@/lib/items";
+import { BoolPill, Field, FormActions, inputClass, PillGroup, PillGroupWithOther } from "@/components/onboarding/shared";
+import {
+  ANSLUTNING_LABELS,
+  createItemId,
+  TELEKOM_BREDBAND_OPERATORER,
+  TELEKOM_MOBIL_OPERATORER,
+  TELEKOM_TYP_LABELS,
+  TV_STREAMING_TJANSTER,
+} from "@/lib/items";
 import type { AnslutningTyp, InsuranceItem, TelekomTyp } from "@/lib/items";
 
 export function TelekomForm({
@@ -60,7 +67,7 @@ export function TelekomForm({
           <ArrowLeft size={15} /> Annan typ
         </button>
         <Field label="Operatör">
-          <input className={inputClass} value={operatorMobil} onChange={(e) => setOperatorMobil(e.target.value)} placeholder="T.ex. Telia" />
+          <PillGroupWithOther options={TELEKOM_MOBIL_OPERATORER} value={operatorMobil} onChange={setOperatorMobil} />
         </Field>
         <Field label="Har du obegränsat med data?">
           <BoolPill value={obegransatData} onChange={setObegransatData} />
@@ -106,7 +113,7 @@ export function TelekomForm({
           <ArrowLeft size={15} /> Annan typ
         </button>
         <Field label="Operatör">
-          <input className={inputClass} value={operatorBredband} onChange={(e) => setOperatorBredband(e.target.value)} placeholder="T.ex. Bahnhof" />
+          <PillGroupWithOther options={TELEKOM_BREDBAND_OPERATORER} value={operatorBredband} onChange={setOperatorBredband} />
         </Field>
         <Field label="Anslutningstyp">
           <PillGroup
@@ -155,7 +162,7 @@ export function TelekomForm({
         <ArrowLeft size={15} /> Annan typ
       </button>
       <Field label="Tjänst">
-        <input className={inputClass} value={tjanst} onChange={(e) => setTjanst(e.target.value)} placeholder="T.ex. Netflix" />
+        <PillGroupWithOther options={TV_STREAMING_TJANSTER} value={tjanst} onChange={setTjanst} />
       </Field>
       <Field label="Pris (kr/månad)">
         <input type="number" className={inputClass} value={prisTv} onChange={(e) => setPrisTv(e.target.value)} placeholder="139" />

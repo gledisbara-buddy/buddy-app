@@ -2,8 +2,8 @@
 
 import { useState } from "react";
 import { ArrowLeft } from "lucide-react";
-import { BoolPill, Field, FormActions, inputClass, PillGroup } from "@/components/onboarding/shared";
-import { createItemId, ONSKAD_KREDITKORT_LABELS } from "@/lib/items";
+import { BoolPill, Field, FormActions, inputClass, PillGroup, PillGroupWithOther } from "@/components/onboarding/shared";
+import { createItemId, KREDITKORT_UTGIVARE, ONSKAD_KREDITKORT_LABELS } from "@/lib/items";
 import type { InsuranceItem, OnskadKreditkortPrioritet } from "@/lib/items";
 
 export function KreditkortForm({
@@ -62,7 +62,7 @@ export function KreditkortForm({
           <ArrowLeft size={15} /> Tillbaka
         </button>
         <Field label="Utgivare / bank">
-          <input className={inputClass} value={utgivare} onChange={(e) => setUtgivare(e.target.value)} placeholder="T.ex. SEB" />
+          <PillGroupWithOther options={KREDITKORT_UTGIVARE} value={utgivare} onChange={setUtgivare} />
         </Field>
         <Field label="Kortnamn (valfritt)">
           <input className={inputClass} value={kortnamn} onChange={(e) => setKortnamn(e.target.value)} placeholder="T.ex. SEB Kort" />

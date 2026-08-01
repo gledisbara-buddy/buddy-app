@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { Check } from "lucide-react";
 
 export function PillGroup<T extends string>({
@@ -71,6 +72,71 @@ export function MultiPillGroup<T extends string>({
         );
       })}
     </div>
+  );
+}
+
+export function PillGroupWithOther({
+  options,
+  value,
+  onChange,
+  otherPlaceholder = "Ange eget",
+}: {
+  options: readonly string[];
+  value: string;
+  onChange: (v: string) => void;
+  otherPlaceholder?: string;
+}) {
+  const [otherActive, setOtherActive] = useState(value.length > 0 && !options.includes(value));
+
+  return (
+    <>
+      <div className="flex flex-wrap gap-2 mb-2">
+        {options.map((opt) => {
+          const active = !otherActive && value === opt;
+          return (
+            <button
+              key={opt}
+              type="button"
+              onClick={() => {
+                setOtherActive(false);
+                onChange(opt);
+              }}
+              className="px-3.5 py-2 rounded-full border text-sm font-medium"
+              style={{
+                borderColor: active ? "var(--color-forest)" : "var(--color-line)",
+                background: active ? "var(--color-frost-2)" : "white",
+                color: active ? "var(--color-forest)" : "var(--color-ink)",
+              }}
+            >
+              {opt}
+            </button>
+          );
+        })}
+        <button
+          type="button"
+          onClick={() => {
+            setOtherActive(true);
+            onChange("");
+          }}
+          className="px-3.5 py-2 rounded-full border text-sm font-medium"
+          style={{
+            borderColor: otherActive ? "var(--color-forest)" : "var(--color-line)",
+            background: otherActive ? "var(--color-frost-2)" : "white",
+            color: otherActive ? "var(--color-forest)" : "var(--color-ink)",
+          }}
+        >
+          Annat
+        </button>
+      </div>
+      {otherActive && (
+        <input
+          className={`${inputClass} mb-2`}
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          placeholder={otherPlaceholder}
+        />
+      )}
+    </>
   );
 }
 
