@@ -5,10 +5,11 @@ import { useRouter } from "next/navigation";
 import { ArrowLeft, ArrowRight, Loader2, Trash2 } from "lucide-react";
 import { Logo } from "@/components/Logo";
 import { ProgressDots } from "@/components/ProgressDots";
+import { AutoFetchStep } from "@/components/onboarding/AutoFetchStep";
 import { BoendeForm } from "@/components/onboarding/BoendeForm";
 import { TelekomForm } from "@/components/onboarding/TelekomForm";
 import { KreditkortForm } from "@/components/onboarding/KreditkortForm";
-import { BoolPill, Field, FormActions, MultiPillGroup, PillGroup, inputClass } from "@/components/onboarding/shared";
+import { BoolPill, Field, FormActions, MultiPillGroup, PillGroup, PillGroupWithOther, inputClass } from "@/components/onboarding/shared";
 import { useBuddy } from "@/lib/buddy-context";
 import { PRIORITY_OPTIONS } from "@/lib/insurance";
 import { lookupVehicle } from "@/lib/vehicle-lookup";
@@ -16,16 +17,20 @@ import {
   AVTALSTYP_LABELS,
   BAT_MOTOR_LABELS,
   DJUR_TYP_LABELS,
+  EL_BOLAG,
   FORDON_TYP_LABELS,
   INNE_UTE_LABELS,
   ITEM_CATEGORIES,
   ONSKAT_SKYDD_LABELS,
   PERSON_RELATION_LABELS,
+  PRENUMERATION_LEVERANTORER,
   SYSSELSATTNING_LABELS,
   createItemId,
+  groupForKind,
   itemSummary,
   type Avtalstyp,
   type BatMotorTyp,
+  type ComparableItem,
   type DjurTyp,
   type Elomrade,
   type FordonTyp,
@@ -396,7 +401,7 @@ function ElForm({ onSave, onCancel }: { onSave: (item: InsuranceItem) => void; o
   return (
     <>
       <Field label="Elbolag">
-        <input className={inputClass} value={elbolag} onChange={(e) => setElbolag(e.target.value)} placeholder="T.ex. Vattenfall" />
+        <PillGroupWithOther options={EL_BOLAG} value={elbolag} onChange={setElbolag} />
       </Field>
       <Field label="Avtalstyp">
         <PillGroup options={["rorligt", "fast", "mix"] as const} labels={AVTALSTYP_LABELS} value={avtalstyp} onChange={setAvtalstyp} />
@@ -462,7 +467,7 @@ function PrenumerationForm({ onSave, onCancel }: { onSave: (item: InsuranceItem)
         <input className={inputClass} value={namn} onChange={(e) => setNamn(e.target.value)} placeholder="T.ex. Gymkort" />
       </Field>
       <Field label="Leverantör (valfritt)">
-        <input className={inputClass} value={leverantor} onChange={(e) => setLeverantor(e.target.value)} placeholder="T.ex. SATS" />
+        <PillGroupWithOther options={PRENUMERATION_LEVERANTORER} value={leverantor} onChange={setLeverantor} />
       </Field>
       <div className="grid grid-cols-2 gap-3">
         <Field label="Pris (kr/månad)">
@@ -510,15 +515,26 @@ const CATEGORY_FORMS: Record<ItemKind, React.ComponentType<{ onSave: (item: Insu
 
 export function Onboarding({ mode = "full", initialKind }: { mode?: "full" | "add"; initialKind?: ItemKind }) {
   const router = useRouter();
-  const { userType, items, addItem, removeItem, updateProfile } = useBuddy();
+  const { userType, items, addItem, removeItem, updateProfile, setPolicy } = useBuddy();
   const [phase, setPhase] = useState<"name" | "hub" | "priority">(mode === "add" ? "hub" : "name");
   const [name, setName] = useState("");
   const [priority, setPriority] = useState<string | null>(null);
   const [activeCategory, setActiveCategory] = useState<ItemKind | null>(mode === "add" ? initialKind ?? null : null);
+  const [addMode, setAddMode] = useState<"choice" | "auto" | "manual" | null>(
+    activeCategory ? (groupForKind(activeCategory) === "forsakring" ? "choice" : "manual") : null
+  );
+  const [addModeFor, setAddModeFor] = useState<ItemKind | null>(activeCategory);
 
   useEffect(() => {
     if (!userType) router.replace("/kom-igang");
   }, [userType, router]);
+
+  // Reset addMode whenever a new category is opened — adjusted during render
+  // (not an effect) so the choice screen shows before the first paint.
+  if (activeCategory !== addModeFor) {
+    setAddModeFor(activeCategory);
+    setAddMode(activeCategory ? (groupForKind(activeCategory) === "forsakring" ? "choice" : "manual") : null);
+  }
 
   if (!userType) return null;
 
@@ -532,6 +548,8 @@ export function Onboarding({ mode = "full", initialKind }: { mode?: "full" | "ad
   if (activeCategory) {
     const meta = ITEM_CATEGORIES.find((c) => c.kind === activeCategory)!;
     const FormComponent = CATEGORY_FORMS[activeCategory];
+    const close = () => setActiveCategory(null);
+
     return (
       <div className="min-h-screen w-full flex flex-col">
         <div className="w-full flex items-center justify-center px-6 py-5">
@@ -539,21 +557,57 @@ export function Onboarding({ mode = "full", initialKind }: { mode?: "full" | "ad
         </div>
         <div className="flex-1 flex items-start justify-center px-5 pb-16">
           <div className="w-full max-w-md bd-fade">
-            <button
-              onClick={() => setActiveCategory(null)}
-              className="flex items-center gap-1.5 text-sm mb-5 opacity-60 hover:opacity-100"
-            >
-              <ArrowLeft size={15} /> Tillbaka
-            </button>
+            {addMode !== "auto" && (
+              <button onClick={close} className="flex items-center gap-1.5 text-sm mb-5 opacity-60 hover:opacity-100">
+                <ArrowLeft size={15} /> Tillbaka
+              </button>
+            )}
             <span className="bd-eyebrow">Lägg till</span>
             <h1 className="bd-display text-2xl mt-3 mb-6">{meta.label}</h1>
-            <FormComponent
-              onSave={(item) => {
-                addItem(item);
-                setActiveCategory(null);
-              }}
-              onCancel={() => setActiveCategory(null)}
-            />
+
+            {addMode === "choice" && (
+              <>
+                <p className="text-sm mb-4 text-slate">
+                  Har du redan det här? Hämta uppgifterna automatiskt från ditt bolag, eller fyll i själv.
+                </p>
+                <div className="flex flex-col gap-3">
+                  <button
+                    onClick={() => setAddMode("auto")}
+                    className="bd-card p-4 rounded-2xl border border-line bg-white text-left text-sm font-medium"
+                  >
+                    Hämta automatiskt från mitt bolag
+                  </button>
+                  <button
+                    onClick={() => setAddMode("manual")}
+                    className="bd-card p-4 rounded-2xl border border-line bg-white text-left text-sm font-medium"
+                  >
+                    Fyll i uppgifterna själv
+                  </button>
+                </div>
+              </>
+            )}
+
+            {addMode === "auto" && (
+              <AutoFetchStep
+                kind={activeCategory as ComparableItem["kind"]}
+                onDone={(item, quote) => {
+                  addItem(item);
+                  setPolicy(item.id, quote);
+                  close();
+                }}
+                onBack={() => setAddMode("choice")}
+              />
+            )}
+
+            {addMode === "manual" && (
+              <FormComponent
+                onSave={(item) => {
+                  addItem(item);
+                  close();
+                }}
+                onCancel={close}
+              />
+            )}
           </div>
         </div>
       </div>

@@ -1,6 +1,6 @@
 export type VehicleInfo = { markeModell: string; arsmodell: number };
 
-const VEHICLE_BOOK: Record<string, VehicleInfo> = {
+export const VEHICLE_BOOK: Record<string, VehicleInfo> = {
   ABC123: { markeModell: "Volvo XC60", arsmodell: 2019 },
   DEF456: { markeModell: "Volkswagen Golf", arsmodell: 2017 },
   GHI789: { markeModell: "Toyota RAV4", arsmodell: 2021 },
