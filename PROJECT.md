@@ -66,8 +66,9 @@ src/
       villkor/, integritetspolicy/, cookies/    Juridiska sidor (LegalPage-mall)
     kom-igang/           Val: privatperson / företag
     login/               Simulerad BankID-inloggning
-    onboarding/          Namn → lägg-till-hub → prioritet (och mode=add-varianten)
-    dashboard/           Inloggad översikt
+    onboarding/          mode="full": bara namn, sen rakt till /dashboard?intro=1.
+                         mode="add": lägg-till-hubben (nås från Dashboard)
+    dashboard/           Inloggad översikt (läser ?intro=1 server-side, se nedan)
     compare/[id]/        Jämförelseflöde per sak
     rekommendation/      Regelbaserad rekommendation baserat på allt man lagt in
     chat/, claim/, book/ Fråga Buddy, skadeanmälan, boka specialist
@@ -80,7 +81,7 @@ src/
     Dashboard.tsx, Onboarding.tsx, CompareFlow.tsx, RecommendationView.tsx,
     ChatScreen.tsx, ClaimFlow.tsx, BookSpecialist.tsx, ProfileMenu.tsx,
     ProfilePage.tsx, SettingsPage.tsx, BankIdLogin.tsx, TopBar.tsx, Logo.tsx,
-    ProgressDots.tsx
+    ProgressDots.tsx, Overlay.tsx (delad modal: introduktion + samlingsrabatt-popup)
   lib/
     items.ts             Datamodellen för allt man kan lägga in (se nedan)
     item-quotes.ts        Jämförelsemotor (bara för de 5 "gamla" kategorierna)
@@ -147,11 +148,13 @@ onboarding-formulär om man är inloggad (`/onboarding?mode=add&kind=X`), annars
 inget riktigt BankID-API). Efter inloggning sätts `userType` i `BuddyProvider`.
 
 ### Onboarding / lägg till en sak (`Onboarding.tsx`)
-Två lägen: `mode="full"` (första gången: namn → lägg-till-hub → valfri prioritetsfråga)
-och `mode="add"` (bara lägg-till-hub, nås från Dashboard). Hub:en visar alla nio
-kategorier som kort; att klicka på en öppnar dess formulär (`activeCategory`-state).
-Stöder deep-link via `?kind=X` (satt av `CategoryCta` och Dashboardens gruppvy) som
-hoppar direkt till ett formulär och hoppar över hub-gridden.
+Två lägen: `mode="full"` (första gången — bara ett namn-steg, sen direkt till
+`/dashboard?intro=1`, se Dashboard nedan) och `mode="add"` (lägg-till-hubben, nås
+från Dashboard). Hub:en visar alla nio kategorier som kort; att klicka på en öppnar
+dess formulär (`activeCategory`-state). Stöder deep-link via `?kind=X` (satt av
+`CategoryCta` och Dashboardens gruppvy) som hoppar direkt till ett formulär och
+hoppar över hub-gridden. (Prioritetsfrågan som tidigare kom efter hubben är
+borttagen — `profile.priority` är numera alltid `null` för nya användare.)
 
 Varje kategori har ett eget formulär anpassat efter vad den faktiskt behöver veta
 (t.ex. Boende frågar helt olika saker för hyresrätt vs. villa vs. magasinering; Bil
@@ -162,23 +165,39 @@ använder `PillGroupWithOther` — en lista med vanliga svenska alternativ plus 
 
 **Auto-hämtning för Försäkring**: för de fem jämförbara kategorierna (boende/bil/
 övrigt fordon/person/djur) visas först ett val — "Hämta automatiskt från mitt bolag"
-eller "Fyll i själv". Auto-hämtning (`AutoFetchStep.tsx`) låter kunden välja bolag
-från topplistan, identifiera sig med en simulerad BankID-signering, och Buddy
-syntetiserar en trovärdig post åt en (`lib/policy-fetch.ts`) och tecknar den direkt
-hos valt bolag — priset kommer från den befintliga offert-motorn i `item-quotes.ts`.
-Bytpunkt för en riktig öppen-försäkring-API senare: allt går via
-`fetchExistingPolicy()`, som är det enda som behöver bytas ut.
+eller "Fyll i själv". Auto-hämtning (`AutoFetchStep.tsx`) låter kunden välja bolag ur
+en rullista med 18 **riktiga** svenska försäkringsbolag (`FORSAKRINGSBOLAG` i
+`items.ts` — Folksam, If, Trygg-Hansa, Länsförsäkringar m.fl., inga fiktiva namn och
+inget påhittat betyg), identifiera sig med en simulerad BankID-signering, och Buddy
+syntetiserar åt en (`lib/policy-fetch.ts`) en trovärdig post **plus** pris,
+självrisk, typ av omfattning och ett framtida förfallodatum. Detta markeras som
+`source: "fetched"` på `Quote` — **inte** samma sak som en riktig jämförelse (se
+Dashboard nedan för hur det skiljs åt i UI:t). Har kunden lagt in fler än 3
+försäkringar i samma session visas en popup ("Boka in samtal — samlingsrabatter kan
+sänka priset ytterligare", länk till `/book`), en gång per session. Bytpunkt för en
+riktig öppen-försäkring-API senare: allt går via `fetchExistingPolicy()`.
 
 ### Dashboard / översikt (`Dashboard.tsx`)
 Visar tre gruppkort (Försäkring / Telekom & prenumerationer / Ekonomi) med antal
 tillagda saker och jämförelsestatus. Man klickar sig **in i en grupp** för att se/lägga
-till just den gruppens saker — andra gruppers kategorier läcker inte in (fixat bug:
-tidigare kunde "Lägg till"-kort inuti en grupp öppna den ogrupperade hubben med alla
-nio kategorier). Den generella "+ Lägg till en sak"-knappen (öppnar hela hubben) visas
-bara i toppvyn, inte inuti en drilled-in grupp. Varje item-kort visar
-"Jämför nu"/"Tecknad hos X" för jämförbara kategorier, eller "Sparad — jämförelse
-kommer snart" för de fyra nya. Tips-rutan längst ner länkar till `/rekommendation`
-("Se din rekommendation") när minst en sak är tillagd.
+till just den gruppens saker — andra gruppers kategorier läcker inte in. Den
+generella "+ Lägg till en sak"-knappen (öppnar hela hubben) visas bara i toppvyn,
+inte inuti en drilled-in grupp.
+
+Varje jämförbart item-kort visar ett av tre lägen: **tecknad genom en riktig
+jämförelse** (`policies[id].source === "compared"`, sätts av `CompareFlow.handleSign`
+— "Tecknad hos X — Y kr/mån", räknas i "X av Y jämförda"), **auto-hämtad men inte
+jämförd** (`source === "fetched"` — visar bolag/pris/omfattning/förfallodatum, men
+säger aldrig "jämfört" och räknas **inte** i "jämförda"-summan, eftersom bara priset
+hämtats in, inte jämförts mot alternativ), eller **helt ojämförd**. Icke-jämförbara
+kategorier visar "Sparad — jämförelse kommer snart". Tips-rutan längst ner länkar
+till `/rekommendation` ("Se din rekommendation") när minst en sak är tillagd.
+
+Första gången man landar här efter onboarding (`?intro=1`, läst server-side i
+`app/dashboard/page.tsx` och skickat ner som `showIntro`-prop — inte via en
+klient-effekt, för att undvika en onödig `useState`+`useEffect`-omväg för något som
+redan är känt vid sidladdning) visas en kort `Overlay`-introduktion om hur sidan
+fungerar.
 
 ### Jämförelseflöde (`CompareFlow.tsx`, `/compare/[id]`)
 Bara för `ComparableItem`-kategorierna. Visar tillval (t.ex. cykel/reseskydd för
@@ -233,8 +252,10 @@ används i hero-sektionerna på startsidan och /jamfor för att ge en varmare k�
 - **BankID är simulerat**, inget riktigt e-legitimationsflöde — gäller både
   inloggningen och auto-hämtningen av befintlig försäkring.
 - **Auto-hämtning av försäkring är helt simulerad** (`lib/policy-fetch.ts`) —
-  ingen riktig öppen-försäkring-API. Datan som "hämtas" är syntetiserad, inte kundens
-  faktiska försäkring.
+  ingen riktig öppen-försäkring-API. Bolagen i listan är riktiga (`FORSAKRINGSBOLAG`),
+  men datan som "hämtas" (pris, självrisk, omfattning, förfallodatum) är syntetiserad,
+  inte kundens faktiska försäkring — därför visas den aldrig som "jämförd" i UI:t,
+  bara som "sparad".
 - **Fordonsuppslagning är simulerad**, ingen riktig biluppgifts-API.
 - **Chat/skadeanmälan/boka möte har kanned svar**, ingen AI eller riktig bokning.
 - All statistik, alla omdömen/testimonials och topplistan är **fiktiv exempeldata**,
@@ -286,3 +307,10 @@ för exakta hashar):
   simulerad auto-hämtning av befintlig försäkring (bolag + BankID → syntetiserad
   post + tecknad offert), en ny regelbaserad `/rekommendation`-sida länkad från
   Dashboard, och ett bokningsformulär som frågar vad samtalet gäller.
+- Städa onboarding-resan efter en detaljerad kundresegenomgång: hoppa över
+  lägg-till-hubben och prioritetsfrågan efter namn-steget (rakt till översikten),
+  en introduktions-popup på översikten första gången, bolagslistan i auto-hämtningen
+  byttes från tre fiktiva till 18 riktiga svenska försäkringsbolag med rikare
+  syntetiserad data (förfallodatum, omfattning), en samlingsrabatt-popup efter fler
+  än 3 försäkringar, och en tydlig åtskillnad i Dashboard mellan "auto-hämtad" och
+  "faktiskt jämförd" så ingen påstås vara jämförd förrän den faktiskt är det.
