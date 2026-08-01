@@ -142,7 +142,7 @@ export function AutoFetchStep({
             </div>
           </div>
           <div className="flex items-center justify-between text-xs text-slate">
-            <span>Självrisk {quote.selfRisk.toLocaleString("sv-SE")} kr</span>
+            {quote.selfRisk != null && <span>Självrisk {quote.selfRisk.toLocaleString("sv-SE")} kr</span>}
             {quote.forfallodatum && <span>Förfaller {quote.forfallodatum}</span>}
           </div>
         </div>

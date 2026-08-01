@@ -12,6 +12,7 @@ import { KreditkortForm } from "@/components/onboarding/KreditkortForm";
 import { BoolPill, Field, FormActions, MultiPillGroup, PillGroup, PillGroupWithOther, inputClass } from "@/components/onboarding/shared";
 import { useBuddy } from "@/lib/buddy-context";
 import type { Quote } from "@/lib/quote";
+import type { FetchableKind } from "@/lib/policy-fetch";
 import { lookupVehicle } from "@/lib/vehicle-lookup";
 import {
   AVTALSTYP_LABELS,
@@ -30,7 +31,6 @@ import {
   itemSummary,
   type Avtalstyp,
   type BatMotorTyp,
-  type ComparableItem,
   type DjurTyp,
   type Elomrade,
   type FordonTyp,
@@ -603,7 +603,7 @@ export function Onboarding({ mode = "full", initialKind }: { mode?: "full" | "ad
 
             {addMode === "auto" && (
               <AutoFetchStep
-                kind={activeCategory as ComparableItem["kind"]}
+                kind={activeCategory as FetchableKind}
                 onDone={(item, quote) => handleItemAdded(item, quote)}
                 onBack={() => setAddMode("choice")}
               />

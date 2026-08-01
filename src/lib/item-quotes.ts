@@ -1,4 +1,4 @@
-import type { ComparableItem } from "@/lib/items";
+import type { ComparableItem, TelekomTyp } from "@/lib/items";
 import type { Quote } from "@/lib/quote";
 
 const RATING = { klarsaker: 4.6, hemgrund: 4.2, nordvakt: 4.4 };
@@ -173,6 +173,110 @@ function djurQuotes(item: Extract<ComparableItem, { kind: "djur" }>): Quote[] {
   ].sort((a, b) => a.price - b.price);
 }
 
+// Telekom, kreditkort och el har redan ett pris kunden själv angett (till skillnad
+// från boende/bil/osv, vars offerter räknas fram helt från sakens egenskaper) — så
+// alternativen här räknas fram som procentandelar av det priset, en blandning av
+// billigare och dyrare för att kännas trovärdiga. Fiktiva varumärken, skilda från
+// försäkringens Klarsäker/Nordvakt/Hemgrund och från de riktiga bolagsnamnen i
+// auto-hämtningen/katalogerna.
+
+const TELEKOM_ALT = [
+  { id: "klarnat", name: "Klarnät", rating: 4.5, mult: 0.85 },
+  { id: "fiberpunkt", name: "Fiberpunkt", rating: 4.3, mult: 0.95 },
+  { id: "sambandet", name: "Sambandet", rating: 4.1, mult: 1.1 },
+];
+
+const TELEKOM_HIGHLIGHTS: Record<TelekomTyp, string[][]> = {
+  mobil: [
+    ["Samma datamängd, lägre pris", "Ingen bindningstid", "Byt när du vill"],
+    ["Bra nätverkstäckning", "Fri surf inom EU", "Kundservice dygnet runt"],
+    ["Prisgaranti i 24 månader", "Familjerabatt vid fler abonnemang", "5G ingår"],
+  ],
+  bredband: [
+    ["Samma hastighet, lägre pris", "Ingen bindningstid", "Fri installation"],
+    ["Stabil uppkoppling", "Router ingår", "Kundservice dygnet runt"],
+    ["Prisgaranti i 24 månader", "Dubbel hastighet första året", "Bonus vid byte"],
+  ],
+  tv_streaming: [
+    ["Liknande utbud, lägre pris", "Ingen bindningstid", "Avsluta när du vill"],
+    ["Bredare kanalutbud", "Flera profiler ingår", "4K ingår"],
+    ["Bonusinnehåll ingår", "Dela med hela familjen", "Nedladdning offline"],
+  ],
+};
+
+function telekomQuotes(item: Extract<ComparableItem, { kind: "telekom" }>): Quote[] {
+  const highlightSets = TELEKOM_HIGHLIGHTS[item.typ];
+  return TELEKOM_ALT.map((alt, i) => ({
+    id: alt.id,
+    name: alt.name,
+    price: Math.max(29, Math.round(item.prisPerManad * alt.mult)),
+    rating: alt.rating,
+    highlights: highlightSets[i],
+  })).sort((a, b) => a.price - b.price);
+}
+
+const KREDITKORT_CARDS = [
+  {
+    id: "klarkort",
+    name: "Klarkort",
+    rating: 4.4,
+    prioritet: "lag_avgift",
+    highlights: ["Ingen årsavgift", "Enkel digital ansökan", "Bra grundvillkor"],
+  },
+  {
+    id: "kontokraft",
+    name: "Kontokraft",
+    rating: 4.6,
+    prioritet: "bonus",
+    highlights: ["Bonusprogram på alla köp", "Extra bonus första året", "Mobilt köpskydd"],
+  },
+  {
+    id: "guldkortet",
+    name: "Guldkortet",
+    rating: 4.2,
+    prioritet: "hog_kreditgrans",
+    highlights: ["Hög kreditgräns", "Utökad reseförsäkring ingår", "Prioriterad kundservice"],
+  },
+];
+
+function kreditkortQuotes(item: Extract<ComparableItem, { kind: "kreditkort" }>): Quote[] {
+  if (item.harReddan) {
+    const baseMonthly = (item.arsavgift ?? 495) / 12;
+    const mults = [0, 0.6, 1.3];
+    return KREDITKORT_CARDS.map((c, i) => ({
+      id: c.id,
+      name: c.name,
+      price: Math.max(0, Math.round(baseMonthly * mults[i])),
+      rating: c.rating,
+      highlights: c.highlights,
+    })).sort((a, b) => a.price - b.price);
+  }
+
+  // Utforskar nytt kort — inget nuvarande pris att jämföra mot, så visa tre fasta
+  // alternativ med olika styrkor och sätt det som matchar önskad prioritet överst.
+  const flatPrices: Record<string, number> = { klarkort: 0, kontokraft: 29, guldkortet: 79 };
+  const priorityToId: Record<string, string> = {
+    lag_avgift: "klarkort",
+    bonus: "kontokraft",
+    reseforsakring: "guldkortet",
+    hog_kreditgrans: "guldkortet",
+  };
+  const preferredId = item.onskadPrioritet ? priorityToId[item.onskadPrioritet] : undefined;
+  const ordered = preferredId
+    ? [...KREDITKORT_CARDS].sort((a, b) => (a.id === preferredId ? -1 : b.id === preferredId ? 1 : 0))
+    : KREDITKORT_CARDS;
+  return ordered.map((c) => ({ id: c.id, name: c.name, price: flatPrices[c.id], rating: c.rating, highlights: c.highlights }));
+}
+
+function elQuotes(item: Extract<ComparableItem, { kind: "el" }>): Quote[] {
+  const baseMonthly = ((item.arsforbrukningKwh ?? 5000) * 1.2) / 12;
+  return [
+    { id: "klarstrom", name: "Klarström", price: Math.round(baseMonthly * 0.88), rating: 4.3, highlights: ["Rörligt pris, ingen bindningstid", "100% förnybar el", "Enkel uppsägning"] },
+    { id: "kraftpunkt", name: "Kraftpunkt", price: Math.round(baseMonthly * 0.95), rating: 4.5, highlights: ["Fast pris i 12 månader", "Prisgaranti", "Ingen påslagsavgift"] },
+    { id: "voltec", name: "Voltec", price: Math.round(baseMonthly * 1.08), rating: 4.0, highlights: ["Fast pris i 24 månader", "Bonus vid tecknande", "Elbilsrabatt"] },
+  ].sort((a, b) => a.price - b.price);
+}
+
 export function computeItemQuotes(item: ComparableItem, extras: string[]): Quote[] {
   switch (item.kind) {
     case "boende":
@@ -185,6 +289,12 @@ export function computeItemQuotes(item: ComparableItem, extras: string[]): Quote
       return personQuotes(item);
     case "djur":
       return djurQuotes(item);
+    case "telekom":
+      return telekomQuotes(item);
+    case "kreditkort":
+      return kreditkortQuotes(item);
+    case "el":
+      return elQuotes(item);
   }
 }
 

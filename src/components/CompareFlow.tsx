@@ -164,9 +164,11 @@ export function CompareFlow({ itemId }: { itemId: string }) {
                   </div>
                 ))}
               </div>
-              <div className="text-xs mb-5" style={{ color: "rgba(255,255,255,.55)" }}>
-                Självrisk: {winner.selfRisk.toLocaleString("sv-SE")} kr
-              </div>
+              {winner.selfRisk != null && (
+                <div className="text-xs mb-5" style={{ color: "rgba(255,255,255,.55)" }}>
+                  Självrisk: {winner.selfRisk.toLocaleString("sv-SE")} kr
+                </div>
+              )}
               <button
                 onClick={() => handleSign(winner)}
                 className="bd-btn w-full py-3.5 rounded-full font-semibold text-[15px] bg-white"
@@ -193,7 +195,8 @@ export function CompareFlow({ itemId }: { itemId: string }) {
                         <div className="text-left">
                           <div className="font-semibold text-sm">{q.name}</div>
                           <div className="text-xs text-slate">
-                            Betyg {q.rating} / 5 · Självrisk {q.selfRisk.toLocaleString("sv-SE")} kr
+                            Betyg {q.rating} / 5
+                            {q.selfRisk != null && <> · Självrisk {q.selfRisk.toLocaleString("sv-SE")} kr</>}
                           </div>
                         </div>
                       </div>

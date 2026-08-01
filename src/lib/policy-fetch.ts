@@ -3,7 +3,9 @@ import { MONTHS } from "@/lib/booking";
 import type { Quote } from "@/lib/quote";
 import { VEHICLE_BOOK } from "@/lib/vehicle-lookup";
 
-export type FetchableKind = ComparableItem["kind"];
+// Auto-hämtning gäller bara Försäkring-gruppens fem kategorier — inte
+// telekom/kreditkort/el, trots att de numera också är ComparableItem.
+export type FetchableKind = Extract<ComparableItem["kind"], "boende" | "bil" | "ovrigt_fordon" | "person" | "djur">;
 
 function pick<T>(pool: readonly T[]): T {
   return pool[Math.floor(Math.random() * pool.length)];

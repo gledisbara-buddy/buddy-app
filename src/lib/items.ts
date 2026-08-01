@@ -229,11 +229,19 @@ export type InsuranceItem =
   | PrenumerationItem;
 export type ItemKind = InsuranceItem["kind"];
 
-// Kinds with a working comparison/quote engine (lib/item-quotes.ts). The newer
-// categories (telekom/kreditkort/el/prenumeration) are data-collection only for now —
-// see the plan note on why comparison isn't wired up for them yet.
-export type ComparableItem = BoendeItem | BilItem | OvrigtFordonItem | PersonItem | DjurItem;
-const COMPARABLE_KINDS: ItemKind[] = ["boende", "bil", "ovrigt_fordon", "person", "djur"];
+// Kinds with a working comparison/quote engine (lib/item-quotes.ts). Prenumeration
+// stays data-collection only — it's an open catch-all category with no natural
+// "alternatives" to compare against.
+export type ComparableItem =
+  | BoendeItem
+  | BilItem
+  | OvrigtFordonItem
+  | PersonItem
+  | DjurItem
+  | TelekomItem
+  | KreditkortItem
+  | ElItem;
+const COMPARABLE_KINDS: ItemKind[] = ["boende", "bil", "ovrigt_fordon", "person", "djur", "telekom", "kreditkort", "el"];
 export function isComparableItem(item: InsuranceItem): item is ComparableItem {
   return COMPARABLE_KINDS.includes(item.kind);
 }
