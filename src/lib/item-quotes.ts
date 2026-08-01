@@ -10,8 +10,8 @@ function build(id: "klarsaker" | "hemgrund" | "nordvakt", name: string, price: n
 
 const currentYear = new Date().getFullYear();
 
-function boendeQuotes(item: Extract<ComparableItem, { kind: "boende" }>, extras: string[]): Quote[] {
-  const extrasCost = extras.length * 14;
+function boendeQuotes(item: Extract<ComparableItem, { kind: "boende" }>, needs: string[]): Quote[] {
+  const extrasCost = needs.length * 14;
 
   if (item.typ === "magasinering") {
     const valueMult = item.uppskattatVarde < 10000 ? 0.8 : item.uppskattatVarde < 30000 ? 1 : 1.3;
@@ -63,7 +63,7 @@ function boendeQuotes(item: Extract<ComparableItem, { kind: "boende" }>, extras:
   ].sort((a, b) => a.price - b.price);
 }
 
-function bilQuotes(item: Extract<ComparableItem, { kind: "bil" }>, extras: string[]): Quote[] {
+function bilQuotes(item: Extract<ComparableItem, { kind: "bil" }>, needs: string[]): Quote[] {
   const age = item.arsmodell ? currentYear - item.arsmodell : 5;
   const ageMult = age < 3 ? 1.3 : age < 8 ? 1.1 : 0.9;
   const korMult = !item.arligKorstracka
@@ -77,7 +77,7 @@ function bilQuotes(item: Extract<ComparableItem, { kind: "bil" }>, extras: strin
           : 1.3;
   const forvaringMult = item.forvaring === "garage" ? 0.9 : item.forvaring === "gata" ? 1.05 : 1;
   const mult = ageMult * korMult * forvaringMult;
-  const extrasCost = extras.length * 20;
+  const extrasCost = needs.length * 20;
 
   return [
     build("klarsaker", "Klarsäker", 249 * mult + extrasCost, [
@@ -98,23 +98,24 @@ function bilQuotes(item: Extract<ComparableItem, { kind: "bil" }>, extras: strin
   ].sort((a, b) => a.price - b.price);
 }
 
-function ovrigtFordonQuotes(item: Extract<ComparableItem, { kind: "ovrigt_fordon" }>): Quote[] {
+function ovrigtFordonQuotes(item: Extract<ComparableItem, { kind: "ovrigt_fordon" }>, needs: string[]): Quote[] {
   const typMult = { mc: 1.2, husvagn: 1.1, bat: 1.4, slap: 0.6, annat: 1 }[item.fordonstyp];
   const effektMult = item.fordonstyp === "mc" && item.effektHk && item.effektHk > 80 ? 1.15 : 1;
   const mult = typMult * effektMult;
+  const extrasCost = needs.length * 12;
 
   return [
-    build("klarsaker", "Klarsäker", 89 * mult, [
+    build("klarsaker", "Klarsäker", 89 * mult + extrasCost, [
       "Fullvärdesskydd, ingen övre gräns",
       "Gäller även utomlands",
       "Skadeanmälan digitalt, snittbeslut inom 2 dagar",
     ]),
-    build("hemgrund", "Hemgrund", 79 * mult, [
+    build("hemgrund", "Hemgrund", 79 * mult + extrasCost, [
       "Lägst grundpris av de tre",
       "Bra grundskydd, färre tillägg ingår",
       "Telefonsupport vardagar 8–17",
     ]),
-    build("nordvakt", "Nordvakt", 95 * mult, [
+    build("nordvakt", "Nordvakt", 95 * mult + extrasCost, [
       "Lägst självrisk av de tre",
       "Inkluderar assistans vid haveri",
       "Prisgaranti — matchar lägre pris hos annat bolag",
@@ -122,10 +123,11 @@ function ovrigtFordonQuotes(item: Extract<ComparableItem, { kind: "ovrigt_fordon
   ].sort((a, b) => a.price - b.price);
 }
 
-function personQuotes(item: Extract<ComparableItem, { kind: "person" }>): Quote[] {
+function personQuotes(item: Extract<ComparableItem, { kind: "person" }>, needs: string[]): Quote[] {
   const relationMult = item.relation === "barn" ? 0.7 : 1;
   const skyddAdd = item.onskatSkydd.length * 15;
-  const base = (v: number) => v * relationMult + skyddAdd;
+  const extrasCost = needs.length * 12;
+  const base = (v: number) => v * relationMult + skyddAdd + extrasCost;
 
   return [
     build("klarsaker", "Klarsäker", base(59), [
@@ -146,26 +148,27 @@ function personQuotes(item: Extract<ComparableItem, { kind: "person" }>): Quote[
   ].sort((a, b) => a.price - b.price);
 }
 
-function djurQuotes(item: Extract<ComparableItem, { kind: "djur" }>): Quote[] {
+function djurQuotes(item: Extract<ComparableItem, { kind: "djur" }>, needs: string[]): Quote[] {
   const typMult = { hund: 1.15, katt: 1, annat: 0.8 }[item.djurtyp];
   const viktMult = !item.viktKg ? 1 : item.viktKg < 10 ? 0.9 : item.viktKg < 25 ? 1.1 : 1.3;
   const age = item.fodelsear ? currentYear - item.fodelsear : 3;
   const ageMult = age < 3 ? 0.9 : age < 8 ? 1 : 1.2;
   const kastreradMult = item.kastrerad ? 0.95 : 1;
   const mult = typMult * viktMult * ageMult * kastreradMult;
+  const extrasCost = needs.length * 12;
 
   return [
-    build("klarsaker", "Klarsäker", 129 * mult, [
+    build("klarsaker", "Klarsäker", 129 * mult + extrasCost, [
       "Ersätter veterinärvård utan övre gräns",
       "Gäller från dag ett, ingen karenstid på olycksfall",
       "Skadeanmälan digitalt, snittbeslut inom 2 dagar",
     ]),
-    build("hemgrund", "Hemgrund", 109 * mult, [
+    build("hemgrund", "Hemgrund", 109 * mult + extrasCost, [
       "Lägst grundpris av de tre",
       "Bra grundskydd för veterinärvård",
       "Telefonsupport vardagar 8–17",
     ]),
-    build("nordvakt", "Nordvakt", 145 * mult, [
+    build("nordvakt", "Nordvakt", 145 * mult + extrasCost, [
       "Lägst självrisk av de tre",
       "Livförsäkring för djuret ingår",
       "Prisgaranti — matchar lägre pris hos annat bolag",
@@ -284,11 +287,11 @@ export function computeItemQuotes(item: ComparableItem, extras: string[]): Quote
     case "bil":
       return bilQuotes(item, extras);
     case "ovrigt_fordon":
-      return ovrigtFordonQuotes(item);
+      return ovrigtFordonQuotes(item, extras);
     case "person":
-      return personQuotes(item);
+      return personQuotes(item, extras);
     case "djur":
-      return djurQuotes(item);
+      return djurQuotes(item, extras);
     case "telekom":
       return telekomQuotes(item);
     case "kreditkort":
@@ -297,5 +300,3 @@ export function computeItemQuotes(item: ComparableItem, extras: string[]): Quote
       return elQuotes(item);
   }
 }
-
-export const ITEM_KINDS_WITH_EXTRAS = ["boende", "bil"] as const;

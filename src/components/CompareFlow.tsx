@@ -2,12 +2,14 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, ArrowRight, Check, ChevronDown, ChevronUp, Loader2, ShieldCheck, Star } from "lucide-react";
+import { Check, ChevronDown, ChevronUp, Loader2, ShieldCheck, Star } from "lucide-react";
 import { Logo } from "@/components/Logo";
+import { NeedsAnalysis } from "@/components/NeedsAnalysis";
 import { useBuddy } from "@/lib/buddy-context";
 import { computeItemQuotes } from "@/lib/item-quotes";
 import { isComparableItem, itemSummary, itemTitle } from "@/lib/items";
-import { BIL_EXTRA_OPTIONS, EXTRA_OPTIONS, pickWinner, type Quote } from "@/lib/quote";
+import type { NeedsKind } from "@/lib/needs";
+import { pickWinner, type Quote } from "@/lib/quote";
 
 export function CompareFlow({ itemId }: { itemId: string }) {
   const router = useRouter();
@@ -19,9 +21,10 @@ export function CompareFlow({ itemId }: { itemId: string }) {
     if (!item) router.replace("/dashboard");
   }, [item, router]);
 
-  const hasExtrasStep = item?.kind === "boende" || item?.kind === "bil";
-  const [phase, setPhase] = useState<"extras" | "loading" | "results">(hasExtrasStep ? "extras" : "loading");
-  const [extras, setExtras] = useState<string[]>([]);
+  const NEEDS_KINDS: NeedsKind[] = ["boende", "bil", "ovrigt_fordon", "person", "djur"];
+  const hasNeedsStep = !!item && (NEEDS_KINDS as string[]).includes(item.kind);
+  const [phase, setPhase] = useState<"needs" | "loading" | "results">(hasNeedsStep ? "needs" : "loading");
+  const [needs, setNeeds] = useState<string[]>([]);
   const [expanded, setExpanded] = useState<string | null>(null);
 
   useEffect(() => {
@@ -31,7 +34,7 @@ export function CompareFlow({ itemId }: { itemId: string }) {
     }
   }, [phase]);
 
-  const quotes = useMemo(() => (item ? computeItemQuotes(item, extras) : []), [item, extras]);
+  const quotes = useMemo(() => (item ? computeItemQuotes(item, needs) : []), [item, needs]);
   const winnerId = pickWinner(quotes, profile?.priority ?? null);
   const winner = quotes.find((q) => q.id === winnerId);
   const others = quotes.filter((q) => q.id !== winnerId);
@@ -39,10 +42,6 @@ export function CompareFlow({ itemId }: { itemId: string }) {
   if (!item || !winner) return null;
 
   const label = itemTitle(item);
-  const extraOptions = item.kind === "boende" ? EXTRA_OPTIONS : item.kind === "bil" ? BIL_EXTRA_OPTIONS : [];
-
-  const toggleExtra = (id: string) =>
-    setExtras((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
 
   const handleSign = (quote: Quote) => {
     setPolicy(item.id, { ...quote, source: "compared" });
@@ -51,7 +50,7 @@ export function CompareFlow({ itemId }: { itemId: string }) {
 
   return (
     <div className="min-h-screen w-full">
-      {phase === "extras" && (
+      {phase === "needs" && (
         <>
           <div className="w-full flex items-center justify-between px-6 py-5">
             <Logo />
@@ -59,48 +58,15 @@ export function CompareFlow({ itemId }: { itemId: string }) {
           </div>
           <div className="flex items-center justify-center px-5">
             <div className="w-full max-w-lg bd-fade">
-              <button
-                onClick={() => router.push("/dashboard")}
-                className="flex items-center gap-1.5 text-sm mb-5 opacity-60 hover:opacity-100"
-              >
-                <ArrowLeft size={15} /> Tillbaka
-              </button>
-              <span className="bd-eyebrow">
-                {label} · {itemSummary(item)}
-              </span>
-              <h1 className="bd-display text-2xl md:text-3xl mt-3 mb-2">Vill du lägga till något extra?</h1>
-              <p className="text-sm mb-6 text-slate">Valfritt.</p>
-              <div className="grid grid-cols-2 gap-3">
-                {extraOptions.map((opt) => {
-                  const Icon = opt.icon;
-                  const active = extras.includes(opt.id);
-                  return (
-                    <button
-                      key={opt.id}
-                      onClick={() => toggleExtra(opt.id)}
-                      className="bd-card p-4 rounded-2xl border text-left flex flex-col gap-3"
-                      style={{
-                        borderColor: active ? "var(--color-forest)" : "var(--color-line)",
-                        background: active ? "var(--color-frost-2)" : "white",
-                      }}
-                    >
-                      <div
-                        className="w-9 h-9 rounded-lg flex items-center justify-center"
-                        style={{ background: active ? "var(--color-forest)" : "var(--color-frost)" }}
-                      >
-                        <Icon size={16} color={active ? "white" : "var(--color-forest)"} />
-                      </div>
-                      <div className="text-sm font-medium leading-tight">{opt.label}</div>
-                    </button>
-                  );
-                })}
-              </div>
-              <button
-                onClick={() => setPhase("loading")}
-                className="bd-btn w-full mt-7 flex items-center justify-center gap-2 py-3.5 rounded-full font-semibold text-white text-[15px] bg-forest"
-              >
-                Visa min jämförelse <ArrowRight size={16} />
-              </button>
+              <NeedsAnalysis
+                kind={item.kind as NeedsKind}
+                item={item}
+                onBack={() => router.push("/dashboard")}
+                onDone={(result) => {
+                  setNeeds(result);
+                  setPhase("loading");
+                }}
+              />
             </div>
           </div>
         </>
