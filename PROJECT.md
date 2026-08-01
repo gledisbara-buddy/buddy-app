@@ -109,11 +109,12 @@ grenar vidare på `typ` i fem bostadsformer). Centrala byggstenar:
   onboarding-hubben och dashboard-korten.
 - **`ITEM_GROUPS`** — de tre grupperna (Försäkring/Telekom & prenumerationer/Ekonomi)
   med vilka `kind`-värden som hör till varje grupp. Delas mellan `/jamfor` och Dashboard.
-- **`ComparableItem` / `isComparableItem()`** — de fem ursprungliga kategorierna
-  (boende/bil/ovrigt_fordon/person/djur) har en fungerande jämförelsemotor
-  (`item-quotes.ts`) och typas separat, så TypeScript håller `computeItemQuotes`
-  exhaustive. De fyra nya kategorierna (telekom/kreditkort/el/prenumeration) är
-  **bara datainsamling** än så länge — se "Kända begränsningar" nedan.
+- **`ComparableItem` / `isComparableItem()`** — åtta av nio kategorier
+  (boende/bil/ovrigt_fordon/person/djur/telekom/kreditkort/el) har en fungerande
+  jämförelsemotor (`item-quotes.ts`) och typas separat, så TypeScript håller
+  `computeItemQuotes` exhaustive. Bara **prenumeration** är kvar som ren
+  datainsamling — en öppen samlingskategori utan naturliga "alternativ" att
+  jämföra mot.
 - **`itemTitle()` / `itemSummary()`** — formaterar valfritt item till en rubrik +
   sammanfattningsrad, används överallt items listas (Dashboard, onboarding-hub).
 
@@ -200,10 +201,19 @@ redan är känt vid sidladdning) visas en kort `Overlay`-introduktion om hur sid
 fungerar.
 
 ### Jämförelseflöde (`CompareFlow.tsx`, `/compare/[id]`)
-Bara för `ComparableItem`-kategorierna. Visar tillval (t.ex. cykel/reseskydd för
-Boende, hyrbil/glasskydd för Bil), räknar fram fiktiva offerter via
-`item-quotes.ts`, och låter användaren "teckna" en offert (sparas i
-`policies` i context).
+Bara för `ComparableItem`-kategorierna (åtta av nio, se ovan). Visar tillval
+(t.ex. cykel/reseskydd för Boende, hyrbil/glasskydd för Bil — bara för
+boende/bil, övriga kategorier hoppar rakt till resultatet), räknar fram fiktiva
+offerter via `item-quotes.ts`, och låter användaren "teckna" en offert
+(`handleSign` sätter `source: "compared"` och sparar i `policies` i context).
+
+Telekom och kreditkort har redan ett pris/årsavgift kunden själv angett, så
+deras tre fiktiva alternativ (Klarnät/Fiberpunkt/Sambandet respektive
+Klarkort/Kontokraft/Guldkortet) räknas fram som procentandelar av det priset
+istället för från grunden som boende/bil gör. El saknar ett prisfält i
+datamodellen, så där (Klarström/Kraftpunkt/Voltec) räknas ett baspris fram
+från årsförbrukningen. Självrisk är ett rent försäkringsbegrepp och är valfri
+på `Quote` — visas bara för de kategorier där den är meningsfull.
 
 ### Rekommendation (`RecommendationView.tsx`, `/rekommendation`)
 Tittar på **allt** kunden lagt in (alla grupper, inte bara jämförbara saker) och ger
@@ -245,10 +255,10 @@ används i hero-sektionerna på startsidan och /jamfor för att ge en varmare k�
 
 - **Ingen persistens.** Allt state ligger i React Context och nollställs vid
   hård omladdning. Störst enskild lucka mellan prototyp och skarp produkt.
-- **Ingen jämförelsemotor för Telekom/Kreditkort/El/Prenumeration.** De fyra nya
-  kategorierna samlar bara in data — `isComparableItem()` filtrerar bort dem från
-  `/compare`-flödet med flit. `/rekommendation` ger enkla regelbaserade tips för dem,
-  men det är inte en riktig prisjämförelse som för de fem gamla kategorierna.
+- **Ingen jämförelsemotor för Prenumeration** (Övriga abonnemang) — enda kvarvarande
+  kategorin som bara samlar in data, eftersom det är en öppen samlingskategori utan
+  naturliga alternativ att jämföra mot. De övriga åtta kategorierna har alla en
+  fungerande (fiktiv) jämförelse nu.
 - **BankID är simulerat**, inget riktigt e-legitimationsflöde — gäller både
   inloggningen och auto-hämtningen av befintlig försäkring.
 - **Auto-hämtning av försäkring är helt simulerad** (`lib/policy-fetch.ts`) —
@@ -263,30 +273,28 @@ används i hero-sektionerna på startsidan och /jamfor för att ge en varmare k�
 
 ## Utvecklingsområden (senast diskuterade, 2026-08-01)
 
-Nyligen klart: kataloger istället för fritext (Telekom/Ekonomi), simulerad
-auto-hämtning av befintlig försäkring, regelbaserad `/rekommendation`, och ett
-utökat bokningsformulär som frågar vad samtalet gäller — hela "koppla ihop
-flödet"-arbetet från kund → inloggning → lägga in → jämföra/rekommendera/boka.
+Nyligen klart: städning av onboarding-resan (rakt till översikten, introduktions-
+popup, 18 riktiga bolag i auto-hämtningen, samlingsrabatt-popup, tydlig "auto-hämtad"
+vs "jämförd"-åtskillnad), och en riktig jämförelsemotor för Telekom/Kreditkort/El
+(samma mönster som de fem ursprungliga kategorierna — tre fiktiva alternativ,
+procentuell prissättning mot kundens angivna pris, valfri självrisk på `Quote`).
 
 Kvarstående, ungefärlig prioritetsordning:
 
-1. **Riktig jämförelsemotor för de fyra nya kategorierna** (telekom/kreditkort/el/
-   prenumeration) — `/rekommendation` ger regelbaserade tips men det är inte samma
-   sak som en riktig prisjämförelse mot alternativ, som de fem gamla kategorierna har.
-2. **Riktig auto-hämtning eller riktig fordonsuppslagning** — två separata simulerade
+1. **Riktig auto-hämtning eller riktig fordonsuppslagning** — två separata simulerade
    flöden (`policy-fetch.ts`, `vehicle-lookup.ts`) som båda är förberedda för att byta
    ut mot en riktig extern API, om/när en lämplig sådan hittas.
-3. **Bilder & varmare känsla, fortsättning** — hero-bilder finns på startsida och
+2. **Bilder & varmare känsla, fortsättning** — hero-bilder finns på startsida och
    /jamfor; kvar: eventuellt fler bilder (Om oss, dashboard), fler äkta
    förtroendesignaler (riktiga omdömen, partner-logotyper) i stället för fiktiv
    exempeldata.
-4. **Genomgång av chat/skadeanmälan** — `/book` fick nyss djupare logik (vad
+3. **Genomgång av chat/skadeanmälan** — `/book` fick nyss djupare logik (vad
    samtalet gäller); chat och skadeanmälan har fortfarande bara kanned svar.
-5. **Persistens (databas)** — den stora tekniska frågan i bakgrunden. Supabase-projekt
+4. **Persistens (databas)** — den stora tekniska frågan i bakgrunden. Supabase-projekt
    `buddy` finns kopplat men är inte satt upp — bedömdes tidigare "inte värt det än"
    eftersom det inte fanns något riktigt att spara. Blir mer motiverat ju mer skarpt
    produkten känns efter punkterna ovan.
-6. Mindre: SEO/metadata per sida, tillgänglighetsgenomgång, mobilgenomgång.
+5. Mindre: SEO/metadata per sida, tillgänglighetsgenomgång, mobilgenomgång.
 
 ## Git-historik
 
@@ -314,3 +322,11 @@ för exakta hashar):
   syntetiserad data (förfallodatum, omfattning), en samlingsrabatt-popup efter fler
   än 3 försäkringar, och en tydlig åtskillnad i Dashboard mellan "auto-hämtad" och
   "faktiskt jämförd" så ingen påstås vara jämförd förrän den faktiskt är det.
+- Riktig jämförelsemotor för Telekom, Kreditkort och El (`b2fc208`): breddade
+  `ComparableItem` till åtta av nio kategorier, nya offert-funktioner i
+  `item-quotes.ts` med tre fiktiva bolag per kategori (Klarnät/Fiberpunkt/
+  Sambandet, Klarkort/Kontokraft/Guldkortet, Klarström/Kraftpunkt/Voltec),
+  procentuell prissättning mot kundens angivna pris för telekom/kreditkort och
+  en förbrukningsbaserad baseline för el, `Quote.selfRisk` gjordes valfri, och
+  en bugg i `recommendation.ts` fixades så auto-hämtade-men-ojämförda
+  försäkringar korrekt flaggas som "inte jämförd än".
