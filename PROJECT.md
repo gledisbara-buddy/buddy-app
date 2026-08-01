@@ -69,19 +69,24 @@ src/
     onboarding/          Namn → lägg-till-hub → prioritet (och mode=add-varianten)
     dashboard/           Inloggad översikt
     compare/[id]/        Jämförelseflöde per sak
+    rekommendation/      Regelbaserad rekommendation baserat på allt man lagt in
     chat/, claim/, book/ Fråga Buddy, skadeanmälan, boka specialist
     profil/, installningar/
     api/address-search/  Server-route mot Geoapify
   components/
     marketing/           Nav, footer, StartCta, CategoryCta, FaqAccordion, LegalPage
-    onboarding/           BoendeForm, TelekomForm, KreditkortForm, AddressField, shared UI
-    Dashboard.tsx, Onboarding.tsx, CompareFlow.tsx, ChatScreen.tsx, ClaimFlow.tsx,
-    BookSpecialist.tsx, ProfileMenu.tsx, ProfilePage.tsx, SettingsPage.tsx,
-    BankIdLogin.tsx, TopBar.tsx, Logo.tsx, ProgressDots.tsx
+    onboarding/           BoendeForm, TelekomForm, KreditkortForm, AutoFetchStep,
+                           AddressField, shared UI (inkl. PillGroupWithOther)
+    Dashboard.tsx, Onboarding.tsx, CompareFlow.tsx, RecommendationView.tsx,
+    ChatScreen.tsx, ClaimFlow.tsx, BookSpecialist.tsx, ProfileMenu.tsx,
+    ProfilePage.tsx, SettingsPage.tsx, BankIdLogin.tsx, TopBar.tsx, Logo.tsx,
+    ProgressDots.tsx
   lib/
     items.ts             Datamodellen för allt man kan lägga in (se nedan)
     item-quotes.ts        Jämförelsemotor (bara för de 5 "gamla" kategorierna)
     quote.ts              Quote-typ + tillval för Boende/Bil-jämförelse
+    policy-fetch.ts        Simulerad auto-hämtning av befintlig försäkring
+    recommendation.ts      Regelbaserad logik bakom /rekommendation
     buddy-context.tsx     Global state (inloggning, profil, items, tecknade avtal)
     address-lookup.ts, vehicle-lookup.ts   Uppslagsfunktioner (en riktig, en simulerad)
     insurance.ts, faq.ts, guides.ts, news.ts, jobs.ts, top-list.ts, booking.ts,
@@ -150,7 +155,19 @@ hoppar direkt till ett formulär och hoppar över hub-gridden.
 
 Varje kategori har ett eget formulär anpassat efter vad den faktiskt behöver veta
 (t.ex. Boende frågar helt olika saker för hyresrätt vs. villa vs. magasinering; Bil
-har regnr-autofyllning; Kreditkort grenar på "har du redan ett kort?").
+har regnr-autofyllning; Kreditkort grenar på "har du redan ett kort?"). Telekom-,
+kreditkort-, el- och prenumerationsfälten (operatör/utgivare/elbolag/leverantör)
+använder `PillGroupWithOther` — en lista med vanliga svenska alternativ plus ett
+"Annat"-läge som faller tillbaka på fritext.
+
+**Auto-hämtning för Försäkring**: för de fem jämförbara kategorierna (boende/bil/
+övrigt fordon/person/djur) visas först ett val — "Hämta automatiskt från mitt bolag"
+eller "Fyll i själv". Auto-hämtning (`AutoFetchStep.tsx`) låter kunden välja bolag
+från topplistan, identifiera sig med en simulerad BankID-signering, och Buddy
+syntetiserar en trovärdig post åt en (`lib/policy-fetch.ts`) och tecknar den direkt
+hos valt bolag — priset kommer från den befintliga offert-motorn i `item-quotes.ts`.
+Bytpunkt för en riktig öppen-försäkring-API senare: allt går via
+`fetchExistingPolicy()`, som är det enda som behöver bytas ut.
 
 ### Dashboard / översikt (`Dashboard.tsx`)
 Visar tre gruppkort (Försäkring / Telekom & prenumerationer / Ekonomi) med antal
@@ -160,7 +177,8 @@ tidigare kunde "Lägg till"-kort inuti en grupp öppna den ogrupperade hubben me
 nio kategorier). Den generella "+ Lägg till en sak"-knappen (öppnar hela hubben) visas
 bara i toppvyn, inte inuti en drilled-in grupp. Varje item-kort visar
 "Jämför nu"/"Tecknad hos X" för jämförbara kategorier, eller "Sparad — jämförelse
-kommer snart" för de fyra nya.
+kommer snart" för de fyra nya. Tips-rutan längst ner länkar till `/rekommendation`
+("Se din rekommendation") när minst en sak är tillagd.
 
 ### Jämförelseflöde (`CompareFlow.tsx`, `/compare/[id]`)
 Bara för `ComparableItem`-kategorierna. Visar tillval (t.ex. cykel/reseskydd för
@@ -168,9 +186,22 @@ Boende, hyrbil/glasskydd för Bil), räknar fram fiktiva offerter via
 `item-quotes.ts`, och låter användaren "teckna" en offert (sparas i
 `policies` i context).
 
+### Rekommendation (`RecommendationView.tsx`, `/rekommendation`)
+Tittar på **allt** kunden lagt in (alla grupper, inte bara jämförbara saker) och ger
+regelbaserade rader via `lib/recommendation.ts` — t.ex. dyr mobilplan, hög
+kortårsavgift, fast elpris, eller en jämförbar sak som inte jämförts än (med
+direktlänk till `/compare/[id]`). Räknar också fram en illustrativ "uppskattad
+besparing", tydligt märkt som exempel. Samma regelbaserade-istället-för-AI-ansats
+som `item-quotes.ts`. Två avslutande vägval: boka ett samtal eller gå tillbaka till
+översikten — den koppling mellan Dashboard/Compare/Book som var poängen med hela
+detta byggsteg.
+
 ### Chat, skadeanmälan, boka specialist
 `/chat`, `/claim`, `/book` — alla med **kanned/simulerade** svar (`lib/chat.ts`,
 `lib/claim.ts`, `lib/booking.ts`), ingen riktig AI eller backend bakom.
+`/book` (`BookSpecialist.tsx`) har ett första steg där kunden kryssar i vilka av
+sina saker samtalet gäller (eller "Övrigt"/"Total helhetslösning") plus fritext —
+sammanfattas på bekräftelsesteget.
 
 ### Profil & inställningar
 Profil-dropdown (`ProfileMenu.tsx`) i övre högra hörnet: Min översikt, Min profil
@@ -197,8 +228,13 @@ används i hero-sektionerna på startsidan och /jamfor för att ge en varmare k�
   hård omladdning. Störst enskild lucka mellan prototyp och skarp produkt.
 - **Ingen jämförelsemotor för Telekom/Kreditkort/El/Prenumeration.** De fyra nya
   kategorierna samlar bara in data — `isComparableItem()` filtrerar bort dem från
-  `/compare`-flödet med flit.
-- **BankID är simulerat**, inget riktigt e-legitimationsflöde.
+  `/compare`-flödet med flit. `/rekommendation` ger enkla regelbaserade tips för dem,
+  men det är inte en riktig prisjämförelse som för de fem gamla kategorierna.
+- **BankID är simulerat**, inget riktigt e-legitimationsflöde — gäller både
+  inloggningen och auto-hämtningen av befintlig försäkring.
+- **Auto-hämtning av försäkring är helt simulerad** (`lib/policy-fetch.ts`) —
+  ingen riktig öppen-försäkring-API. Datan som "hämtas" är syntetiserad, inte kundens
+  faktiska försäkring.
 - **Fordonsuppslagning är simulerad**, ingen riktig biluppgifts-API.
 - **Chat/skadeanmälan/boka möte har kanned svar**, ingen AI eller riktig bokning.
 - All statistik, alla omdömen/testimonials och topplistan är **fiktiv exempeldata**,
@@ -206,22 +242,29 @@ används i hero-sektionerna på startsidan och /jamfor för att ge en varmare k�
 
 ## Utvecklingsområden (senast diskuterade, 2026-08-01)
 
-Prioritetsordning enligt senaste avstämningen — se commit-historiken för vad som
-redan är klart:
+Nyligen klart: kataloger istället för fritext (Telekom/Ekonomi), simulerad
+auto-hämtning av befintlig försäkring, regelbaserad `/rekommendation`, och ett
+utökat bokningsformulär som frågar vad samtalet gäller — hela "koppla ihop
+flödet"-arbetet från kund → inloggning → lägga in → jämföra/rekommendera/boka.
 
-1. **Bilder & varmare känsla** — påbörjat (hero-bilder på startsida + /jamfor).
-   Kvar: eventuellt fler bilder (Om oss, dashboard), fler äkta förtroendesignaler
-   (riktiga omdömen, partner-logotyper) i stället för fiktiv exempeldata.
-2. **Jämförelsemotor för de fyra nya kategorierna** (telekom/kreditkort/el/
-   prenumeration) — störst funktionell lucka mot löftet "vi visar var du kan spara".
-3. **Riktig fordonsuppslagning** — byt ut `lib/vehicle-lookup.ts` mot en riktig
-   biluppgifts-API när en gratis/lämplig sådan hittas.
-4. **Genomgång av chat/skadeanmälan/boka möte** — bedöma om flödena behöver djupare
-   verklig logik.
+Kvarstående, ungefärlig prioritetsordning:
+
+1. **Riktig jämförelsemotor för de fyra nya kategorierna** (telekom/kreditkort/el/
+   prenumeration) — `/rekommendation` ger regelbaserade tips men det är inte samma
+   sak som en riktig prisjämförelse mot alternativ, som de fem gamla kategorierna har.
+2. **Riktig auto-hämtning eller riktig fordonsuppslagning** — två separata simulerade
+   flöden (`policy-fetch.ts`, `vehicle-lookup.ts`) som båda är förberedda för att byta
+   ut mot en riktig extern API, om/när en lämplig sådan hittas.
+3. **Bilder & varmare känsla, fortsättning** — hero-bilder finns på startsida och
+   /jamfor; kvar: eventuellt fler bilder (Om oss, dashboard), fler äkta
+   förtroendesignaler (riktiga omdömen, partner-logotyper) i stället för fiktiv
+   exempeldata.
+4. **Genomgång av chat/skadeanmälan** — `/book` fick nyss djupare logik (vad
+   samtalet gäller); chat och skadeanmälan har fortfarande bara kanned svar.
 5. **Persistens (databas)** — den stora tekniska frågan i bakgrunden. Supabase-projekt
    `buddy` finns kopplat men är inte satt upp — bedömdes tidigare "inte värt det än"
    eftersom det inte fanns något riktigt att spara. Blir mer motiverat ju mer skarpt
-   produkten känns efter punkt 1–4.
+   produkten känns efter punkterna ovan.
 6. Mindre: SEO/metadata per sida, tillgänglighetsgenomgång, mobilgenomgång.
 
 ## Git-historik
@@ -239,3 +282,7 @@ för exakta hashar):
 - Bredda datamodellen till nio kategorier i tre grupper, gruppera Dashboard-
   översikten, göra om /jamfor till en produktsida, fixa en kategori-läckage-bugg
   i Dashboardens gruppvy, och lägga till riktiga hero-bilder.
+- Koppla ihop flödet: kataloger istället för fritext i Telekom/Ekonomi-formulären,
+  simulerad auto-hämtning av befintlig försäkring (bolag + BankID → syntetiserad
+  post + tecknad offert), en ny regelbaserad `/rekommendation`-sida länkad från
+  Dashboard, och ett bokningsformulär som frågar vad samtalet gäller.
