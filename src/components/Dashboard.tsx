@@ -252,25 +252,35 @@ export function Dashboard() {
 
         <div className="rounded-2xl border border-line p-5 flex items-start gap-3 bg-frost-2">
           <Star size={16} className="mt-0.5 flex-none text-amber-deep" />
-          <p className="text-sm text-ink">
-            <b>Tips från Buddy:</b>{" "}
-            {items.length === 0
-              ? "du har inte lagt in något än — börja med det som känns viktigast, t.ex. ditt boende eller din bil."
-              : (() => {
-                  const comparableCount = items.filter(isComparableItem).length;
-                  const signedCount = Object.keys(policies).length;
-                  if (comparableCount === 0) {
-                    return "bra jobbat! Fortsätt lägga till fler saker så får du en komplett bild av vad du betalar för.";
-                  }
-                  if (signedCount === 0) {
-                    return "du har inte jämfört några avtal än — det tar ~1 minut per sak och du bestämmer själv om du vill teckna.";
-                  }
-                  if (signedCount < comparableCount) {
-                    return "bra jobbat, fortsätt jämföra dina övriga saker för att se om du kan spara mer.";
-                  }
-                  return "snyggt — allt du lagt in är jämfört. Lägg gärna till fler saker för en komplett bild.";
-                })()}
-          </p>
+          <div className="flex-1">
+            <p className="text-sm mb-3 text-ink">
+              <b>Tips från Buddy:</b>{" "}
+              {items.length === 0
+                ? "du har inte lagt in något än — börja med det som känns viktigast, t.ex. ditt boende eller din bil."
+                : (() => {
+                    const comparableCount = items.filter(isComparableItem).length;
+                    const signedCount = Object.keys(policies).length;
+                    if (comparableCount === 0) {
+                      return "bra jobbat! Fortsätt lägga till fler saker så får du en komplett bild av vad du betalar för.";
+                    }
+                    if (signedCount === 0) {
+                      return "du har inte jämfört några avtal än — det tar ~1 minut per sak och du bestämmer själv om du vill teckna.";
+                    }
+                    if (signedCount < comparableCount) {
+                      return "bra jobbat, fortsätt jämföra dina övriga saker för att se om du kan spara mer.";
+                    }
+                    return "snyggt — allt du lagt in är jämfört. Lägg gärna till fler saker för en komplett bild.";
+                  })()}
+            </p>
+            {items.length > 0 && (
+              <button
+                onClick={() => router.push("/rekommendation")}
+                className="text-sm font-semibold flex items-center gap-1 text-forest"
+              >
+                Se din rekommendation <ArrowRight size={14} />
+              </button>
+            )}
+          </div>
         </div>
       </div>
     </div>
