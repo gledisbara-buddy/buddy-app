@@ -53,29 +53,41 @@ const STEPS = [
 export default function MarketingHome() {
   return (
     <div>
-      <section className="max-w-4xl mx-auto px-5 md:px-10 pt-20 pb-16 text-center bd-fade">
-        <span
-          className="bd-eyebrow inline-block px-3 py-1.5 rounded-full bg-frost-2"
-        >
-          Din digitala assistent för allt du betalar för
-        </span>
-        <h1 className="bd-display text-4xl md:text-6xl mt-6 mb-5 leading-[1.05]">
-          Allt du betalar för,
-          <br />
-          på ett ställe.
-        </h1>
-        <p className="text-base md:text-lg mb-9 max-w-xl mx-auto text-slate">
-          Försäkring, mobil & bredband, kreditkort, el — Buddy samlar allt på ett ställe,
-          hjälper dig jämföra, och finns kvar när något händer.
-        </p>
-        <div className="flex flex-col sm:flex-row gap-3 justify-center">
-          <StartCta className="bd-btn px-6 py-3.5 rounded-full font-semibold text-white text-[15px] bg-forest flex items-center justify-center gap-2" />
-          <Link
-            href="/jamfor"
-            className="bd-btn px-6 py-3.5 rounded-full font-semibold text-[15px] border border-line bg-white flex items-center justify-center gap-2"
-          >
-            Se allt vi jämför
-          </Link>
+      <section className="max-w-6xl mx-auto px-5 md:px-10 pt-16 md:pt-20 pb-16 bd-fade">
+        <div className="grid md:grid-cols-2 gap-10 md:gap-14 items-center">
+          <div className="text-center md:text-left">
+            <span className="bd-eyebrow inline-block px-3 py-1.5 rounded-full bg-frost-2">
+              Din digitala assistent för allt du betalar för
+            </span>
+            <h1 className="bd-display text-4xl md:text-5xl mt-6 mb-5 leading-[1.05]">
+              Allt du betalar för,
+              <br />
+              på ett ställe.
+            </h1>
+            <p className="text-base md:text-lg mb-9 max-w-xl mx-auto md:mx-0 text-slate">
+              Försäkring, mobil & bredband, kreditkort, el — Buddy samlar allt på ett ställe,
+              hjälper dig jämföra, och finns kvar när något händer.
+            </p>
+            <div className="flex flex-col sm:flex-row gap-3 justify-center md:justify-start">
+              <StartCta className="bd-btn px-6 py-3.5 rounded-full font-semibold text-white text-[15px] bg-forest flex items-center justify-center gap-2" />
+              <Link
+                href="/jamfor"
+                className="bd-btn px-6 py-3.5 rounded-full font-semibold text-[15px] border border-line bg-white flex items-center justify-center gap-2"
+              >
+                Se allt vi jämför
+              </Link>
+            </div>
+          </div>
+          <div className="relative rounded-[2rem] overflow-hidden aspect-[4/3]">
+            <Image
+              src="/images/hero-home.jpg"
+              alt="Varmt och inrett vardagsrum"
+              fill
+              priority
+              sizes="(min-width: 768px) 45vw, 100vw"
+              className="object-cover"
+            />
+          </div>
         </div>
       </section>
 

@@ -1,3 +1,4 @@
+import Image from "next/image";
 import {
   BadgeCheck,
   CheckCircle2,
@@ -213,20 +214,34 @@ function GroupSection({ group, index }: { group: (typeof ITEM_GROUPS)[number]; i
 export default function JamforPage() {
   return (
     <div className="bd-fade">
-      <section className="max-w-4xl mx-auto px-5 md:px-10 pt-16 pb-14 text-center">
-        <span className="bd-eyebrow inline-block px-3 py-1.5 rounded-full bg-frost-2">Jämför</span>
-        <h1 className="bd-display text-4xl md:text-5xl mt-6 mb-5 leading-[1.05]">
-          En jämförelsetjänst för allt du betalar för
-        </h1>
-        <p className="text-base md:text-lg mb-8 max-w-xl mx-auto text-slate">
-          Försäkring, mobil & bredband, kreditkort, el — lägg in det du har så ställer Buddy rätt
-          frågor och visar var du kan spara.
-        </p>
-        <div className="flex justify-center mb-10">
-          <StartCta className="bd-btn px-6 py-3.5 rounded-full font-semibold text-white text-[15px] bg-forest inline-flex items-center gap-2" />
+      <section className="max-w-6xl mx-auto px-5 md:px-10 pt-16 pb-14">
+        <div className="grid md:grid-cols-2 gap-10 md:gap-14 items-center mb-14">
+          <div className="text-center md:text-left">
+            <span className="bd-eyebrow inline-block px-3 py-1.5 rounded-full bg-frost-2">Jämför</span>
+            <h1 className="bd-display text-4xl md:text-5xl mt-6 mb-5 leading-[1.05]">
+              En jämförelsetjänst för allt du betalar för
+            </h1>
+            <p className="text-base md:text-lg mb-8 max-w-xl mx-auto md:mx-0 text-slate">
+              Försäkring, mobil & bredband, kreditkort, el — lägg in det du har så ställer Buddy
+              rätt frågor och visar var du kan spara.
+            </p>
+            <div className="flex justify-center md:justify-start">
+              <StartCta className="bd-btn px-6 py-3.5 rounded-full font-semibold text-white text-[15px] bg-forest inline-flex items-center gap-2" />
+            </div>
+          </div>
+          <div className="relative w-full rounded-[2rem] overflow-hidden aspect-[4/5] max-w-sm mx-auto md:max-w-none">
+            <Image
+              src="/images/hero-compare.jpg"
+              alt="Två personer som jämför sina abonnemang tillsammans hemma"
+              fill
+              priority
+              sizes="(min-width: 768px) 40vw, 80vw"
+              className="object-cover"
+            />
+          </div>
         </div>
 
-        <div className="grid grid-cols-3 gap-4 max-w-lg mx-auto">
+        <div className="grid grid-cols-3 gap-4 max-w-lg mx-auto text-center">
           {STATS.map((s) => (
             <div key={s.label}>
               <div className="bd-display text-2xl md:text-3xl text-forest">{s.value}</div>
@@ -234,7 +249,7 @@ export default function JamforPage() {
             </div>
           ))}
         </div>
-        <p className="text-xs mt-4 text-slate">Exempeldata i den här prototypen — siffrorna är fiktiva.</p>
+        <p className="text-xs mt-4 text-center text-slate">Exempeldata i den här prototypen — siffrorna är fiktiva.</p>
       </section>
 
       <section className="border-t border-y border-line bg-white">
