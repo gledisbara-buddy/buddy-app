@@ -68,12 +68,14 @@ export function Dashboard() {
           ) : (
             <div className="text-sm font-semibold text-slate">Dina saker</div>
           )}
-          <button
-            onClick={() => router.push("/onboarding?mode=add")}
-            className="bd-btn flex items-center gap-1.5 text-sm font-semibold px-3.5 py-2 rounded-full text-white bg-forest"
-          >
-            <Plus size={14} /> Lägg till en sak
-          </button>
+          {!active && (
+            <button
+              onClick={() => router.push("/onboarding?mode=add")}
+              className="bd-btn flex items-center gap-1.5 text-sm font-semibold px-3.5 py-2 rounded-full text-white bg-forest"
+            >
+              <Plus size={14} /> Lägg till en sak
+            </button>
+          )}
         </div>
 
         {!active ? (
@@ -175,7 +177,7 @@ export function Dashboard() {
                 return (
                   <button
                     key={cat.kind}
-                    onClick={() => router.push("/onboarding?mode=add")}
+                    onClick={() => router.push(`/onboarding?mode=add&kind=${cat.kind}`)}
                     className="bd-card rounded-2xl border border-dashed border-line p-5 flex items-center gap-3 text-left bg-transparent"
                   >
                     <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-none bg-frost">
