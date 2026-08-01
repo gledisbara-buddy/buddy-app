@@ -10,3 +10,6 @@ npm run dev
 ```
 
 Öppna [http://localhost:3000](http://localhost:3000).
+
+Se [PROJECT.md](PROJECT.md) för en fullständig, löpande uppdaterad översikt av
+vad som är byggt, arkitektur och kända begränsningar.
