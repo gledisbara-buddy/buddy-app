@@ -508,13 +508,13 @@ const CATEGORY_FORMS: Record<ItemKind, React.ComponentType<{ onSave: (item: Insu
   prenumeration: PrenumerationForm,
 };
 
-export function Onboarding({ mode = "full" }: { mode?: "full" | "add" }) {
+export function Onboarding({ mode = "full", initialKind }: { mode?: "full" | "add"; initialKind?: ItemKind }) {
   const router = useRouter();
   const { userType, items, addItem, removeItem, updateProfile } = useBuddy();
   const [phase, setPhase] = useState<"name" | "hub" | "priority">(mode === "add" ? "hub" : "name");
   const [name, setName] = useState("");
   const [priority, setPriority] = useState<string | null>(null);
-  const [activeCategory, setActiveCategory] = useState<ItemKind | null>(null);
+  const [activeCategory, setActiveCategory] = useState<ItemKind | null>(mode === "add" ? initialKind ?? null : null);
 
   useEffect(() => {
     if (!userType) router.replace("/kom-igang");
