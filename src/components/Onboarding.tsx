@@ -2,16 +2,16 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, ArrowRight, Loader2, Trash2 } from "lucide-react";
+import { ArrowLeft, ArrowRight, Loader2, PhoneCall, Trash2 } from "lucide-react";
 import { Logo } from "@/components/Logo";
-import { ProgressDots } from "@/components/ProgressDots";
+import { Overlay } from "@/components/Overlay";
 import { AutoFetchStep } from "@/components/onboarding/AutoFetchStep";
 import { BoendeForm } from "@/components/onboarding/BoendeForm";
 import { TelekomForm } from "@/components/onboarding/TelekomForm";
 import { KreditkortForm } from "@/components/onboarding/KreditkortForm";
 import { BoolPill, Field, FormActions, MultiPillGroup, PillGroup, PillGroupWithOther, inputClass } from "@/components/onboarding/shared";
 import { useBuddy } from "@/lib/buddy-context";
-import { PRIORITY_OPTIONS } from "@/lib/insurance";
+import type { Quote } from "@/lib/quote";
 import { lookupVehicle } from "@/lib/vehicle-lookup";
 import {
   AVTALSTYP_LABELS,
@@ -516,14 +516,15 @@ const CATEGORY_FORMS: Record<ItemKind, React.ComponentType<{ onSave: (item: Insu
 export function Onboarding({ mode = "full", initialKind }: { mode?: "full" | "add"; initialKind?: ItemKind }) {
   const router = useRouter();
   const { userType, items, addItem, removeItem, updateProfile, setPolicy } = useBuddy();
-  const [phase, setPhase] = useState<"name" | "hub" | "priority">(mode === "add" ? "hub" : "name");
+  const phase = mode === "add" ? "hub" : "name";
   const [name, setName] = useState("");
-  const [priority, setPriority] = useState<string | null>(null);
   const [activeCategory, setActiveCategory] = useState<ItemKind | null>(mode === "add" ? initialKind ?? null : null);
   const [addMode, setAddMode] = useState<"choice" | "auto" | "manual" | null>(
     activeCategory ? (groupForKind(activeCategory) === "forsakring" ? "choice" : "manual") : null
   );
   const [addModeFor, setAddModeFor] = useState<ItemKind | null>(activeCategory);
+  const [showBundlePopup, setShowBundlePopup] = useState(false);
+  const bundlePopupShownRef = useRef(false);
 
   useEffect(() => {
     if (!userType) router.replace("/kom-igang");
@@ -540,9 +541,22 @@ export function Onboarding({ mode = "full", initialKind }: { mode?: "full" | "ad
 
   const goToDashboard = () => router.push("/dashboard");
 
-  const finishFull = (chosenPriority: string | null) => {
-    updateProfile({ name: name.trim(), priority: chosenPriority });
-    goToDashboard();
+  const finishFull = () => {
+    updateProfile({ name: name.trim(), priority: null });
+    router.push("/dashboard?intro=1");
+  };
+
+  const handleItemAdded = (item: InsuranceItem, quote?: Quote) => {
+    addItem(item);
+    if (quote) setPolicy(item.id, quote);
+    if (!bundlePopupShownRef.current && groupForKind(item.kind) === "forsakring") {
+      const newCount = items.filter((i) => groupForKind(i.kind) === "forsakring").length + 1;
+      if (newCount > 3) {
+        bundlePopupShownRef.current = true;
+        setShowBundlePopup(true);
+      }
+    }
+    setActiveCategory(null);
   };
 
   if (activeCategory) {
@@ -590,23 +604,13 @@ export function Onboarding({ mode = "full", initialKind }: { mode?: "full" | "ad
             {addMode === "auto" && (
               <AutoFetchStep
                 kind={activeCategory as ComparableItem["kind"]}
-                onDone={(item, quote) => {
-                  addItem(item);
-                  setPolicy(item.id, quote);
-                  close();
-                }}
+                onDone={(item, quote) => handleItemAdded(item, quote)}
                 onBack={() => setAddMode("choice")}
               />
             )}
 
             {addMode === "manual" && (
-              <FormComponent
-                onSave={(item) => {
-                  addItem(item);
-                  close();
-                }}
-                onCancel={close}
-              />
+              <FormComponent onSave={(item) => handleItemAdded(item)} onCancel={close} />
             )}
           </div>
         </div>
@@ -619,7 +623,6 @@ export function Onboarding({ mode = "full", initialKind }: { mode?: "full" | "ad
       <div className="min-h-screen w-full flex flex-col">
         <div className="w-full flex items-center justify-between px-6 py-5">
           <Logo />
-          <ProgressDots total={3} current={0} />
           <div className="w-6" />
         </div>
         <div className="flex-1 flex items-center justify-center px-5 pb-16">
@@ -634,77 +637,17 @@ export function Onboarding({ mode = "full", initialKind }: { mode?: "full" | "ad
               className={`${inputClass} mb-4`}
             />
             <button
-              onClick={() => setPhase("hub")}
+              onClick={finishFull}
               disabled={name.trim().length < 2}
               className="bd-btn w-full flex items-center justify-center gap-2 py-3.5 rounded-full font-semibold text-white text-[15px] bg-forest disabled:opacity-40"
             >
               Fortsätt <ArrowRight size={16} />
             </button>
-            <button onClick={goToDashboard} className="w-full text-sm font-semibold py-3 text-slate">
+            <button
+              onClick={() => router.push("/dashboard?intro=1")}
+              className="w-full text-sm font-semibold py-3 text-slate"
+            >
               Hoppa över, jag gör det sen
-            </button>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  if (phase === "priority") {
-    return (
-      <div className="min-h-screen w-full flex flex-col">
-        <div className="w-full flex items-center justify-between px-6 py-5">
-          <Logo />
-          <ProgressDots total={3} current={2} />
-          <div className="w-6" />
-        </div>
-        <div className="flex-1 flex items-center justify-center px-5 pb-16">
-          <div className="w-full max-w-md bd-fade">
-            <button
-              onClick={() => setPhase("hub")}
-              className="flex items-center gap-1.5 text-sm mb-5 opacity-60 hover:opacity-100"
-            >
-              <ArrowLeft size={15} /> Tillbaka
-            </button>
-            <span className="bd-eyebrow">Valfritt sista steg</span>
-            <h1 className="bd-display text-2xl mt-3 mb-2">Vad är viktigast för dig?</h1>
-            <p className="text-sm mb-6 text-slate">
-              Vi använder det för att sortera dina förslag när du jämför.
-            </p>
-            <div className="flex flex-col gap-3 mb-6">
-              {PRIORITY_OPTIONS.map((opt) => {
-                const active = priority === opt.id;
-                return (
-                  <button
-                    key={opt.id}
-                    onClick={() => setPriority(opt.id)}
-                    className="bd-card p-4 rounded-2xl border text-left flex items-center gap-3"
-                    style={{
-                      borderColor: active ? "var(--color-forest)" : "var(--color-line)",
-                      background: active ? "var(--color-frost-2)" : "white",
-                    }}
-                  >
-                    <div
-                      className="w-5 h-5 rounded-full border-2 flex items-center justify-center flex-none"
-                      style={{ borderColor: active ? "var(--color-forest)" : "var(--color-line)" }}
-                    >
-                      {active && <div className="w-2.5 h-2.5 rounded-full" style={{ background: "var(--color-forest)" }} />}
-                    </div>
-                    <div>
-                      <div className="text-sm font-semibold">{opt.label}</div>
-                      <div className="text-xs text-slate">{opt.desc}</div>
-                    </div>
-                  </button>
-                );
-              })}
-            </div>
-            <button
-              onClick={() => finishFull(priority)}
-              className="bd-btn w-full flex items-center justify-center gap-2 py-3.5 rounded-full font-semibold text-white text-[15px] bg-forest"
-            >
-              Klar, gå till min översikt <ArrowRight size={16} />
-            </button>
-            <button onClick={() => finishFull(null)} className="w-full text-sm font-semibold py-3 text-slate">
-              Hoppa över
             </button>
           </div>
         </div>
@@ -715,14 +658,35 @@ export function Onboarding({ mode = "full", initialKind }: { mode?: "full" | "ad
   // phase === "hub"
   return (
     <div className="min-h-screen w-full flex flex-col">
+      {showBundlePopup && (
+        <Overlay onClose={() => setShowBundlePopup(false)}>
+          <span className="bd-eyebrow">Samlingsrabatt</span>
+          <h2 className="bd-display text-2xl mt-2 mb-3">Du har lagt in flera försäkringar</h2>
+          <p className="text-sm mb-6 text-slate">
+            Vi ser ofta att samlingsrabatter kan sänka priset på dina försäkringar ytterligare.
+            Boka in ett samtal så går vi igenom det tillsammans.
+          </p>
+          <button
+            onClick={() => router.push("/book")}
+            className="bd-btn w-full mb-3 flex items-center justify-center gap-2 py-3.5 rounded-full font-semibold text-white text-[15px] bg-forest"
+          >
+            <PhoneCall size={16} /> Boka in samtal
+          </button>
+          <button
+            onClick={() => setShowBundlePopup(false)}
+            className="w-full text-sm font-semibold py-2 text-slate"
+          >
+            Fortsätt lägga till
+          </button>
+        </Overlay>
+      )}
       <div className="w-full flex items-center justify-between px-6 py-5">
         <Logo />
-        {mode === "full" && <ProgressDots total={3} current={1} />}
         <div className="w-6" />
       </div>
       <div className="flex-1 flex items-start justify-center px-5 pt-2 pb-16">
         <div className="w-full max-w-lg bd-fade">
-          <span className="bd-eyebrow">{mode === "add" ? "Lägg till en sak" : "Dina saker"}</span>
+          <span className="bd-eyebrow">Lägg till en sak</span>
           <h1 className="bd-display text-2xl mt-3 mb-2">Vad vill du lägga till?</h1>
           <p className="text-sm mb-6 text-slate">
             Lägg till en sak i taget — du kan alltid lägga till fler senare.
@@ -768,29 +732,12 @@ export function Onboarding({ mode = "full", initialKind }: { mode?: "full" | "ad
             </div>
           )}
 
-          {mode === "add" ? (
-            <button
-              onClick={goToDashboard}
-              className="bd-btn w-full flex items-center justify-center gap-2 py-3.5 rounded-full font-semibold text-white text-[15px] bg-forest"
-            >
-              Klar, tillbaka till översikten <ArrowRight size={16} />
-            </button>
-          ) : (
-            <>
-              <button
-                onClick={() => setPhase("priority")}
-                className="bd-btn w-full flex items-center justify-center gap-2 py-3.5 rounded-full font-semibold text-white text-[15px] bg-forest"
-              >
-                Fortsätt <ArrowRight size={16} />
-              </button>
-              <button
-                onClick={() => finishFull(null)}
-                className="w-full text-sm font-semibold py-3 text-slate"
-              >
-                Hoppa över, gör det senare
-              </button>
-            </>
-          )}
+          <button
+            onClick={goToDashboard}
+            className="bd-btn w-full flex items-center justify-center gap-2 py-3.5 rounded-full font-semibold text-white text-[15px] bg-forest"
+          >
+            Klar, tillbaka till översikten <ArrowRight size={16} />
+          </button>
         </div>
       </div>
     </div>

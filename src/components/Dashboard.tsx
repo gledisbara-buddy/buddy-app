@@ -7,26 +7,51 @@ import {
   ArrowRight,
   CalendarDays,
   ChevronRight,
+  LayoutGrid,
   MessageCircle,
   Plus,
   ShieldAlert,
+  ShieldCheck,
+  Sparkles,
   Star,
   Trash2,
 } from "lucide-react";
+import { Overlay } from "@/components/Overlay";
 import { TopBar } from "@/components/TopBar";
 import { ProfileMenu } from "@/components/ProfileMenu";
 import { useBuddy } from "@/lib/buddy-context";
 import { PRIORITY_OPTIONS } from "@/lib/insurance";
 import { isComparableItem, ITEM_CATEGORIES, ITEM_GROUPS, itemSummary, itemTitle, type ItemGroupId } from "@/lib/items";
 
-export function Dashboard() {
+const INTRO_POINTS = [
+  {
+    icon: LayoutGrid,
+    text: "Lägg till det du vill hålla koll på — försäkring, mobil, kreditkort, el och mer, i tre kategorier.",
+  },
+  {
+    icon: ShieldCheck,
+    text: "Har du redan en försäkring? Hämta den automatiskt från ditt bolag istället för att fylla i allt själv.",
+  },
+  {
+    icon: Sparkles,
+    text: "När du är redo kan du jämföra, få en rekommendation, eller boka ett samtal med en rådgivare.",
+  },
+];
+
+export function Dashboard({ showIntro: initialShowIntro }: { showIntro?: boolean }) {
   const router = useRouter();
   const { userType, profile, items, removeItem, policies } = useBuddy();
   const [activeGroup, setActiveGroup] = useState<ItemGroupId | null>(null);
+  const [showIntro, setShowIntro] = useState(!!initialShowIntro);
 
   useEffect(() => {
     if (!userType) router.replace("/kom-igang");
   }, [userType, router]);
+
+  const closeIntro = () => {
+    setShowIntro(false);
+    router.replace("/dashboard");
+  };
 
   if (!userType) return null;
 
@@ -35,7 +60,7 @@ export function Dashboard() {
   const groups = ITEM_GROUPS.map((g) => {
     const groupItems = items.filter((i) => g.kinds.includes(i.kind));
     const comparableItems = groupItems.filter(isComparableItem);
-    const signedCount = comparableItems.filter((i) => policies[i.id]).length;
+    const signedCount = comparableItems.filter((i) => policies[i.id]?.source === "compared").length;
     return { ...g, items: groupItems, comparableCount: comparableItems.length, signedCount };
   });
 
@@ -43,6 +68,28 @@ export function Dashboard() {
 
   return (
     <div className="min-h-screen w-full">
+      {showIntro && (
+        <Overlay onClose={closeIntro}>
+          <span className="bd-eyebrow">Välkommen</span>
+          <h2 className="bd-display text-2xl mt-2 mb-4">Såhär funkar Buddy</h2>
+          <div className="flex flex-col gap-3 mb-6">
+            {INTRO_POINTS.map((p) => (
+              <div key={p.text} className="flex items-start gap-3">
+                <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-none bg-frost-2">
+                  <p.icon size={15} className="text-forest" />
+                </div>
+                <p className="text-sm text-ink">{p.text}</p>
+              </div>
+            ))}
+          </div>
+          <button
+            onClick={closeIntro}
+            className="bd-btn w-full py-3.5 rounded-full font-semibold text-white text-[15px] bg-forest"
+          >
+            Kom igång
+          </button>
+        </Overlay>
+      )}
       <TopBar right={<ProfileMenu />} />
       <div className="max-w-4xl mx-auto px-5 md:px-10 py-10 bd-fade">
         <span className="bd-eyebrow">Din översikt</span>
@@ -140,7 +187,7 @@ export function Dashboard() {
                       <div className="text-xs mb-4 text-slate">{itemSummary(item)}</div>
                       {!isComparableItem(item) ? (
                         <div className="text-xs text-slate">● Sparad — jämförelse kommer snart</div>
-                      ) : signed ? (
+                      ) : signed?.source === "compared" ? (
                         <>
                           <div className="text-xs mb-3 text-forest">
                             ● Tecknad hos {signed.name} — {signed.price} kr/mån
@@ -150,6 +197,22 @@ export function Dashboard() {
                             className="text-sm font-semibold flex items-center gap-1 text-forest"
                           >
                             Jämför igen <ArrowRight size={14} />
+                          </button>
+                        </>
+                      ) : signed?.source === "fetched" ? (
+                        <>
+                          <div className="text-xs text-ink">
+                            <b>{signed.name}</b> · {signed.price} kr/mån
+                          </div>
+                          {signed.omfattning && <div className="text-xs text-slate">{signed.omfattning}</div>}
+                          {signed.forfallodatum && (
+                            <div className="text-xs mb-3 text-slate">Förfaller {signed.forfallodatum}</div>
+                          )}
+                          <button
+                            onClick={() => router.push(`/compare/${item.id}`)}
+                            className="text-sm font-semibold flex items-center gap-1 text-forest"
+                          >
+                            Jämför nu <ArrowRight size={14} />
                           </button>
                         </>
                       ) : (
