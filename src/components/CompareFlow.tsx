@@ -45,7 +45,7 @@ export function CompareFlow({ itemId }: { itemId: string }) {
     setExtras((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
 
   const handleSign = (quote: Quote) => {
-    setPolicy(item.id, quote);
+    setPolicy(item.id, { ...quote, source: "compared" });
     router.push("/dashboard");
   };
 

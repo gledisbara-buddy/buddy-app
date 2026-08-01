@@ -378,6 +378,28 @@ export const KREDITKORT_UTGIVARE = ["SEB", "Swedbank", "Handelsbanken", "Nordea"
 export const EL_BOLAG = ["Vattenfall", "E.ON", "Fortum", "Telge Energi", "Bixia", "Skellefteå Kraft"] as const;
 export const PRENUMERATION_LEVERANTORER = ["SATS", "Fitness24Seven", "Storytel", "Audible"] as const;
 
+// Riktiga svenska försäkringsbolag att välja bland i "Hämta automatiskt"-flödet.
+export const FORSAKRINGSBOLAG = [
+  "Aktsam",
+  "Bliwa",
+  "Dina Försäkringar",
+  "Euro Accident",
+  "Folksam",
+  "Gjensidige",
+  "Hedvig",
+  "ICA Försäkring",
+  "If",
+  "Länsförsäkringar",
+  "Moderna Försäkringar",
+  "Movestic",
+  "Skandia",
+  "Solid Försäkring",
+  "Svedea",
+  "Trygg-Hansa",
+  "Vardia",
+  "Volvia",
+] as const;
+
 export function createItemId(): string {
   return crypto.randomUUID();
 }

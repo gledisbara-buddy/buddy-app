@@ -1,12 +1,23 @@
 import { createItemId, type ComparableItem } from "@/lib/items";
-import { computeItemQuotes } from "@/lib/item-quotes";
+import { MONTHS } from "@/lib/booking";
 import type { Quote } from "@/lib/quote";
 import { VEHICLE_BOOK } from "@/lib/vehicle-lookup";
 
 export type FetchableKind = ComparableItem["kind"];
 
-function pick<T>(pool: T[]): T {
+function pick<T>(pool: readonly T[]): T {
   return pool[Math.floor(Math.random() * pool.length)];
+}
+
+function randomInRange([min, max]: readonly [number, number]): number {
+  return Math.round(min + Math.random() * (max - min));
+}
+
+function randomFutureDate(): string {
+  const now = new Date();
+  const monthsAhead = 1 + Math.floor(Math.random() * 12);
+  const d = new Date(now.getFullYear(), now.getMonth() + monthsAhead, 1 + Math.floor(Math.random() * 27));
+  return `${d.getDate()} ${MONTHS[d.getMonth()]} ${d.getFullYear()}`;
 }
 
 function synthesizeItem(kind: FetchableKind): ComparableItem {
@@ -67,18 +78,45 @@ function synthesizeItem(kind: FetchableKind): ComparableItem {
   }
 }
 
+const PRICE_RANGES: Record<FetchableKind, readonly [number, number]> = {
+  boende: [80, 160],
+  bil: [200, 350],
+  ovrigt_fordon: [70, 140],
+  person: [50, 90],
+  djur: [100, 180],
+};
+
+const OMFATTNING_POOL: Record<FetchableKind, readonly string[]> = {
+  boende: ["Grundskydd", "Fullvärde", "Fullvärde + Drulle"],
+  bil: ["Trafikförsäkring", "Halvförsäkring", "Helförsäkring"],
+  ovrigt_fordon: ["Trafikförsäkring", "Halvförsäkring", "Helförsäkring"],
+  person: ["Grundskydd", "Utökat skydd"],
+  djur: ["Veterinärvårdsförsäkring", "Livförsäkring + Veterinärvård"],
+};
+
+const SELF_RISK_POOL = [1000, 1200, 1500, 2000, 2500] as const;
+
 /**
  * Simulerad hämtning av en befintlig försäkring hos ett valt bolag — swap-punkt för en
  * riktig öppen-försäkring-API senare (samma signatur, AutoFetchStep beror bara på den här
- * funktionen). Syntetiserar en trovärdig sak och återanvänder befintlig prissättningslogik
- * i item-quotes.ts så att bolagen förblir konsekventa med resten av appen.
+ * funktionen). Bolaget är ett riktigt namn som kunden själv väljer (FORSAKRINGSBOLAG i
+ * items.ts), så priset/omfattningen syntetiseras separat här istället för att återanvända
+ * item-quotes.ts's tre fiktiva jämförelsebolag.
  */
 export function fetchExistingPolicy(kind: FetchableKind, bolagNamn: string): Promise<{ item: ComparableItem; quote: Quote }> {
   return new Promise((resolve) => {
     setTimeout(() => {
       const item = synthesizeItem(kind);
-      const quotes = computeItemQuotes(item, []);
-      const quote = quotes.find((q) => q.name === bolagNamn) ?? quotes[0];
+      const quote: Quote = {
+        id: createItemId(),
+        name: bolagNamn,
+        price: randomInRange(PRICE_RANGES[kind]),
+        selfRisk: pick(SELF_RISK_POOL),
+        highlights: [],
+        source: "fetched",
+        omfattning: pick(OMFATTNING_POOL[kind]),
+        forfallodatum: randomFutureDate(),
+      };
       resolve({ item, quote });
     }, 1400);
   });

@@ -1,13 +1,12 @@
 "use client";
 
 import { useState } from "react";
-import { ArrowLeft, Check, Loader2, ShieldCheck, Smartphone, Star } from "lucide-react";
+import { ArrowLeft, Check, Loader2, Smartphone } from "lucide-react";
 import { inputClass } from "@/components/onboarding/shared";
 import type { ComparableItem } from "@/lib/items";
-import { itemSummary, itemTitle } from "@/lib/items";
+import { FORSAKRINGSBOLAG, itemSummary, itemTitle } from "@/lib/items";
 import { fetchExistingPolicy, type FetchableKind } from "@/lib/policy-fetch";
 import type { Quote } from "@/lib/quote";
-import { TOP_LIST } from "@/lib/top-list";
 
 type Phase = "bolag" | "bankid-idle" | "bankid-waiting" | "fetching" | "result";
 
@@ -44,28 +43,17 @@ export function AutoFetchStep({
           <ArrowLeft size={15} /> Tillbaka
         </button>
         <p className="text-sm mb-4 text-slate">Vilket bolag har du den här hos idag?</p>
-        <div className="flex flex-col gap-3">
-          {TOP_LIST.map((b) => (
+        <div className="bd-scroll flex flex-col gap-1.5 max-h-[420px] overflow-y-auto pr-1">
+          {FORSAKRINGSBOLAG.map((b) => (
             <button
-              key={b.name}
+              key={b}
               onClick={() => {
-                setBolag(b.name);
+                setBolag(b);
                 setPhase("bankid-idle");
               }}
-              className="bd-card p-4 rounded-2xl border border-line bg-white text-left flex items-start gap-3"
+              className="bd-card w-full text-left px-4 py-3 rounded-xl border border-line bg-white text-sm font-medium"
             >
-              <div className="w-9 h-9 rounded-lg flex items-center justify-center flex-none bg-frost-2">
-                <ShieldCheck size={17} className="text-forest" />
-              </div>
-              <div>
-                <div className="flex items-center gap-2 mb-0.5">
-                  <div className="font-semibold text-sm">{b.name}</div>
-                  <div className="flex items-center gap-1 text-xs text-amber-deep">
-                    <Star size={11} fill="currentColor" /> {b.rating}
-                  </div>
-                </div>
-                <div className="text-xs text-slate">{b.tagline}</div>
-              </div>
+              {b}
             </button>
           ))}
         </div>
@@ -142,14 +130,20 @@ export function AutoFetchStep({
       <div className="bg-white rounded-2xl border border-line p-5 mb-6">
         <div className="font-semibold text-[15px] mb-1">{itemTitle(item)}</div>
         <div className="text-xs mb-4 text-slate">{itemSummary(item)}</div>
-        <div className="flex items-center justify-between pt-4 border-t border-line">
-          <div>
-            <div className="font-semibold text-sm">{quote.name}</div>
-            <div className="text-xs text-slate">Självrisk {quote.selfRisk.toLocaleString("sv-SE")} kr</div>
+        <div className="pt-4 border-t border-line">
+          <div className="flex items-center justify-between mb-3">
+            <div>
+              <div className="font-semibold text-sm">{quote.name}</div>
+              {quote.omfattning && <div className="text-xs text-slate">{quote.omfattning}</div>}
+            </div>
+            <div className="text-right">
+              <div className="bd-display text-xl text-forest">{quote.price} kr</div>
+              <div className="text-xs text-slate">per månad</div>
+            </div>
           </div>
-          <div className="text-right">
-            <div className="bd-display text-xl text-forest">{quote.price} kr</div>
-            <div className="text-xs text-slate">per månad</div>
+          <div className="flex items-center justify-between text-xs text-slate">
+            <span>Självrisk {quote.selfRisk.toLocaleString("sv-SE")} kr</span>
+            {quote.forfallodatum && <span>Förfaller {quote.forfallodatum}</span>}
           </div>
         </div>
       </div>

@@ -6,8 +6,13 @@ export type Quote = {
   name: string;
   price: number;
   selfRisk: number;
-  rating: number;
+  rating?: number;
   highlights: string[];
+  // "compared" = jämförd och tecknad via Buddys jämförelseflöde (CompareFlow).
+  // "fetched" = auto-hämtad från kundens befintliga bolag, inte jämförd än.
+  source?: "compared" | "fetched";
+  forfallodatum?: string;
+  omfattning?: string;
 };
 
 export type ExtraId = "cykel" | "resa" | "drulle" | "brf";
@@ -28,7 +33,7 @@ export const BIL_EXTRA_OPTIONS: { id: BilExtraId; label: string; icon: LucideIco
 ];
 
 export function pickWinner(quotes: Quote[], priority: string | null): string {
-  if (priority === "skydd") return [...quotes].sort((a, b) => b.rating - a.rating)[0].id;
+  if (priority === "skydd") return [...quotes].sort((a, b) => (b.rating ?? 0) - (a.rating ?? 0))[0].id;
   if (priority === "snabbhet") return "klarsaker";
   return quotes[0].id;
 }
