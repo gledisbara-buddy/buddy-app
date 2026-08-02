@@ -80,8 +80,8 @@ export default function MarketingHome() {
           </div>
           <div className="relative rounded-[2rem] overflow-hidden aspect-[4/3]">
             <Image
-              src="/images/hero-home.jpg"
-              alt="Varmt och inrett vardagsrum"
+              src="/images/hero-couple.jpg"
+              alt="Ett par som tillsammans går igenom vad de betalar för i mobilen"
               fill
               priority
               sizes="(min-width: 768px) 45vw, 100vw"
@@ -169,15 +169,15 @@ export default function MarketingHome() {
       </section>
 
       <section className="max-w-5xl mx-auto px-5 md:px-10 py-16 border-t border-line">
-        <div className="rounded-3xl bg-white border border-line overflow-hidden grid md:grid-cols-2">
-          <div className="relative min-h-[260px]">
+        <div className="rounded-3xl bg-white border border-line overflow-hidden flex flex-col md:flex-row">
+          <div className="relative w-full md:w-[280px] flex-none aspect-[3/4]">
             <Image
-              src="/founder.jpg"
+              src="/images/founder.jpg"
               alt="Gledis Bara, grundare av Buddy"
               fill
-              sizes="(min-width: 768px) 50vw, 100vw"
+              sizes="(min-width: 768px) 280px, 100vw"
               className="object-cover"
-              style={{ objectPosition: "50% 15%" }}
+              style={{ objectPosition: "50% 20%" }}
             />
           </div>
           <div className="p-8 md:p-10 flex flex-col justify-center">

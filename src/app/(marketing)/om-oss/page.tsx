@@ -39,7 +39,7 @@ export default function OmOssPage() {
       <div className="rounded-3xl border border-line bg-white p-6 md:p-8 mb-12 flex flex-col sm:flex-row gap-6 items-center sm:items-start">
         <div className="w-32 h-32 sm:w-36 sm:h-36 rounded-2xl overflow-hidden flex-none relative">
           <Image
-            src="/founder.jpg"
+            src="/images/founder.jpg"
             alt="Gledis Bara, grundare och VD för Buddy"
             fill
             sizes="144px"
