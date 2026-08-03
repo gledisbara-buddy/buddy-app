@@ -12,7 +12,27 @@ export type Quote = {
   omfattning?: string;
 };
 
-export function pickWinner(quotes: Quote[], priority: string | null): string {
-  if (priority === "skydd") return [...quotes].sort((a, b) => (b.rating ?? 0) - (a.rating ?? 0))[0].id;
-  return quotes[0].id;
+// "Bästa helhetsvärde" — väger ihop betyg och pris istället för att bara
+// välja billigast, så rekommendationen kan skilja sig från det billigaste
+// alternativet (annars blir de två alltid identiska).
+export function pickWinner(quotes: Quote[]): string {
+  const prices = quotes.map((q) => q.price);
+  const ratings = quotes.map((q) => q.rating ?? 0);
+  const minPrice = Math.min(...prices);
+  const priceRange = Math.max(...prices) - minPrice || 1;
+  const minRating = Math.min(...ratings);
+  const ratingRange = Math.max(...ratings) - minRating || 1;
+
+  let best = quotes[0];
+  let bestScore = -Infinity;
+  for (const q of quotes) {
+    const priceScore = 1 - (q.price - minPrice) / priceRange;
+    const ratingScore = ((q.rating ?? 0) - minRating) / ratingRange;
+    const score = ratingScore * 0.6 + priceScore * 0.4;
+    if (score > bestScore) {
+      bestScore = score;
+      best = q;
+    }
+  }
+  return best.id;
 }

@@ -14,10 +14,12 @@ export function AutoFetchStep({
   kind,
   onDone,
   onBack,
+  displayItem,
 }: {
   kind: FetchableKind;
   onDone: (item: ComparableItem, quote: Quote) => void;
   onBack: () => void;
+  displayItem?: ComparableItem;
 }) {
   const [phase, setPhase] = useState<Phase>("bolag");
   const [bolag, setBolag] = useState<string | null>(null);
@@ -121,6 +123,7 @@ export function AutoFetchStep({
   // phase === "result"
   if (!result) return null;
   const { item, quote } = result;
+  const shownItem = displayItem ?? item;
   return (
     <div className="bd-fade">
       <div className="flex items-center gap-2 mb-4 text-forest">
@@ -128,8 +131,8 @@ export function AutoFetchStep({
         <span className="text-sm font-semibold">Vi hittade din försäkring</span>
       </div>
       <div className="bg-white rounded-2xl border border-line p-5 mb-6">
-        <div className="font-semibold text-[15px] mb-1">{itemTitle(item)}</div>
-        <div className="text-xs mb-4 text-slate">{itemSummary(item)}</div>
+        <div className="font-semibold text-[15px] mb-1">{itemTitle(shownItem)}</div>
+        <div className="text-xs mb-4 text-slate">{itemSummary(shownItem)}</div>
         <div className="pt-4 border-t border-line">
           <div className="flex items-center justify-between mb-3">
             <div>
