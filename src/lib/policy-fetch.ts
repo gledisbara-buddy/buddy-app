@@ -98,6 +98,19 @@ const OMFATTNING_POOL: Record<FetchableKind, readonly string[]> = {
 
 const SELF_RISK_POOL = [1000, 1200, 1500, 2000, 2500] as const;
 
+// Simulerade avtalsdetaljer för det avancerade jämförelseläget — precis som
+// pris/omfattning/förfallodatum är det här syntetiserad data, inte kundens
+// faktiska avtal (bolagsnamnet är dock riktigt, valt av kunden själv).
+const KARENSTID_POOL = ["Ingen karenstid", "24 timmar för vattenskador", "48 timmar för vattenskador"] as const;
+const ERSATTNINGSTAK_POOL = ["1 000 000 kr per skada", "1 500 000 kr per skada", "Ingen övre gräns"] as const;
+const BINDNINGSTID_POOL = ["Ingen bindningstid", "12 månader"] as const;
+const UPPSAGNINGSTID_POOL = ["30 dagar", "60 dagar"] as const;
+const UNDANTAG_POOL = [
+  ["Grov vårdslöshet", "Krig och terrorism"],
+  ["Grov vårdslöshet", "Slitage och bristande underhåll"],
+  ["Grov vårdslöshet", "Skador vid uthyrning i andra hand"],
+] as const;
+
 /**
  * Simulerad hämtning av en befintlig försäkring hos ett valt bolag — swap-punkt för en
  * riktig öppen-försäkring-API senare (samma signatur, AutoFetchStep beror bara på den här
@@ -118,6 +131,11 @@ export function fetchExistingPolicy(kind: FetchableKind, bolagNamn: string): Pro
         source: "fetched",
         omfattning: pick(OMFATTNING_POOL[kind]),
         forfallodatum: randomFutureDate(),
+        karenstid: pick(KARENSTID_POOL),
+        ersattningstak: pick(ERSATTNINGSTAK_POOL),
+        bindningstid: pick(BINDNINGSTID_POOL),
+        uppsagningstid: pick(UPPSAGNINGSTID_POOL),
+        undantag: [...pick(UNDANTAG_POOL)],
       };
       resolve({ item, quote });
     }, 1400);

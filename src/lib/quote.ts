@@ -10,6 +10,13 @@ export type Quote = {
   source?: "compared" | "fetched";
   forfallodatum?: string;
   omfattning?: string;
+  // Avtalsdetaljer för det avancerade jämförelseläget — bara satta för
+  // Försäkring-gruppens offerter (fiktiva och auto-hämtade).
+  karenstid?: string;
+  ersattningstak?: string;
+  bindningstid?: string;
+  uppsagningstid?: string;
+  undantag?: string[];
 };
 
 // "Bästa helhetsvärde" — väger ihop betyg och pris istället för att bara

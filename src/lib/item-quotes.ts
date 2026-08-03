@@ -4,8 +4,47 @@ import type { Quote } from "@/lib/quote";
 const RATING = { klarsaker: 4.6, hemgrund: 4.2, nordvakt: 4.4 };
 const SELF_RISK = { klarsaker: 1500, hemgrund: 2000, nordvakt: 1200 };
 
+// Simulerade avtalsdetaljer för det avancerade jämförelseläget — varje
+// fiktivt bolag har en konsekvent "personlighet" genom alla fem kategorier:
+// Klarsäker (dyrast, högst betyg) har generösast villkor, Hemgrund
+// (billigast, lägst betyg) har strängast, Nordvakt ligger mitt emellan.
+const TERMS: Record<
+  "klarsaker" | "hemgrund" | "nordvakt",
+  { karenstid: string; ersattningstak: string; bindningstid: string; uppsagningstid: string; undantag: string[] }
+> = {
+  klarsaker: {
+    karenstid: "Ingen karenstid",
+    ersattningstak: "Ingen övre gräns",
+    bindningstid: "Ingen bindningstid",
+    uppsagningstid: "30 dagar",
+    undantag: ["Grov vårdslöshet", "Krig och terrorism"],
+  },
+  hemgrund: {
+    karenstid: "48 timmar för vattenskador",
+    ersattningstak: "1 000 000 kr per skada",
+    bindningstid: "12 månader",
+    uppsagningstid: "60 dagar",
+    undantag: ["Grov vårdslöshet", "Slitage och bristande underhåll", "Skador i samband med renovering"],
+  },
+  nordvakt: {
+    karenstid: "24 timmar för vattenskador",
+    ersattningstak: "2 000 000 kr per skada",
+    bindningstid: "Ingen bindningstid",
+    uppsagningstid: "30 dagar",
+    undantag: ["Grov vårdslöshet", "Krig och terrorism", "Skador vid uthyrning i andra hand"],
+  },
+};
+
 function build(id: "klarsaker" | "hemgrund" | "nordvakt", name: string, price: number, highlights: string[]): Quote {
-  return { id, name, price: Math.max(29, Math.round(price)), selfRisk: SELF_RISK[id], rating: RATING[id], highlights };
+  return {
+    id,
+    name,
+    price: Math.max(29, Math.round(price)),
+    selfRisk: SELF_RISK[id],
+    rating: RATING[id],
+    highlights,
+    ...TERMS[id],
+  };
 }
 
 const currentYear = new Date().getFullYear();

@@ -14,6 +14,52 @@ import type { NeedsKind } from "@/lib/needs";
 import type { FetchableKind } from "@/lib/policy-fetch";
 import { pickWinner, type Quote } from "@/lib/quote";
 
+// Avtalsdetaljer för det avancerade jämförelseläget — bara satt för
+// Försäkring-gruppens offerter, så komponenten renderar inget om fälten saknas.
+function AdvancedDetails({ quote, dark }: { quote: Quote; dark?: boolean }) {
+  if (!quote.karenstid && !quote.ersattningstak && !quote.bindningstid && !quote.uppsagningstid && !quote.undantag) {
+    return null;
+  }
+  const mutedColor = dark ? "rgba(255,255,255,.6)" : "var(--color-slate)";
+  const textColor = dark ? "rgba(255,255,255,.9)" : "var(--color-ink)";
+  const fields: [string, string | undefined][] = [
+    ["Karenstid", quote.karenstid],
+    ["Ersättningstak", quote.ersattningstak],
+    ["Bindningstid", quote.bindningstid],
+    ["Uppsägningstid", quote.uppsagningstid],
+  ];
+  return (
+    <div
+      className="text-xs mb-5 pt-4 border-t"
+      style={{ borderColor: dark ? "rgba(255,255,255,.15)" : "var(--color-line)" }}
+    >
+      <div className="grid grid-cols-2 gap-x-3 gap-y-2.5 mb-3">
+        {fields.map(
+          ([label, value]) =>
+            value && (
+              <div key={label}>
+                <div className="mb-0.5" style={{ color: mutedColor }}>
+                  {label}
+                </div>
+                <div className="font-medium" style={{ color: textColor }}>
+                  {value}
+                </div>
+              </div>
+            )
+        )}
+      </div>
+      {quote.undantag && quote.undantag.length > 0 && (
+        <div>
+          <div className="mb-0.5" style={{ color: mutedColor }}>
+            Undantag
+          </div>
+          <div style={{ color: textColor }}>{quote.undantag.join(", ")}</div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 export function CompareFlow({ itemId }: { itemId: string }) {
   const router = useRouter();
   const { items, policies, setPolicy } = useBuddy();
@@ -35,6 +81,7 @@ export function CompareFlow({ itemId }: { itemId: string }) {
   const [needs, setNeeds] = useState<string[]>([]);
   const [expanded, setExpanded] = useState<string | null>(null);
   const [showAutoFetch, setShowAutoFetch] = useState(false);
+  const [detailLevel, setDetailLevel] = useState<"enkel" | "avancerat">("enkel");
 
   useEffect(() => {
     if (phase === "loading") {
@@ -109,9 +156,34 @@ export function CompareFlow({ itemId }: { itemId: string }) {
             <div className="max-w-5xl mx-auto px-5 md:px-10 pb-14 bd-fade">
               <span className="bd-eyebrow">Din jämförelse</span>
               <h1 className="bd-display text-3xl mt-2 mb-2">Så ser dina alternativ ut</h1>
-              <p className="text-sm mb-8 text-slate">
+              <p className="text-sm mb-5 text-slate">
                 Baserat på {label.toLowerCase()} — {itemSummary(item)}.
               </p>
+
+              <div className="flex items-center gap-1 mb-6 p-1 rounded-full w-fit bg-frost-2">
+                <button
+                  onClick={() => setDetailLevel("enkel")}
+                  className="px-4 py-1.5 rounded-full text-xs font-semibold"
+                  style={
+                    detailLevel === "enkel"
+                      ? { background: "white", color: "var(--color-ink)", boxShadow: "0 1px 3px rgba(0,0,0,.08)" }
+                      : { color: "var(--color-slate)" }
+                  }
+                >
+                  Enkel
+                </button>
+                <button
+                  onClick={() => setDetailLevel("avancerat")}
+                  className="px-4 py-1.5 rounded-full text-xs font-semibold"
+                  style={
+                    detailLevel === "avancerat"
+                      ? { background: "white", color: "var(--color-ink)", boxShadow: "0 1px 3px rgba(0,0,0,.08)" }
+                      : { color: "var(--color-slate)" }
+                  }
+                >
+                  Avancerat
+                </button>
+              </div>
 
               <div className="grid md:grid-cols-3 gap-4">
                 <div className="bg-white rounded-3xl border border-line p-6 flex flex-col h-full">
@@ -123,10 +195,11 @@ export function CompareFlow({ itemId }: { itemId: string }) {
                       <div className="bd-display text-2xl mb-4">
                         {current.price} kr <span className="text-xs font-sans font-normal text-slate">/mån</span>
                       </div>
-                      <div className="flex flex-col gap-1.5 text-xs mt-auto pt-4 border-t border-line text-slate">
+                      <div className="flex flex-col gap-1.5 text-xs text-slate">
                         {current.selfRisk != null && <div>Självrisk {current.selfRisk.toLocaleString("sv-SE")} kr</div>}
                         {current.forfallodatum && <div>Förfaller {current.forfallodatum}</div>}
                       </div>
+                      <div className="mt-auto">{detailLevel === "avancerat" && <AdvancedDetails quote={current} />}</div>
                     </>
                   ) : (
                     <div className="flex-1 flex flex-col items-center justify-center text-center gap-3 py-4">
@@ -161,6 +234,7 @@ export function CompareFlow({ itemId }: { itemId: string }) {
                       </div>
                     ))}
                   </div>
+                  {detailLevel === "avancerat" && <AdvancedDetails quote={cheapest} />}
                   <button
                     onClick={() => handleSign(cheapest)}
                     className="bd-btn w-full mt-auto py-3 rounded-full font-semibold text-sm text-white bg-forest"
@@ -204,6 +278,7 @@ export function CompareFlow({ itemId }: { itemId: string }) {
                       Självrisk: {winner.selfRisk.toLocaleString("sv-SE")} kr
                     </div>
                   )}
+                  {detailLevel === "avancerat" && <AdvancedDetails quote={winner} dark />}
                   <button
                     onClick={() => handleSign(winner)}
                     className="bd-btn w-full mt-auto py-3 rounded-full font-semibold text-sm bg-white"
