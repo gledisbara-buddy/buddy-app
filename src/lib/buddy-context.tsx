@@ -23,6 +23,10 @@ type BuddyState = {
   removeItem: (id: string) => void;
   policies: Record<string, Quote>;
   setPolicy: (insuranceId: string, quote: Quote) => void;
+  // Skiljer lägg-in-fasen från jämför-fasen — sätts till true när kunden
+  // uttryckligen säger att den är redo, låses aldrig om under sessionen.
+  readyToCompare: boolean;
+  setReadyToCompare: (ready: boolean) => void;
   logout: () => void;
 };
 
@@ -33,6 +37,7 @@ export function BuddyProvider({ children }: { children: ReactNode }) {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [items, setItems] = useState<InsuranceItem[]>([]);
   const [policies, setPolicies] = useState<Record<string, Quote>>({});
+  const [readyToCompare, setReadyToCompare] = useState(false);
 
   const updateProfile = (patch: Partial<Profile>) =>
     setProfile((prev) => ({ name: "", priority: null, ...prev, ...patch }));
@@ -45,6 +50,7 @@ export function BuddyProvider({ children }: { children: ReactNode }) {
     setProfile(null);
     setItems([]);
     setPolicies({});
+    setReadyToCompare(false);
   };
 
   const value = useMemo(
@@ -58,9 +64,11 @@ export function BuddyProvider({ children }: { children: ReactNode }) {
       removeItem,
       policies,
       setPolicy,
+      readyToCompare,
+      setReadyToCompare,
       logout,
     }),
-    [userType, profile, items, policies]
+    [userType, profile, items, policies, readyToCompare]
   );
 
   return <BuddyContext.Provider value={value}>{children}</BuddyContext.Provider>;

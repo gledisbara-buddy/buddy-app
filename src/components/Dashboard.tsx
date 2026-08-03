@@ -40,7 +40,7 @@ const INTRO_POINTS = [
 
 export function Dashboard({ showIntro: initialShowIntro }: { showIntro?: boolean }) {
   const router = useRouter();
-  const { userType, profile, items, removeItem, policies } = useBuddy();
+  const { userType, profile, items, removeItem, policies, readyToCompare, setReadyToCompare } = useBuddy();
   const [activeGroup, setActiveGroup] = useState<ItemGroupId | null>(null);
   const [showIntro, setShowIntro] = useState(!!initialShowIntro);
 
@@ -125,6 +125,26 @@ export function Dashboard({ showIntro: initialShowIntro }: { showIntro?: boolean
           )}
         </div>
 
+        {!readyToCompare && items.length > 0 && (
+          <div className="rounded-2xl border border-line p-5 mb-6 flex items-center justify-between gap-4 flex-wrap bg-frost-2">
+            <div className="flex items-center gap-3">
+              <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-none bg-white">
+                <Sparkles size={16} className="text-forest" />
+              </div>
+              <div>
+                <div className="text-sm font-semibold">Du lägger till dina saker just nu</div>
+                <div className="text-xs text-slate">Lägg in allt du vill hålla koll på — jämförelsen väntar tills du är redo.</div>
+              </div>
+            </div>
+            <button
+              onClick={() => setReadyToCompare(true)}
+              className="bd-btn flex items-center gap-1.5 text-sm font-semibold px-4 py-2.5 rounded-full text-white bg-forest flex-none"
+            >
+              Klar? Nu jämför vi allt <ArrowRight size={14} />
+            </button>
+          </div>
+        )}
+
         {!active ? (
           <div className="grid md:grid-cols-3 gap-4 mb-8">
             {groups.map((g) => {
@@ -147,7 +167,7 @@ export function Dashboard({ showIntro: initialShowIntro }: { showIntro?: boolean
                       ? "Inget tillagt än"
                       : `${g.items.length} ${g.items.length === 1 ? "sak" : "saker"} tillagda`}
                   </div>
-                  {g.items.length > 0 && (
+                  {g.items.length > 0 && readyToCompare && (
                     <div className="text-xs mt-auto">
                       {g.comparableCount > 0 ? (
                         <span className={g.signedCount === g.comparableCount ? "text-forest" : "text-amber-deep"}>
@@ -187,6 +207,8 @@ export function Dashboard({ showIntro: initialShowIntro }: { showIntro?: boolean
                       <div className="text-xs mb-4 text-slate">{itemSummary(item)}</div>
                       {!isComparableItem(item) ? (
                         <div className="text-xs text-slate">● Sparad — jämförelse kommer snart</div>
+                      ) : !readyToCompare ? (
+                        <div className="text-xs text-slate">● Tillagd</div>
                       ) : signed?.source === "compared" ? (
                         <>
                           <div className="text-xs mb-3 text-forest">
@@ -233,9 +255,7 @@ export function Dashboard({ showIntro: initialShowIntro }: { showIntro?: boolean
             )}
 
             <div className="grid md:grid-cols-3 gap-4">
-              {ITEM_CATEGORIES.filter(
-                (cat) => active.kinds.includes(cat.kind) && !active.items.some((i) => i.kind === cat.kind)
-              ).map((cat) => {
+              {ITEM_CATEGORIES.filter((cat) => active.kinds.includes(cat.kind)).map((cat) => {
                 const Icon = cat.icon;
                 return (
                   <button
@@ -320,6 +340,8 @@ export function Dashboard({ showIntro: initialShowIntro }: { showIntro?: boolean
               <b>Tips från Buddy:</b>{" "}
               {items.length === 0
                 ? "du har inte lagt in något än — börja med det som känns viktigast, t.ex. ditt boende eller din bil."
+                : !readyToCompare
+                ? "bra start — lägg till fler saker, eller klicka på \"Nu jämför vi allt\" ovan när du är redo."
                 : (() => {
                     const comparableCount = items.filter(isComparableItem).length;
                     const signedCount = Object.keys(policies).length;
@@ -335,7 +357,7 @@ export function Dashboard({ showIntro: initialShowIntro }: { showIntro?: boolean
                     return "snyggt — allt du lagt in är jämfört. Lägg gärna till fler saker för en komplett bild.";
                   })()}
             </p>
-            {items.length > 0 && (
+            {items.length > 0 && readyToCompare && (
               <button
                 onClick={() => router.push("/rekommendation")}
                 className="text-sm font-semibold flex items-center gap-1 text-forest"

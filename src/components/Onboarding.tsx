@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, ArrowRight, Loader2, PhoneCall, Trash2 } from "lucide-react";
+import { ArrowLeft, ArrowRight, Check, Loader2, PhoneCall, Trash2 } from "lucide-react";
 import { Logo } from "@/components/Logo";
 import { Overlay } from "@/components/Overlay";
 import { AutoFetchStep } from "@/components/onboarding/AutoFetchStep";
@@ -29,6 +29,7 @@ import {
   createItemId,
   groupForKind,
   itemSummary,
+  itemTitle,
   type Avtalstyp,
   type BatMotorTyp,
   type DjurTyp,
@@ -525,10 +526,17 @@ export function Onboarding({ mode = "full", initialKind }: { mode?: "full" | "ad
   const [addModeFor, setAddModeFor] = useState<ItemKind | null>(activeCategory);
   const [showBundlePopup, setShowBundlePopup] = useState(false);
   const bundlePopupShownRef = useRef(false);
+  const [toastMessage, setToastMessage] = useState<string | null>(null);
 
   useEffect(() => {
     if (!userType) router.replace("/kom-igang");
   }, [userType, router]);
+
+  useEffect(() => {
+    if (!toastMessage) return;
+    const t = setTimeout(() => setToastMessage(null), 2500);
+    return () => clearTimeout(t);
+  }, [toastMessage]);
 
   // Reset addMode whenever a new category is opened — adjusted during render
   // (not an effect) so the choice screen shows before the first paint.
@@ -549,6 +557,7 @@ export function Onboarding({ mode = "full", initialKind }: { mode?: "full" | "ad
   const handleItemAdded = (item: InsuranceItem, quote?: Quote) => {
     addItem(item);
     if (quote) setPolicy(item.id, quote);
+    setToastMessage(`${itemTitle(item)} inlagd`);
     if (!bundlePopupShownRef.current && groupForKind(item.kind) === "forsakring") {
       const newCount = items.filter((i) => groupForKind(i.kind) === "forsakring").length + 1;
       if (newCount > 3) {
@@ -679,6 +688,13 @@ export function Onboarding({ mode = "full", initialKind }: { mode?: "full" | "ad
             Fortsätt lägga till
           </button>
         </Overlay>
+      )}
+      {toastMessage && (
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 bd-fade">
+          <div className="flex items-center gap-2 px-4 py-3 rounded-full text-sm font-semibold text-white shadow-lg bg-ink-deep">
+            <Check size={15} className="text-forest-light" /> {toastMessage}
+          </div>
+        </div>
       )}
       <div className="w-full flex items-center justify-between px-6 py-5">
         <Logo />
