@@ -1,9 +1,17 @@
 import type { ComparableItem } from "@/lib/items";
 
-// Behovsanalys innan jämförelse — bara de fem Försäkring-kategorierna har ett
-// riskbedömnings-koncept. Telekom/Kreditkort/El har redan ett pris kunden
-// själv angett och saknar motsvarande "behov".
-export type NeedsKind = "boende" | "bil" | "ovrigt_fordon" | "person" | "djur";
+// Behovsanalys innan jämförelse — gäller alla åtta kategorier som faktiskt
+// har en jämförelsemotor (Prenumeration undantaget, den saknar fortfarande
+// en jämförelsemotor att bygga behov inför).
+export type NeedsKind =
+  | "boende"
+  | "bil"
+  | "ovrigt_fordon"
+  | "person"
+  | "djur"
+  | "telekom"
+  | "kreditkort"
+  | "el";
 
 export type NeedOption = { id: string; label: string };
 
@@ -187,12 +195,114 @@ const DJUR_QUESTIONS: NeedQuestion[] = [
   },
 ];
 
+const TELEKOM_QUESTIONS: NeedQuestion[] = [
+  {
+    id: "utomlands",
+    label: "Bra villkor utomlands",
+    type: "yesno",
+    prompt: "Reser du utomlands ofta och vill ha bra data-/samtalsvillkor där?",
+  },
+  {
+    id: "storforbrukare",
+    label: "Streamar/laddar ner mycket",
+    type: "yesno",
+    prompt: "Streamar eller laddar du ner mycket, till exempel filmer eller stora filer?",
+  },
+  {
+    id: "hemarbete",
+    label: "Beroende av stabil uppkoppling",
+    type: "yesno",
+    prompt: "Jobbar du hemifrån och är beroende av en stabil uppkoppling?",
+  },
+  {
+    id: "flera_anvandare",
+    label: "Flera i hushållet delar abonnemanget",
+    type: "yesno",
+    prompt: "Är ni flera i hushållet som delar på det här abonnemanget?",
+  },
+  {
+    id: "bindningstid",
+    label: "Ingen bindningstid",
+    type: "yesno",
+    prompt: "Vill du undvika bindningstid och kunna byta när du vill?",
+  },
+];
+
+const KREDITKORT_QUESTIONS: NeedQuestion[] = [
+  {
+    id: "utlandsresor",
+    label: "Bra villkor för utlandsköp",
+    type: "yesno",
+    prompt: "Reser du utomlands ofta och vill ha bra villkor för utländska köp och uttag?",
+  },
+  {
+    id: "stora_kop",
+    label: "Köpskydd / förlängd garanti",
+    type: "yesno",
+    prompt: "Gör du ofta större inköp och vill ha köpskydd eller förlängd garanti?",
+  },
+  {
+    id: "kontantuttag",
+    label: "Kontantuttag",
+    type: "yesno",
+    prompt: "Tar du ofta ut kontanter, i Sverige eller utomlands?",
+  },
+  {
+    id: "delat_kort",
+    label: "Extrakort till familjemedlem",
+    type: "yesno",
+    prompt: "Vill du kunna lägga till ett extrakort till en familjemedlem?",
+  },
+  {
+    id: "poang",
+    label: "Bonus / cashback",
+    type: "yesno",
+    prompt: "Är det viktigt för dig att samla bonuspoäng eller cashback på vardagsköp?",
+  },
+];
+
+const EL_QUESTIONS: NeedQuestion[] = [
+  {
+    id: "elbil",
+    label: "Elbil / laddning",
+    type: "yesno",
+    prompt: "Har du elbil, eller planerar att skaffa en, och behöver bra laddvillkor?",
+  },
+  {
+    id: "fastpris_trygghet",
+    label: "Fast pris för trygghet",
+    type: "yesno",
+    prompt: "Vill du ha ett fast pris för trygghet, även om det kan bli dyrare vid låga rörliga priser?",
+  },
+  {
+    id: "miljo",
+    label: "Förnybar/miljömärkt el",
+    type: "yesno",
+    prompt: "Är det viktigt för dig att elen är förnybar eller miljömärkt?",
+  },
+  {
+    id: "hog_forbrukning",
+    label: "Hög elförbrukning",
+    type: "yesno",
+    prompt: "Har du hög elförbrukning, till exempel på grund av värmepump, elbil eller ett stort hus?",
+  },
+  {
+    id: "solceller",
+    label: "Solceller / sälja överskottsel",
+    type: "yesno",
+    prompt: "Har du solceller, eller planerar att skaffa, och vill kunna sälja överskottsel?",
+  },
+];
+
 export const NEED_QUESTIONS: Record<NeedsKind, NeedQuestion[]> = {
   boende: BOENDE_QUESTIONS,
   bil: BIL_QUESTIONS,
   ovrigt_fordon: OVRIGT_FORDON_QUESTIONS,
   person: PERSON_QUESTIONS,
   djur: DJUR_QUESTIONS,
+  telekom: TELEKOM_QUESTIONS,
+  kreditkort: KREDITKORT_QUESTIONS,
+  el: EL_QUESTIONS,
 };
 
 // Magasinering (förvaring) saknar de flesta "hem"-behoven (reseskydd,
@@ -236,6 +346,9 @@ export const NEED_LABELS: Record<NeedsKind, Record<string, string>> = {
   ovrigt_fordon: buildLabels(OVRIGT_FORDON_QUESTIONS),
   person: buildLabels(PERSON_QUESTIONS),
   djur: buildLabels(DJUR_QUESTIONS),
+  telekom: buildLabels(TELEKOM_QUESTIONS),
+  kreditkort: buildLabels(KREDITKORT_QUESTIONS),
+  el: buildLabels(EL_QUESTIONS),
 };
 
 // Nyckelord/fraser för den simulerade fritext-tolkningen — enkel
@@ -280,6 +393,27 @@ const NEED_KEYWORDS: Record<NeedsKind, Record<string, string[]>> = {
     kronisk: ["kronisk", "sjukdom", "gammal", "äldre"],
     rasbetingad: ["ärftlig", "rasbetingad", "höftledsdysplasi", "rasrisk"],
     flerdjurshushall: ["flera djur", "fler husdjur", "syskon"],
+  },
+  telekom: {
+    utomlands: ["utomlands", "resa", "reser", "roaming"],
+    storforbrukare: ["streama", "streamar", "ladda ner", "mycket data", "4k"],
+    hemarbete: ["jobbar hemifrån", "distansarbete", "hemmakontor", "stabil uppkoppling"],
+    flera_anvandare: ["flera i hushållet", "familj", "delar", "flera användare"],
+    bindningstid: ["bindningstid", "ingen bindning", "byta när jag vill"],
+  },
+  kreditkort: {
+    utlandsresor: ["utomlands", "resa", "reser", "utlandsköp"],
+    stora_kop: ["stora inköp", "köpskydd", "garanti", "dyra köp"],
+    kontantuttag: ["kontanter", "uttag", "ta ut pengar"],
+    delat_kort: ["extrakort", "familjemedlem", "dela kortet"],
+    poang: ["bonus", "poäng", "cashback", "rabatt"],
+  },
+  el: {
+    elbil: ["elbil", "laddbox", "laddning"],
+    fastpris_trygghet: ["fast pris", "trygghet", "förutsägbart"],
+    miljo: ["miljö", "förnybar", "grön el", "miljömärkt"],
+    hog_forbrukning: ["värmepump", "stort hus", "hög förbrukning"],
+    solceller: ["solceller", "sälja el", "överskott"],
   },
 };
 

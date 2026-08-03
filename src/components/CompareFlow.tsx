@@ -24,11 +24,13 @@ export function CompareFlow({ itemId }: { itemId: string }) {
     if (!item) router.replace("/dashboard");
   }, [item, router]);
 
-  // Samma fem kategorier som har ett behovsanalys-steg har också auto-hämtning
-  // — dubbelanvänds här för att avgöra om tre-kolumnsvyn ska visas.
-  const NEEDS_KINDS: NeedsKind[] = ["boende", "bil", "ovrigt_fordon", "person", "djur"];
-  const isForsakringGroup = !!item && (NEEDS_KINDS as string[]).includes(item.kind);
-  const hasNeedsStep = isForsakringGroup;
+  // Försäkring-gruppens fem kategorier har auto-hämtning och får tre-kolumnsvyn
+  // (Nuvarande/Billigast/Rekommendation). Behovsanalysen gäller därutöver även
+  // Telekom/Kreditkort/El — de åtta kategorier som faktiskt har en jämförelsemotor.
+  const FORSAKRING_KINDS: NeedsKind[] = ["boende", "bil", "ovrigt_fordon", "person", "djur"];
+  const NEEDS_KINDS: NeedsKind[] = [...FORSAKRING_KINDS, "telekom", "kreditkort", "el"];
+  const isForsakringGroup = !!item && (FORSAKRING_KINDS as string[]).includes(item.kind);
+  const hasNeedsStep = !!item && (NEEDS_KINDS as string[]).includes(item.kind);
   const [phase, setPhase] = useState<"needs" | "loading" | "results">(hasNeedsStep ? "needs" : "loading");
   const [needs, setNeeds] = useState<string[]>([]);
   const [expanded, setExpanded] = useState<string | null>(null);

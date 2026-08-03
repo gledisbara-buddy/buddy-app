@@ -207,12 +207,13 @@ const TELEKOM_HIGHLIGHTS: Record<TelekomTyp, string[][]> = {
   ],
 };
 
-function telekomQuotes(item: Extract<ComparableItem, { kind: "telekom" }>): Quote[] {
+function telekomQuotes(item: Extract<ComparableItem, { kind: "telekom" }>, needs: string[]): Quote[] {
   const highlightSets = TELEKOM_HIGHLIGHTS[item.typ];
+  const extrasCost = needs.length * 12;
   return TELEKOM_ALT.map((alt, i) => ({
     id: alt.id,
     name: alt.name,
-    price: Math.max(29, Math.round(item.prisPerManad * alt.mult)),
+    price: Math.max(29, Math.round(item.prisPerManad * alt.mult) + extrasCost),
     rating: alt.rating,
     highlights: highlightSets[i],
   })).sort((a, b) => a.price - b.price);
@@ -242,14 +243,15 @@ const KREDITKORT_CARDS = [
   },
 ];
 
-function kreditkortQuotes(item: Extract<ComparableItem, { kind: "kreditkort" }>): Quote[] {
+function kreditkortQuotes(item: Extract<ComparableItem, { kind: "kreditkort" }>, needs: string[]): Quote[] {
+  const extrasCost = needs.length * 12;
   if (item.harReddan) {
     const baseMonthly = (item.arsavgift ?? 495) / 12;
     const mults = [0, 0.6, 1.3];
     return KREDITKORT_CARDS.map((c, i) => ({
       id: c.id,
       name: c.name,
-      price: Math.max(0, Math.round(baseMonthly * mults[i])),
+      price: Math.max(0, Math.round(baseMonthly * mults[i]) + extrasCost),
       rating: c.rating,
       highlights: c.highlights,
     })).sort((a, b) => a.price - b.price);
@@ -268,15 +270,22 @@ function kreditkortQuotes(item: Extract<ComparableItem, { kind: "kreditkort" }>)
   const ordered = preferredId
     ? [...KREDITKORT_CARDS].sort((a, b) => (a.id === preferredId ? -1 : b.id === preferredId ? 1 : 0))
     : KREDITKORT_CARDS;
-  return ordered.map((c) => ({ id: c.id, name: c.name, price: flatPrices[c.id], rating: c.rating, highlights: c.highlights }));
+  return ordered.map((c) => ({
+    id: c.id,
+    name: c.name,
+    price: flatPrices[c.id] + extrasCost,
+    rating: c.rating,
+    highlights: c.highlights,
+  }));
 }
 
-function elQuotes(item: Extract<ComparableItem, { kind: "el" }>): Quote[] {
+function elQuotes(item: Extract<ComparableItem, { kind: "el" }>, needs: string[]): Quote[] {
   const baseMonthly = ((item.arsforbrukningKwh ?? 5000) * 1.2) / 12;
+  const extrasCost = needs.length * 12;
   return [
-    { id: "klarstrom", name: "Klarström", price: Math.round(baseMonthly * 0.88), rating: 4.3, highlights: ["Rörligt pris, ingen bindningstid", "100% förnybar el", "Enkel uppsägning"] },
-    { id: "kraftpunkt", name: "Kraftpunkt", price: Math.round(baseMonthly * 0.95), rating: 4.5, highlights: ["Fast pris i 12 månader", "Prisgaranti", "Ingen påslagsavgift"] },
-    { id: "voltec", name: "Voltec", price: Math.round(baseMonthly * 1.08), rating: 4.0, highlights: ["Fast pris i 24 månader", "Bonus vid tecknande", "Elbilsrabatt"] },
+    { id: "klarstrom", name: "Klarström", price: Math.round(baseMonthly * 0.88) + extrasCost, rating: 4.3, highlights: ["Rörligt pris, ingen bindningstid", "100% förnybar el", "Enkel uppsägning"] },
+    { id: "kraftpunkt", name: "Kraftpunkt", price: Math.round(baseMonthly * 0.95) + extrasCost, rating: 4.5, highlights: ["Fast pris i 12 månader", "Prisgaranti", "Ingen påslagsavgift"] },
+    { id: "voltec", name: "Voltec", price: Math.round(baseMonthly * 1.08) + extrasCost, rating: 4.0, highlights: ["Fast pris i 24 månader", "Bonus vid tecknande", "Elbilsrabatt"] },
   ].sort((a, b) => a.price - b.price);
 }
 
@@ -293,10 +302,10 @@ export function computeItemQuotes(item: ComparableItem, extras: string[]): Quote
     case "djur":
       return djurQuotes(item, extras);
     case "telekom":
-      return telekomQuotes(item);
+      return telekomQuotes(item, extras);
     case "kreditkort":
-      return kreditkortQuotes(item);
+      return kreditkortQuotes(item, extras);
     case "el":
-      return elQuotes(item);
+      return elQuotes(item, extras);
   }
 }
