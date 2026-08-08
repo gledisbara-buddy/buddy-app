@@ -550,7 +550,7 @@ export function Onboarding({ mode = "full", initialKind }: { mode?: "full" | "ad
   const goToDashboard = () => router.push("/dashboard");
 
   const finishFull = () => {
-    updateProfile({ name: name.trim(), priority: null });
+    updateProfile({ name: name.trim() });
     router.push("/dashboard?intro=1");
   };
 

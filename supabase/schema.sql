@@ -9,7 +9,6 @@ create table if not exists public.profiles (
   id uuid primary key references auth.users(id) on delete cascade,
   user_type text not null default 'privat' check (user_type in ('privat', 'foretag')),
   name text not null default '',
-  priority text,
   personnummer text,
   phone text,
   ready_to_compare boolean not null default false,
@@ -19,6 +18,10 @@ create table if not exists public.profiles (
 -- E-post dupliceras hit från auth.users (som klienten inte får läsa direkt)
 -- så att anställda kan söka upp en kund på e-post.
 alter table public.profiles add column if not exists email text;
+
+-- priority användes tidigare för ett prioritetsval i onboardingen som togs
+-- bort — appen läser och skriver inte längre fältet.
+alter table public.profiles drop column if exists priority;
 update public.profiles p
 set email = u.email
 from auth.users u

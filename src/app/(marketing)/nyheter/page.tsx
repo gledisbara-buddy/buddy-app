@@ -1,9 +1,15 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { NEWS_ARTICLES } from "@/lib/news";
 
 function formatDate(iso: string) {
   return new Date(iso).toLocaleDateString("sv-SE", { year: "numeric", month: "long", day: "numeric" });
 }
+
+export const metadata: Metadata = {
+  title: "Nyheter & aktuellt",
+  description: "Kort och konkret om vad som är på gång i försäkringsvärlden, och tips som faktiskt gör skillnad.",
+};
 
 export default function NyheterPage() {
   return (

@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
@@ -9,6 +10,13 @@ function formatDate(iso: string) {
 
 export function generateStaticParams() {
   return NEWS_ARTICLES.map((a) => ({ slug: a.slug }));
+}
+
+export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
+  const { slug } = await params;
+  const article = getArticleBySlug(slug);
+  if (!article) return {};
+  return { title: article.title, description: article.excerpt };
 }
 
 export default async function NyhetPage({ params }: { params: Promise<{ slug: string }> }) {

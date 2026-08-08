@@ -1,5 +1,11 @@
+import type { Metadata } from "next";
 import { Briefcase, Clock, MapPin } from "lucide-react";
 import { JOB_LISTINGS } from "@/lib/jobs";
+
+export const metadata: Metadata = {
+  title: "Jobba hos oss",
+  description: "Vi bygger ett enklare sätt att hantera försäkring. Se våra just nu lediga tjänster.",
+};
 
 export default function JobbPage() {
   return (

@@ -9,7 +9,6 @@ import type { ChatMessage } from "@/lib/claim";
 
 export type Profile = {
   name: string;
-  priority: string | null;
   personnummer?: string;
   email?: string;
   phone?: string;
@@ -63,7 +62,6 @@ const BuddyContext = createContext<BuddyState | null>(null);
 type ProfileRow = {
   user_type: UserType;
   name: string;
-  priority: string | null;
   personnummer: string | null;
   phone: string | null;
   ready_to_compare: boolean;
@@ -102,7 +100,7 @@ export function BuddyProvider({ children }: { children: ReactNode }) {
   const loadForUser = useCallback(
     async (uid: string, email: string | undefined) => {
       const [{ data: profileRow }, { data: itemRows }, { data: policyRows }, { data: employeeRow }] = await Promise.all([
-        supabase.from("profiles").select("user_type, name, priority, personnummer, phone, ready_to_compare").eq("id", uid).single(),
+        supabase.from("profiles").select("user_type, name, personnummer, phone, ready_to_compare").eq("id", uid).single(),
         supabase.from("items").select("kind, data").eq("user_id", uid),
         supabase.from("policies").select("item_id, data").eq("user_id", uid),
         email ? supabase.from("employees").select("email").eq("email", email).maybeSingle() : Promise.resolve({ data: null }),
@@ -113,7 +111,6 @@ export function BuddyProvider({ children }: { children: ReactNode }) {
         setUserType(row.user_type);
         setProfile({
           name: row.name,
-          priority: row.priority,
           personnummer: row.personnummer ?? undefined,
           phone: row.phone ?? undefined,
           email,
@@ -166,11 +163,10 @@ export function BuddyProvider({ children }: { children: ReactNode }) {
 
   const updateProfile = useCallback(
     (patch: Partial<Omit<Profile, "email">>) => {
-      setProfile((prev) => ({ name: "", priority: null, ...prev, ...patch }));
+      setProfile((prev) => ({ name: "", ...prev, ...patch }));
       if (!userId) return;
       const dbPatch: Record<string, unknown> = {};
       if (patch.name !== undefined) dbPatch.name = patch.name;
-      if (patch.priority !== undefined) dbPatch.priority = patch.priority;
       if (patch.personnummer !== undefined) dbPatch.personnummer = patch.personnummer;
       if (patch.phone !== undefined) dbPatch.phone = patch.phone;
       if (Object.keys(dbPatch).length > 0) {

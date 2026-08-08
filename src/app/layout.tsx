@@ -16,7 +16,11 @@ const ibmPlexMono = IBM_Plex_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Buddy",
+  metadataBase: new URL("https://buddy-app-iota.vercel.app"),
+  title: {
+    default: "Buddy",
+    template: "%s | Buddy",
+  },
   description: "Din digitala assistent för allt du betalar för",
 };
 

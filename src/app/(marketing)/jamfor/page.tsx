@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import Image from "next/image";
 import {
   BadgeCheck,
@@ -13,6 +14,12 @@ import {
 import { CategoryCta } from "@/components/marketing/CategoryCta";
 import { StartCta } from "@/components/marketing/StartCta";
 import { ITEM_CATEGORIES, ITEM_GROUPS, type ItemGroupId, type ItemKind } from "@/lib/items";
+
+export const metadata: Metadata = {
+  title: "Jämför försäkring, mobil, kreditkort och el",
+  description:
+    "Lägg in det du har så ställer Buddy rätt frågor och visar var du kan spara — försäkring, mobil & bredband, kreditkort och el.",
+};
 
 const STATS = [
   { value: "14 500+", label: "jämförelser gjorda" },

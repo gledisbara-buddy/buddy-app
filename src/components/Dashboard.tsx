@@ -25,7 +25,6 @@ import { TopBar } from "@/components/TopBar";
 import { ProfileMenu } from "@/components/ProfileMenu";
 import { useBuddy } from "@/lib/buddy-context";
 import { daysUntilSwedishDate } from "@/lib/dates";
-import { PRIORITY_OPTIONS } from "@/lib/insurance";
 import { isComparableItem, ITEM_CATEGORIES, ITEM_GROUPS, itemSummary, itemTitle, type ItemGroupId } from "@/lib/items";
 
 const INTRO_POINTS = [
@@ -59,8 +58,6 @@ export function Dashboard({ showIntro: initialShowIntro }: { showIntro?: boolean
   };
 
   if (loading || !userType) return null;
-
-  const priorityLabel = PRIORITY_OPTIONS.find((p) => p.id === profile?.priority)?.label;
 
   const groups = ITEM_GROUPS.map((g) => {
     const groupItems = items.filter((i) => g.kinds.includes(i.kind));
@@ -112,15 +109,7 @@ export function Dashboard({ showIntro: initialShowIntro }: { showIntro?: boolean
       <div className="max-w-4xl mx-auto px-5 md:px-10 py-10 bd-fade">
         <span className="bd-eyebrow">Din översikt</span>
         <h1 className="bd-display text-3xl mt-2 mb-1">Hej {profile?.name || "där"} 👋</h1>
-        <p className="text-sm mb-8 text-slate">
-          {priorityLabel ? (
-            <>
-              Fokus just nu: <b className="text-ink">{priorityLabel}</b>. Här är läget på dina saker.
-            </>
-          ) : (
-            "Här är läget på dina saker."
-          )}
-        </p>
+        <p className="text-sm mb-8 text-slate">Här är läget på dina saker.</p>
 
         <div className="flex items-center justify-between mb-4">
           {active ? (

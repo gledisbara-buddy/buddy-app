@@ -1,6 +1,12 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { Clock } from "lucide-react";
 import { GUIDES } from "@/lib/guides";
+
+export const metadata: Metadata = {
+  title: "Guider",
+  description: "Genomgångar av hur olika försäkringar och avtal faktiskt fungerar, utan krångligt språk.",
+};
 
 export default function GuiderPage() {
   return (

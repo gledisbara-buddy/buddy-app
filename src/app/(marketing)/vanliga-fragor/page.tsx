@@ -1,5 +1,11 @@
+import type { Metadata } from "next";
 import { FaqAccordion } from "@/components/marketing/FaqAccordion";
 import { FAQ_ITEMS } from "@/lib/faq";
+
+export const metadata: Metadata = {
+  title: "Vanliga frågor",
+  description: "Kort svar på de vanligaste frågorna om Buddy och hur tjänsten fungerar.",
+};
 
 export default function VanligaFragorPage() {
   return (

@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
 import {
@@ -20,6 +21,12 @@ import { TOP_LIST } from "@/lib/top-list";
 function formatDate(iso: string) {
   return new Date(iso).toLocaleDateString("sv-SE", { year: "numeric", month: "long", day: "numeric" });
 }
+
+export const metadata: Metadata = {
+  title: "Allt du betalar för, på ett ställe",
+  description:
+    "Försäkring, mobil & bredband, kreditkort, el — Buddy samlar allt på ett ställe, hjälper dig jämföra, och finns kvar när något händer.",
+};
 
 const FEATURES = [
   {

@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Check, ChevronDown, ChevronUp, Loader2, ShieldCheck, Star, Zap } from "lucide-react";
+import { Check, Loader2, ShieldCheck, Star, Zap } from "lucide-react";
 import { Logo } from "@/components/Logo";
 import { NeedsAnalysis } from "@/components/NeedsAnalysis";
 import { Overlay } from "@/components/Overlay";
@@ -173,7 +173,6 @@ export function CompareFlow({ itemId }: { itemId: string }) {
   const hasNeedsStep = !!item && (NEEDS_KINDS as string[]).includes(item.kind);
   const [phase, setPhase] = useState<"needs" | "loading" | "results">(hasNeedsStep ? "needs" : "loading");
   const [needs, setNeeds] = useState<string[]>([]);
-  const [expanded, setExpanded] = useState<string | null>(null);
   const [showAutoFetch, setShowAutoFetch] = useState(false);
   const [detailLevel, setDetailLevel] = useState<"enkel" | "avancerat">("enkel");
   const [showTable, setShowTable] = useState(false);
@@ -189,7 +188,6 @@ export function CompareFlow({ itemId }: { itemId: string }) {
   const winnerId = pickWinner(quotes);
   const winner = quotes.find((q) => q.id === winnerId);
   const cheapest = [...quotes].sort((a, b) => a.price - b.price)[0];
-  const others = quotes.filter((q) => q.id !== winnerId);
 
   if (!item || !winner) return null;
 
@@ -489,53 +487,24 @@ export function CompareFlow({ itemId }: { itemId: string }) {
                 </button>
               </div>
 
-              <div className="text-sm font-semibold mb-3 text-slate">Andra alternativ</div>
-              <div className="flex flex-col gap-3">
-                {others.map((q) => {
-                  const isOpen = expanded === q.id;
-                  return (
-                    <div key={q.id} className="bg-white rounded-2xl border border-line">
-                      <button
-                        onClick={() => setExpanded(isOpen ? null : q.id)}
-                        className="w-full flex items-center justify-between p-4"
-                      >
-                        <div className="flex items-center gap-3">
-                          <div className="w-9 h-9 rounded-lg flex items-center justify-center bg-frost-2">
-                            <ShieldCheck size={16} className="text-forest" />
-                          </div>
-                          <div className="text-left">
-                            <div className="font-semibold text-sm">{q.name}</div>
-                            <div className="text-xs text-slate">
-                              Betyg {q.rating} / 5
-                              {q.selfRisk != null && <> · Självrisk {q.selfRisk.toLocaleString("sv-SE")} kr</>}
-                            </div>
-                          </div>
-                        </div>
-                        <div className="flex items-center gap-3">
-                          <div className="font-semibold text-sm">{q.price} kr/mån</div>
-                          {isOpen ? <ChevronUp size={16} className="text-slate" /> : <ChevronDown size={16} className="text-slate" />}
-                        </div>
-                      </button>
-                      {isOpen && (
-                        <div className="px-4 pb-4 bd-fade">
-                          <div className="flex flex-col gap-2 mb-4">
-                            {q.highlights.map((h, i) => (
-                              <div key={i} className="flex items-start gap-2 text-sm">
-                                <Check size={14} className="mt-0.5 flex-none text-forest" /> {h}
-                              </div>
-                            ))}
-                          </div>
-                          <button
-                            onClick={() => handleSign(q)}
-                            className="bd-btn w-full py-3 rounded-full font-semibold text-sm text-white bg-forest"
-                          >
-                            Teckna {q.name} →
-                          </button>
-                        </div>
-                      )}
-                    </div>
-                  );
-                })}
+              <div>
+                <button
+                  onClick={() => setShowTable((v) => !v)}
+                  className="text-xs font-semibold text-forest hover:opacity-80"
+                >
+                  {showTable ? "Dölj tabellen" : `Se alla ${quotes.length} alternativ i en tabell`}
+                </button>
+                {showTable && (
+                  <div className="mt-4 bg-white rounded-3xl border border-line p-5 bd-fade">
+                    <ComparisonTable
+                      quotes={quotes}
+                      winnerId={winnerId}
+                      cheapestId={cheapest.id}
+                      detailLevel="enkel"
+                      onSign={handleSign}
+                    />
+                  </div>
+                )}
               </div>
               <p className="text-xs text-center mt-8 text-slate">
                 Bolagsnamn i den här prototypen är fiktiva exempel.

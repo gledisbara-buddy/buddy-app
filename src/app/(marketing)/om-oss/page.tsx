@@ -1,5 +1,12 @@
+import type { Metadata } from "next";
 import Image from "next/image";
 import { Heart, Lightbulb, ShieldCheck } from "lucide-react";
+
+export const metadata: Metadata = {
+  title: "Om oss",
+  description:
+    "Buddy hjälper dig samla, jämföra och hålla koll på allt du betalar för — försäkring, mobil, kreditkort och el — på ett ställe.",
+};
 
 const VALUES = [
   {

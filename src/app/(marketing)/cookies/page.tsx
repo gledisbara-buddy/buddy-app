@@ -1,4 +1,10 @@
+import type { Metadata } from "next";
 import { LegalPage } from "@/components/marketing/LegalPage";
+
+export const metadata: Metadata = {
+  title: "Cookies",
+  description: "Hur Buddy använder cookies.",
+};
 
 export default function CookiesPage() {
   return (

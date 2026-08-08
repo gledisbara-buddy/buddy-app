@@ -1,4 +1,10 @@
+import type { Metadata } from "next";
 import { Clock, Mail, MapPin, Phone } from "lucide-react";
+
+export const metadata: Metadata = {
+  title: "Kontakt",
+  description: "Så når du Buddys kundtjänst — telefon, e-post och kontor.",
+};
 
 const CHANNELS = [
   { icon: Phone, title: "Telefon", value: "010-123 45 67", desc: "Vardagar 8–18" },
