@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import {
   ArrowLeft,
   ArrowRight,
+  Baby,
   CalendarDays,
   ChevronRight,
   HeartPulse,
@@ -16,6 +17,7 @@ import {
   Sparkles,
   Star,
   Trash2,
+  Truck,
 } from "lucide-react";
 import { Overlay } from "@/components/Overlay";
 import { TopBar } from "@/components/TopBar";
@@ -394,6 +396,32 @@ export function Dashboard({ showIntro: initialShowIntro }: { showIntro?: boolean
               className="bd-btn self-start mt-4 px-4 py-2 rounded-full text-sm font-semibold text-white bg-forest"
             >
               Gör hälsokollen
+            </button>
+          </div>
+        </div>
+
+        <div className="rounded-2xl border border-line p-5 mb-4 bg-white">
+          <div className="text-sm font-semibold mb-3">Något på gång i livet?</div>
+          <div className="grid sm:grid-cols-2 gap-3">
+            <button
+              onClick={() => router.push("/livshandelser?event=flytt")}
+              className="flex items-center gap-3 rounded-xl border border-line p-3 text-left hover:bg-frost"
+            >
+              <div className="w-9 h-9 rounded-lg flex items-center justify-center flex-none bg-frost-2">
+                <Truck size={16} className="text-forest" />
+              </div>
+              <span className="text-sm font-medium">Jag ska flytta</span>
+              <ArrowRight size={14} className="ml-auto text-slate" />
+            </button>
+            <button
+              onClick={() => router.push("/livshandelser?event=barn")}
+              className="flex items-center gap-3 rounded-xl border border-line p-3 text-left hover:bg-frost"
+            >
+              <div className="w-9 h-9 rounded-lg flex items-center justify-center flex-none bg-frost-2">
+                <Baby size={16} className="text-forest" />
+              </div>
+              <span className="text-sm font-medium">Vi väntar barn</span>
+              <ArrowRight size={14} className="ml-auto text-slate" />
             </button>
           </div>
         </div>
