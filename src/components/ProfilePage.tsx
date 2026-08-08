@@ -10,19 +10,34 @@ import { useBuddy } from "@/lib/buddy-context";
 
 export function ProfilePage() {
   const router = useRouter();
-  const { userType, profile, updateProfile } = useBuddy();
+  const { userType, loading, profile, updateProfile } = useBuddy();
 
   useEffect(() => {
-    if (!userType) router.replace("/kom-igang");
-  }, [userType, router]);
+    if (!loading && !userType) router.replace("/kom-igang");
+  }, [loading, userType, router]);
 
   const [name, setName] = useState(profile?.name ?? "");
   const [personnummer, setPersonnummer] = useState(profile?.personnummer ?? "");
   const [email, setEmail] = useState(profile?.email ?? "");
   const [phone, setPhone] = useState(profile?.phone ?? "");
   const [saved, setSaved] = useState(false);
+  const [syncedLoading, setSyncedLoading] = useState(loading);
 
-  if (!userType) return null;
+  // profile laddas asynkront från Supabase, så formuläret måste synkas om
+  // en gång när det blir klart — useState:s initialvärde fångas annars bara
+  // vid första renderingen (då profile fortfarande är null). Justeras under
+  // rendering (samma mönster som NeedsAnalysis.tsx), inte i en effekt.
+  if (loading !== syncedLoading) {
+    setSyncedLoading(loading);
+    if (!loading && profile) {
+      setName(profile.name);
+      setPersonnummer(profile.personnummer ?? "");
+      setEmail(profile.email ?? "");
+      setPhone(profile.phone ?? "");
+    }
+  }
+
+  if (loading || !userType) return null;
 
   const idLabel = userType === "foretag" ? "Organisationsnummer" : "Personnummer";
 

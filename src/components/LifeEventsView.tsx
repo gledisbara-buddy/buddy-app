@@ -12,14 +12,14 @@ const EVENT_ICONS: Record<LifeEventId, typeof Truck> = { flytt: Truck, barn: Bab
 
 export function LifeEventsView({ initialEvent }: { initialEvent?: LifeEventId }) {
   const router = useRouter();
-  const { userType, items } = useBuddy();
+  const { userType, loading, items } = useBuddy();
   const [event, setEvent] = useState<LifeEventId | null>(initialEvent ?? null);
 
   useEffect(() => {
-    if (!userType) router.replace("/kom-igang");
-  }, [userType, router]);
+    if (!loading && !userType) router.replace("/kom-igang");
+  }, [loading, userType, router]);
 
-  if (!userType) return null;
+  if (loading || !userType) return null;
 
   const selectEvent = (id: LifeEventId) => {
     setEvent(id);

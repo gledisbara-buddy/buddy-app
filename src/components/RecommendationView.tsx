@@ -10,13 +10,13 @@ import { buildRecommendation } from "@/lib/recommendation";
 
 export function RecommendationView() {
   const router = useRouter();
-  const { userType, items, policies, profile } = useBuddy();
+  const { userType, loading, items, policies, profile } = useBuddy();
 
   useEffect(() => {
-    if (!userType) router.replace("/kom-igang");
-  }, [userType, router]);
+    if (!loading && !userType) router.replace("/kom-igang");
+  }, [loading, userType, router]);
 
-  if (!userType) return null;
+  if (loading || !userType) return null;
 
   const rec = buildRecommendation(items, policies, profile);
 

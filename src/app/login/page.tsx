@@ -1,5 +1,5 @@
 import { redirect } from "next/navigation";
-import { BankIdLogin } from "@/components/BankIdLogin";
+import { AuthForm } from "@/components/AuthForm";
 import type { UserType } from "@/lib/types";
 
 export default async function LoginPage({
@@ -12,5 +12,5 @@ export default async function LoginPage({
     redirect("/kom-igang");
   }
 
-  return <BankIdLogin userType={type as UserType} />;
+  return <AuthForm userType={type as UserType} />;
 }

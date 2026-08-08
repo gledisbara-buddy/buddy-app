@@ -9,24 +9,39 @@ import { CHAT_SUGGESTIONS, getCannedReply, randomDelay, type ChatMessage } from 
 
 export function ChatScreen() {
   const router = useRouter();
-  const { userType, profile } = useBuddy();
+  const { userType, loading: authLoading, profile } = useBuddy();
 
   useEffect(() => {
-    if (!userType) router.replace("/kom-igang");
-  }, [userType, router]);
+    if (!authLoading && !userType) router.replace("/kom-igang");
+  }, [authLoading, userType, router]);
 
   const [messages, setMessages] = useState<ChatMessage[]>([
     { role: "assistant", content: `Hej ${profile?.name || "där"}. Vad kan jag hjälpa dig med?` },
   ]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
+  const [syncedAuthLoading, setSyncedAuthLoading] = useState(authLoading);
   const scrollRef = useRef<HTMLDivElement>(null);
+
+  // profile laddas asynkront — hälsningen (satt vid mount) hinner ibland
+  // före, så den uppdateras en gång när laddningen är klar. Justeras under
+  // rendering (samma mönster som NeedsAnalysis.tsx), inte i en effekt.
+  if (authLoading !== syncedAuthLoading) {
+    setSyncedAuthLoading(authLoading);
+    if (!authLoading) {
+      setMessages((prev) =>
+        prev.length === 1 && prev[0].role === "assistant"
+          ? [{ role: "assistant", content: `Hej ${profile?.name || "där"}. Vad kan jag hjälpa dig med?` }]
+          : prev
+      );
+    }
+  }
 
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
   }, [messages, loading]);
 
-  if (!userType) return null;
+  if (authLoading || !userType) return null;
 
   const send = (text?: string) => {
     const content = (text ?? input).trim();

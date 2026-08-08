@@ -10,13 +10,13 @@ import { buildHealthCheck } from "@/lib/health-check";
 
 export function HealthCheckView() {
   const router = useRouter();
-  const { userType, items, policies } = useBuddy();
+  const { userType, loading, items, policies } = useBuddy();
 
   useEffect(() => {
-    if (!userType) router.replace("/kom-igang");
-  }, [userType, router]);
+    if (!loading && !userType) router.replace("/kom-igang");
+  }, [loading, userType, router]);
 
-  if (!userType) return null;
+  if (loading || !userType) return null;
 
   const check = buildHealthCheck(items, policies);
   const comparableCount = check.comparedCount + check.uncomparedCount;

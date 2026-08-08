@@ -45,20 +45,20 @@ const INTRO_POINTS = [
 
 export function Dashboard({ showIntro: initialShowIntro }: { showIntro?: boolean }) {
   const router = useRouter();
-  const { userType, profile, items, removeItem, policies, readyToCompare, setReadyToCompare } = useBuddy();
+  const { userType, loading, profile, items, removeItem, policies, readyToCompare, setReadyToCompare } = useBuddy();
   const [activeGroup, setActiveGroup] = useState<ItemGroupId | null>(null);
   const [showIntro, setShowIntro] = useState(!!initialShowIntro);
 
   useEffect(() => {
-    if (!userType) router.replace("/kom-igang");
-  }, [userType, router]);
+    if (!loading && !userType) router.replace("/kom-igang");
+  }, [loading, userType, router]);
 
   const closeIntro = () => {
     setShowIntro(false);
     router.replace("/dashboard");
   };
 
-  if (!userType) return null;
+  if (loading || !userType) return null;
 
   const priorityLabel = PRIORITY_OPTIONS.find((p) => p.id === profile?.priority)?.label;
 

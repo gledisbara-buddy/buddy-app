@@ -516,7 +516,7 @@ const CATEGORY_FORMS: Record<ItemKind, React.ComponentType<{ onSave: (item: Insu
 
 export function Onboarding({ mode = "full", initialKind }: { mode?: "full" | "add"; initialKind?: ItemKind }) {
   const router = useRouter();
-  const { userType, items, addItem, removeItem, updateProfile, setPolicy } = useBuddy();
+  const { userType, loading, items, addItem, removeItem, updateProfile, setPolicy } = useBuddy();
   const phase = mode === "add" ? "hub" : "name";
   const [name, setName] = useState("");
   const [activeCategory, setActiveCategory] = useState<ItemKind | null>(mode === "add" ? initialKind ?? null : null);
@@ -529,8 +529,8 @@ export function Onboarding({ mode = "full", initialKind }: { mode?: "full" | "ad
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!userType) router.replace("/kom-igang");
-  }, [userType, router]);
+    if (!loading && !userType) router.replace("/kom-igang");
+  }, [loading, userType, router]);
 
   useEffect(() => {
     if (!toastMessage) return;
@@ -545,7 +545,7 @@ export function Onboarding({ mode = "full", initialKind }: { mode?: "full" | "ad
     setAddMode(activeCategory ? (groupForKind(activeCategory) === "forsakring" ? "choice" : "manual") : null);
   }
 
-  if (!userType) return null;
+  if (loading || !userType) return null;
 
   const goToDashboard = () => router.push("/dashboard");
 

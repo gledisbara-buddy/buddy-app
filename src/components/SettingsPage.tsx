@@ -10,18 +10,18 @@ import { useBuddy } from "@/lib/buddy-context";
 
 export function SettingsPage() {
   const router = useRouter();
-  const { userType } = useBuddy();
+  const { userType, loading } = useBuddy();
 
   useEffect(() => {
-    if (!userType) router.replace("/kom-igang");
-  }, [userType, router]);
+    if (!loading && !userType) router.replace("/kom-igang");
+  }, [loading, userType, router]);
 
   const [emailNotis, setEmailNotis] = useState<"ja" | "nej" | null>("ja");
   const [smsNotis, setSmsNotis] = useState<"ja" | "nej" | null>("nej");
   const [sprak, setSprak] = useState<"sv" | "en" | null>("sv");
   const [saved, setSaved] = useState(false);
 
-  if (!userType) return null;
+  if (loading || !userType) return null;
 
   const handleSave = () => {
     setSaved(true);

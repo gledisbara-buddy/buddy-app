@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Check, Copy, Gift } from "lucide-react";
 import { TopBar } from "@/components/TopBar";
@@ -15,13 +15,15 @@ function generateCode(name?: string | null): string {
 
 export function ReferralView() {
   const router = useRouter();
-  const { userType, profile } = useBuddy();
-  const [code] = useState(() => generateCode(profile?.name));
+  const { userType, loading, profile } = useBuddy();
+  // profile laddas asynkront, så koden härleds via useMemo (inte en lazy
+  // useState-initializer, som skulle fånga profile innan den hunnit ladda).
+  const code = useMemo(() => generateCode(profile?.name), [profile?.name]);
   const [copied, setCopied] = useState(false);
 
   useEffect(() => {
-    if (!userType) router.replace("/kom-igang");
-  }, [userType, router]);
+    if (!loading && !userType) router.replace("/kom-igang");
+  }, [loading, userType, router]);
 
   useEffect(() => {
     if (!copied) return;
@@ -29,7 +31,7 @@ export function ReferralView() {
     return () => clearTimeout(t);
   }, [copied]);
 
-  if (!userType) return null;
+  if (loading || !userType) return null;
 
   const handleCopy = () => {
     navigator.clipboard.writeText(code);
