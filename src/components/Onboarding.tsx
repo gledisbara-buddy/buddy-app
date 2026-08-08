@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { ArrowLeft, ArrowRight, Check, Loader2, PhoneCall, Trash2 } from "lucide-react";
 import { Logo } from "@/components/Logo";
-import { Overlay } from "@/components/Overlay";
+import { ConfirmDialog, Overlay } from "@/components/Overlay";
 import { AutoFetchStep } from "@/components/onboarding/AutoFetchStep";
 import { BoendeForm } from "@/components/onboarding/BoendeForm";
 import { TelekomForm } from "@/components/onboarding/TelekomForm";
@@ -527,6 +527,7 @@ export function Onboarding({ mode = "full", initialKind }: { mode?: "full" | "ad
   const [showBundlePopup, setShowBundlePopup] = useState(false);
   const bundlePopupShownRef = useRef(false);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
+  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
 
   useEffect(() => {
     if (!loading && !userType) router.replace("/kom-igang");
@@ -708,7 +709,7 @@ export function Onboarding({ mode = "full", initialKind }: { mode?: "full" | "ad
             Lägg till en sak i taget — du kan alltid lägga till fler senare.
           </p>
 
-          <div className="grid grid-cols-2 gap-3 mb-8">
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-3 mb-8">
             {ITEM_CATEGORIES.map((cat) => {
               const Icon = cat.icon;
               const itemsInCategory = items.filter((i) => i.kind === cat.kind);
@@ -740,12 +741,25 @@ export function Onboarding({ mode = "full", initialKind }: { mode?: "full" | "ad
                   className="flex items-center justify-between px-4 py-3 rounded-xl bg-white border border-line"
                 >
                   <div className="text-sm">{itemSummary(item)}</div>
-                  <button onClick={() => removeItem(item.id)} className="opacity-50 hover:opacity-100">
+                  <button onClick={() => setConfirmDeleteId(item.id)} className="opacity-50 hover:opacity-100">
                     <Trash2 size={15} />
                   </button>
                 </div>
               ))}
             </div>
+          )}
+
+          {confirmDeleteId && (
+            <ConfirmDialog
+              title="Ta bort den här saken?"
+              body="Den försvinner från din översikt och tas bort permanent."
+              confirmLabel="Ta bort"
+              onConfirm={() => {
+                removeItem(confirmDeleteId);
+                setConfirmDeleteId(null);
+              }}
+              onCancel={() => setConfirmDeleteId(null)}
+            />
           )}
 
           <button

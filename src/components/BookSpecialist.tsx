@@ -6,7 +6,7 @@ import { ArrowLeft, CalendarPlus, Check, Clock, Phone, Video } from "lucide-reac
 import { Logo } from "@/components/Logo";
 import { ProgressDots } from "@/components/ProgressDots";
 import { useBuddy } from "@/lib/buddy-context";
-import { MONTHS, nextWeekdays, TIME_SLOTS, WEEKDAYS } from "@/lib/booking";
+import { buildIcsFile, MONTHS, nextWeekdays, TIME_SLOTS, WEEKDAYS } from "@/lib/booking";
 import { itemSummary, itemTitle } from "@/lib/items";
 
 function toIsoDate(d: Date): string {
@@ -44,6 +44,42 @@ export function BookSpecialist() {
       return;
     }
     setStep(step - 1);
+  };
+
+  const addToCalendar = () => {
+    if (!time) return;
+    const start = new Date(day);
+    const [h, m] = time.split(":").map(Number);
+    start.setHours(h, m, 0, 0);
+    const topicLabels = topics
+      .map((t) => {
+        const fixed = FIXED_TOPICS.find((f) => f.id === t);
+        if (fixed) return fixed.label;
+        const item = items.find((i) => i.id === t);
+        return item ? itemTitle(item) : null;
+      })
+      .filter((label): label is string => !!label);
+    const description = [
+      meetingType === "video" ? "Videosamtal med en rådgivare från Buddy." : "Telefonsamtal med en rådgivare från Buddy.",
+      topicLabels.length > 0 ? `Gäller: ${topicLabels.join(", ")}.` : "",
+      extraNote.trim(),
+    ]
+      .filter(Boolean)
+      .join("\n");
+
+    const ics = buildIcsFile({
+      start,
+      durationMinutes: 20,
+      title: meetingType === "video" ? "Videosamtal med Buddy-rådgivare" : "Telefonsamtal med Buddy-rådgivare",
+      description,
+    });
+    const blob = new Blob([ics], { type: "text/calendar;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "buddy-mote.ics";
+    a.click();
+    URL.revokeObjectURL(url);
   };
 
   return (
@@ -175,7 +211,7 @@ export function BookSpecialist() {
             <>
               <span className="bd-eyebrow">Boka specialist</span>
               <h1 className="bd-display text-2xl md:text-3xl mt-3 mb-2">Välj dag och tid</h1>
-              <div className="flex gap-2 overflow-x-auto pb-2 mb-5">
+              <div className="bd-scroll flex gap-2 overflow-x-auto pb-2 mb-5">
                 {days.map((d, i) => {
                   const active = i === dayIdx;
                   return (
@@ -336,7 +372,10 @@ export function BookSpecialist() {
                   </div>
                 </div>
               )}
-              <button className="bd-btn w-full mb-3 flex items-center justify-center gap-2 py-3.5 rounded-full font-semibold text-white text-[15px] bg-forest">
+              <button
+                onClick={addToCalendar}
+                className="bd-btn w-full mb-3 flex items-center justify-center gap-2 py-3.5 rounded-full font-semibold text-white text-[15px] bg-forest"
+              >
                 <CalendarPlus size={16} /> Lägg till i kalender
               </button>
               <button

@@ -20,7 +20,7 @@ import {
   Trash2,
   Truck,
 } from "lucide-react";
-import { Overlay } from "@/components/Overlay";
+import { ConfirmDialog, Overlay } from "@/components/Overlay";
 import { TopBar } from "@/components/TopBar";
 import { ProfileMenu } from "@/components/ProfileMenu";
 import { useBuddy } from "@/lib/buddy-context";
@@ -47,6 +47,7 @@ export function Dashboard({ showIntro: initialShowIntro }: { showIntro?: boolean
   const { userType, loading, profile, items, removeItem, policies, readyToCompare, setReadyToCompare } = useBuddy();
   const [activeGroup, setActiveGroup] = useState<ItemGroupId | null>(null);
   const [showIntro, setShowIntro] = useState(!!initialShowIntro);
+  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
 
   useEffect(() => {
     if (!loading && !userType) router.replace("/kom-igang");
@@ -104,6 +105,18 @@ export function Dashboard({ showIntro: initialShowIntro }: { showIntro?: boolean
             Kom igång
           </button>
         </Overlay>
+      )}
+      {confirmDeleteId && (
+        <ConfirmDialog
+          title="Ta bort den här saken?"
+          body="Den försvinner från din översikt och tas bort permanent."
+          confirmLabel="Ta bort"
+          onConfirm={() => {
+            removeItem(confirmDeleteId);
+            setConfirmDeleteId(null);
+          }}
+          onCancel={() => setConfirmDeleteId(null)}
+        />
       )}
       <TopBar right={<ProfileMenu />} />
       <div className="max-w-4xl mx-auto px-5 md:px-10 py-10 bd-fade">
@@ -270,7 +283,7 @@ export function Dashboard({ showIntro: initialShowIntro }: { showIntro?: boolean
                             return <Icon size={18} className="text-forest" />;
                           })()}
                         </div>
-                        <button onClick={() => removeItem(item.id)} className="opacity-40 hover:opacity-100">
+                        <button onClick={() => setConfirmDeleteId(item.id)} className="opacity-40 hover:opacity-100">
                           <Trash2 size={15} />
                         </button>
                       </div>

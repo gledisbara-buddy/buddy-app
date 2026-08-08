@@ -36,7 +36,7 @@ export function LifeEventsView({ initialEvent }: { initialEvent?: LifeEventId })
         <span className="bd-eyebrow">Livshändelser</span>
 
         {active ? (
-          <>
+          <div key={event} className="bd-fade">
             <h1 className="bd-display text-3xl mt-2 mb-2">{active.title}</h1>
             <p className="text-sm mb-6 text-slate">{active.intro}</p>
             <div className="flex flex-col gap-3 mb-6">
@@ -65,9 +65,9 @@ export function LifeEventsView({ initialEvent }: { initialEvent?: LifeEventId })
             >
               {event === "flytt" ? "Väntar du barn istället?" : "Ska du flytta istället?"}
             </button>
-          </>
+          </div>
         ) : (
-          <>
+          <div key="none" className="bd-fade">
             <h1 className="bd-display text-3xl mt-2 mb-2">Något på gång i livet?</h1>
             <p className="text-sm mb-6 text-slate">Välj det som stämmer, så guidar vi dig genom vad som är bra att tänka på.</p>
             <div className="grid sm:grid-cols-2 gap-3 mb-8">
@@ -87,7 +87,7 @@ export function LifeEventsView({ initialEvent }: { initialEvent?: LifeEventId })
                 );
               })}
             </div>
-          </>
+          </div>
         )}
 
         <div className="mb-6">

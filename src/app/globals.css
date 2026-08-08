@@ -12,6 +12,11 @@
   --color-amber-deep: #bd8730;
   --color-slate: #7c8896;
   --color-line: rgba(51, 70, 92, 0.14);
+  /* Samma toner som --color-frost/--color-ink, bara med alpha — så
+     halvgenomskinliga ytor (topbars, overlay-scrim) inte behöver hårdkoda
+     om samma rgb-värden på egen hand. */
+  --color-frost-90: rgba(245, 247, 250, 0.9);
+  --color-scrim: rgba(51, 70, 92, 0.45);
 }
 
 @theme inline {
@@ -25,6 +30,8 @@
   --color-amber-deep: var(--color-amber-deep);
   --color-slate: var(--color-slate);
   --color-line: var(--color-line);
+  --color-frost-90: var(--color-frost-90);
+  --color-scrim: var(--color-scrim);
 
   --font-display: var(--font-inter);
   --font-sans: var(--font-inter);
@@ -63,6 +70,18 @@ body {
   to {
     opacity: 1;
     transform: translateY(0);
+  }
+}
+
+.bd-scrim {
+  animation: bdScrim 0.2s ease both;
+}
+@keyframes bdScrim {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
   }
 }
 

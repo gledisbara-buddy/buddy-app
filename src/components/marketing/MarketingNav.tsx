@@ -24,7 +24,7 @@ export function MarketingNav() {
   return (
     <header
       className="w-full flex items-center justify-between gap-4 px-5 md:px-10 py-4 border-b border-line flex-wrap"
-      style={{ background: "rgba(245,247,250,0.9)" }}
+      style={{ background: "var(--color-frost-90)" }}
     >
       <Logo />
       <nav className="flex items-center gap-1 flex-wrap">

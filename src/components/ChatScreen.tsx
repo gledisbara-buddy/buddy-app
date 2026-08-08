@@ -67,12 +67,17 @@ export function ChatScreen() {
       <TopBar
         onBack={() => router.push("/dashboard")}
         right={
-          <button
-            onClick={() => router.push("/book")}
-            className="hidden sm:flex items-center gap-1.5 text-xs font-semibold px-3 py-2 rounded-full text-white bg-forest"
-          >
-            <CalendarDays size={13} /> Boka specialist
-          </button>
+          <div className="flex items-center gap-2">
+            <span className="text-xs font-medium px-2.5 py-1 rounded-full bg-frost-2 text-forest whitespace-nowrap">
+              Demo-läge
+            </span>
+            <button
+              onClick={() => router.push("/book")}
+              className="hidden sm:flex items-center gap-1.5 text-xs font-semibold px-3 py-2 rounded-full text-white bg-forest"
+            >
+              <CalendarDays size={13} /> Boka specialist
+            </button>
+          </div>
         }
       />
       <div ref={scrollRef} className="bd-scroll flex-1 overflow-y-auto px-5 md:px-8 py-6">

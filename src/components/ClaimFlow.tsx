@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Camera, Check, CircleDot, Receipt, Send, Sparkles, X } from "lucide-react";
+import { ConfirmDialog } from "@/components/Overlay";
 import { TopBar } from "@/components/TopBar";
 import { useBuddy } from "@/lib/buddy-context";
 import { buildClassification, getIntakeReply, type Classification, type ChatMessage } from "@/lib/claim";
@@ -23,8 +24,17 @@ export function ClaimFlow() {
   const [photos, setPhotos] = useState<UploadedFile[]>([]);
   const [receipts, setReceipts] = useState<UploadedFile[]>([]);
   const [classification, setClassification] = useState<Classification | null>(null);
+  const [confirmLeave, setConfirmLeave] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   const exchanges = messages.filter((m) => m.role === "user").length;
+
+  const handleBack = () => {
+    if (exchanges > 0 && phase !== "confirmed") {
+      setConfirmLeave(true);
+      return;
+    }
+    router.push("/dashboard");
+  };
 
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
@@ -82,7 +92,20 @@ export function ClaimFlow() {
 
   return (
     <div className="h-screen w-full flex flex-col">
-      <TopBar onBack={() => router.push("/dashboard")} right={<span className="bd-eyebrow">Skadeanmälan</span>} />
+      <TopBar onBack={handleBack} right={<span className="bd-eyebrow">Skadeanmälan</span>} />
+
+      {confirmLeave && (
+        <ConfirmDialog
+          title="Avbryta skadeanmälan?"
+          body="Det du redan berättat sparas inte om du går tillbaka nu."
+          confirmLabel="Avbryt anmälan"
+          onConfirm={() => {
+            setConfirmLeave(false);
+            router.push("/dashboard");
+          }}
+          onCancel={() => setConfirmLeave(false)}
+        />
+      )}
 
       {phase === "chat" && (
         <>
@@ -129,14 +152,14 @@ export function ClaimFlow() {
           </div>
           <div className="px-5 md:px-8 pb-4 flex-none">
             <div className="max-w-2xl mx-auto">
-              {exchanges >= 2 && (
-                <button
-                  onClick={() => setPhase("upload")}
-                  className="bd-btn w-full mb-3 flex items-center justify-center gap-2 py-3 rounded-full font-semibold text-white text-sm bg-forest"
-                >
-                  <Camera size={15} /> Fortsätt till foton & kvitton
-                </button>
-              )}
+              <button
+                onClick={() => setPhase("upload")}
+                className={`bd-btn w-full mb-3 flex items-center justify-center gap-2 py-3 rounded-full font-semibold text-sm ${
+                  exchanges >= 2 ? "text-white bg-forest" : "text-forest bg-white border border-line"
+                }`}
+              >
+                <Camera size={15} /> {exchanges >= 2 ? "Fortsätt till foton & kvitton" : "Hoppa till foton & kvitton"}
+              </button>
               <div className="flex items-end gap-2 bg-white rounded-2xl border border-line p-2">
                 <textarea
                   value={input}
