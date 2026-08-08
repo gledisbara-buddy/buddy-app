@@ -5,6 +5,7 @@ import { createClient } from "@/lib/supabase/client";
 import type { UserType } from "@/lib/types";
 import type { Quote } from "@/lib/quote";
 import type { InsuranceItem } from "@/lib/items";
+import type { ChatMessage } from "@/lib/claim";
 
 export type Profile = {
   name: string;
@@ -14,13 +15,33 @@ export type Profile = {
   phone?: string;
 };
 
+export type BookingInput = {
+  topics: string[];
+  extraNote: string;
+  meetingType: "video" | "phone";
+  day: string; // ISO-datum (YYYY-MM-DD)
+  time: string;
+  contact: string;
+};
+
+export type ClaimInput = {
+  transcript: ChatMessage[];
+  photoCount: number;
+  receiptCount: number;
+  skadetyp?: string;
+  allvarlighetsgrad?: string;
+};
+
 type BuddyState = {
   // Sant fram tills den första sessions-kontrollen mot Supabase är klar —
   // guardade sidor ska vänta med att redirecta till /kom-igang tills dess.
   loading: boolean;
   userType: UserType | null;
   profile: Profile | null;
-  updateProfile: (patch: Partial<Profile>) => void;
+  // `email` kommer alltid från Supabase Auth (den riktiga inloggningsmejlen)
+  // och kan inte skrivas via profiles-tabellen — se ProfilePage för hur en
+  // riktig mejländring görs (supabase.auth.updateUser).
+  updateProfile: (patch: Partial<Omit<Profile, "email">>) => void;
   items: InsuranceItem[];
   addItem: (item: InsuranceItem) => void;
   removeItem: (id: string) => void;
@@ -30,6 +51,10 @@ type BuddyState = {
   // uttryckligen säger att den är redo, låses aldrig om under sessionen.
   readyToCompare: boolean;
   setReadyToCompare: (ready: boolean) => void;
+  // Sant om e-posten finns i `employees`-tabellen — styr åtkomst till /internt.
+  isEmployee: boolean;
+  submitBooking: (input: BookingInput) => void;
+  submitClaim: (input: ClaimInput) => void;
   logout: () => void;
 };
 
@@ -62,6 +87,7 @@ export function BuddyProvider({ children }: { children: ReactNode }) {
   const [items, setItems] = useState<InsuranceItem[]>([]);
   const [policies, setPolicies] = useState<Record<string, Quote>>({});
   const [readyToCompare, setReadyToCompareState] = useState(false);
+  const [isEmployee, setIsEmployee] = useState(false);
 
   const resetLocalState = () => {
     setUserId(null);
@@ -70,14 +96,16 @@ export function BuddyProvider({ children }: { children: ReactNode }) {
     setItems([]);
     setPolicies({});
     setReadyToCompareState(false);
+    setIsEmployee(false);
   };
 
   const loadForUser = useCallback(
     async (uid: string, email: string | undefined) => {
-      const [{ data: profileRow }, { data: itemRows }, { data: policyRows }] = await Promise.all([
+      const [{ data: profileRow }, { data: itemRows }, { data: policyRows }, { data: employeeRow }] = await Promise.all([
         supabase.from("profiles").select("user_type, name, priority, personnummer, phone, ready_to_compare").eq("id", uid).single(),
         supabase.from("items").select("kind, data").eq("user_id", uid),
         supabase.from("policies").select("item_id, data").eq("user_id", uid),
+        email ? supabase.from("employees").select("email").eq("email", email).maybeSingle() : Promise.resolve({ data: null }),
       ]);
 
       if (profileRow) {
@@ -94,6 +122,7 @@ export function BuddyProvider({ children }: { children: ReactNode }) {
       }
       setItems(((itemRows ?? []) as ItemRow[]).map((r) => r.data));
       setPolicies(Object.fromEntries(((policyRows ?? []) as PolicyRow[]).map((r) => [r.item_id, r.data])));
+      setIsEmployee(!!employeeRow);
     },
     [supabase]
   );
@@ -136,7 +165,7 @@ export function BuddyProvider({ children }: { children: ReactNode }) {
   }, [supabase, loadForUser]);
 
   const updateProfile = useCallback(
-    (patch: Partial<Profile>) => {
+    (patch: Partial<Omit<Profile, "email">>) => {
       setProfile((prev) => ({ name: "", priority: null, ...prev, ...patch }));
       if (!userId) return;
       const dbPatch: Record<string, unknown> = {};
@@ -198,6 +227,43 @@ export function BuddyProvider({ children }: { children: ReactNode }) {
     [supabase, userId]
   );
 
+  const submitBooking = useCallback(
+    (input: BookingInput) => {
+      if (!userId) return;
+      supabase
+        .from("bookings")
+        .insert({
+          user_id: userId,
+          topics: input.topics,
+          extra_note: input.extraNote || null,
+          meeting_type: input.meetingType,
+          day: input.day,
+          time: input.time,
+          contact: input.contact,
+        })
+        .then(logWriteError("bokning"));
+    },
+    [supabase, userId]
+  );
+
+  const submitClaim = useCallback(
+    (input: ClaimInput) => {
+      if (!userId) return;
+      supabase
+        .from("claims")
+        .insert({
+          user_id: userId,
+          transcript: input.transcript,
+          photo_count: input.photoCount,
+          receipt_count: input.receiptCount,
+          skadetyp: input.skadetyp ?? null,
+          allvarlighetsgrad: input.allvarlighetsgrad ?? null,
+        })
+        .then(logWriteError("skadeanmälan"));
+    },
+    [supabase, userId]
+  );
+
   const logout = useCallback(() => {
     supabase.auth.signOut();
   }, [supabase]);
@@ -215,6 +281,9 @@ export function BuddyProvider({ children }: { children: ReactNode }) {
       setPolicy,
       readyToCompare,
       setReadyToCompare,
+      isEmployee,
+      submitBooking,
+      submitClaim,
       logout,
     }),
     [
@@ -229,6 +298,9 @@ export function BuddyProvider({ children }: { children: ReactNode }) {
       setPolicy,
       readyToCompare,
       setReadyToCompare,
+      isEmployee,
+      submitBooking,
+      submitClaim,
       logout,
     ]
   );

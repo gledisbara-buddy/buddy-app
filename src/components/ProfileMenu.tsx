@@ -2,12 +2,12 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Gift, HelpCircle, LayoutDashboard, LogOut, Settings, User } from "lucide-react";
+import { Gift, HelpCircle, LayoutDashboard, LogOut, Settings, Shield, User } from "lucide-react";
 import { useBuddy } from "@/lib/buddy-context";
 
 export function ProfileMenu() {
   const router = useRouter();
-  const { profile, logout } = useBuddy();
+  const { profile, isEmployee, logout } = useBuddy();
   const [open, setOpen] = useState(false);
   const rootRef = useRef<HTMLDivElement>(null);
 
@@ -85,6 +85,16 @@ export function ProfileMenu() {
               <HelpCircle size={16} className="text-forest" /> Hjälp & Support
             </button>
           </div>
+          {isEmployee && (
+            <div className="py-1.5 border-t border-line">
+              <button
+                onClick={() => go("/internt")}
+                className="w-full flex items-center gap-3 px-4 py-2.5 text-sm hover:bg-frost text-left"
+              >
+                <Shield size={16} className="text-forest" /> Internt
+              </button>
+            </div>
+          )}
           <div className="py-1.5 border-t border-line">
             <button
               onClick={handleLogout}

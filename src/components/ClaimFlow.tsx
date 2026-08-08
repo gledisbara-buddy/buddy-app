@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Camera, Check, CircleDot, Receipt, Send, Sparkles, X } from "lucide-react";
 import { TopBar } from "@/components/TopBar";
+import { useBuddy } from "@/lib/buddy-context";
 import { buildClassification, getIntakeReply, type Classification, type ChatMessage } from "@/lib/claim";
 import { randomDelay } from "@/lib/chat";
 
@@ -12,6 +13,7 @@ type UploadedFile = { name: string; dataUrl: string };
 
 export function ClaimFlow() {
   const router = useRouter();
+  const { submitClaim } = useBuddy();
   const [phase, setPhase] = useState<Phase>("chat");
   const [messages, setMessages] = useState<ChatMessage[]>([
     { role: "assistant", content: "Hej. Tråkigt att höra att något har hänt — vad är det som har hänt?" },
@@ -65,7 +67,15 @@ export function ClaimFlow() {
   const classifyAndSubmit = () => {
     setPhase("submitting");
     setTimeout(() => {
-      setClassification(buildClassification());
+      const result = buildClassification();
+      setClassification(result);
+      submitClaim({
+        transcript: messages,
+        photoCount: photos.length,
+        receiptCount: receipts.length,
+        skadetyp: result.skadetyp,
+        allvarlighetsgrad: result.allvarlighetsgrad,
+      });
       setPhase("confirmed");
     }, 1400);
   };

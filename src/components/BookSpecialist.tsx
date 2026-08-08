@@ -9,6 +9,10 @@ import { useBuddy } from "@/lib/buddy-context";
 import { MONTHS, nextWeekdays, TIME_SLOTS, WEEKDAYS } from "@/lib/booking";
 import { itemSummary, itemTitle } from "@/lib/items";
 
+function toIsoDate(d: Date): string {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+}
+
 type MeetingType = "video" | "phone";
 const FIXED_TOPICS = [
   { id: "OVRIGT", label: "Övrigt" },
@@ -17,7 +21,7 @@ const FIXED_TOPICS = [
 
 export function BookSpecialist() {
   const router = useRouter();
-  const { items } = useBuddy();
+  const { items, submitBooking } = useBuddy();
   const [step, setStep] = useState(0);
   const [topics, setTopics] = useState<string[]>([]);
   const [extraNote, setExtraNote] = useState("");
@@ -266,7 +270,17 @@ export function BookSpecialist() {
                 className="w-full px-4 py-3 rounded-xl border border-line text-[15px] mb-6"
               />
               <button
-                onClick={() => setStep(4)}
+                onClick={() => {
+                  submitBooking({
+                    topics,
+                    extraNote,
+                    meetingType: meetingType!,
+                    day: toIsoDate(day),
+                    time: time!,
+                    contact: contact.trim(),
+                  });
+                  setStep(4);
+                }}
                 disabled={contact.trim().length < 3}
                 className="bd-btn w-full py-3.5 rounded-full font-semibold text-white text-[15px] bg-forest disabled:opacity-40"
               >

@@ -18,7 +18,6 @@ export function ProfilePage() {
 
   const [name, setName] = useState(profile?.name ?? "");
   const [personnummer, setPersonnummer] = useState(profile?.personnummer ?? "");
-  const [email, setEmail] = useState(profile?.email ?? "");
   const [phone, setPhone] = useState(profile?.phone ?? "");
   const [saved, setSaved] = useState(false);
   const [syncedLoading, setSyncedLoading] = useState(loading);
@@ -32,7 +31,6 @@ export function ProfilePage() {
     if (!loading && profile) {
       setName(profile.name);
       setPersonnummer(profile.personnummer ?? "");
-      setEmail(profile.email ?? "");
       setPhone(profile.phone ?? "");
     }
   }
@@ -45,7 +43,6 @@ export function ProfilePage() {
     updateProfile({
       name: name.trim(),
       personnummer: personnummer.trim() || undefined,
-      email: email.trim() || undefined,
       phone: phone.trim() || undefined,
     });
     setSaved(true);
@@ -77,11 +74,14 @@ export function ProfilePage() {
           <Field label="E-post">
             <input
               type="email"
-              className={inputClass}
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="sam@exempel.se"
+              className={`${inputClass} bg-slate-50 opacity-60 cursor-not-allowed`}
+              value={profile?.email ?? ""}
+              disabled
+              readOnly
             />
+            <p className="text-xs mt-1.5 text-slate">
+              Det här är din inloggningsmejl. Kontakta kundtjänst om du vill byta den.
+            </p>
           </Field>
           <Field label="Telefonnummer">
             <input
