@@ -13,7 +13,7 @@ export default function VillkorPage() {
         },
         {
           heading: "2. Ditt konto",
-          body: "Du loggar in med BankID och ansvarar för att uppgifterna du lämnar är korrekta. Du kan när som helst radera dina uppgifter.",
+          body: "Du loggar in med e-post och lösenord och ansvarar för att uppgifterna du lämnar är korrekta. Du kan när som helst radera dina uppgifter.",
         },
         {
           heading: "3. Jämförelser och erbjudanden",

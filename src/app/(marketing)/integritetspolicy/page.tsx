@@ -9,7 +9,7 @@ export default function IntegritetspolicyPage() {
       sections={[
         {
           heading: "Vilka uppgifter samlar vi in?",
-          body: "De uppgifter du själv lägger in om ditt boende, fordon, dig som person eller dina djur, samt information som krävs för BankID-inloggning.",
+          body: "De uppgifter du själv lägger in om ditt boende, fordon, dig som person eller dina djur, samt din e-postadress som används för inloggning.",
         },
         {
           heading: "Vad använder vi uppgifterna till?",

@@ -45,7 +45,7 @@ const FEATURES = [
 ];
 
 const STEPS = [
-  { n: "1", title: "Logga in med BankID", desc: "Säkert och snabbt, precis som du är van vid." },
+  { n: "1", title: "Skapa ett konto", desc: "Med e-post och lösenord — klart på under en minut." },
   { n: "2", title: "Lägg till dina saker", desc: "Boende, fordon, mobil, kreditkort — så mycket eller lite du vill." },
   { n: "3", title: "Få en samlad överblick", desc: "Se allt på ett ställe och jämför när du är redo." },
 ];
