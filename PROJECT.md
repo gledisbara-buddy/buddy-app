@@ -69,8 +69,9 @@ npm run dev
 - Inget annat backend-API förutom `/api/address-search` (proxy mot Geoapify, håller
   API-nyckeln server-side).
 - Repo: `github.com/gledisbara-buddy/buddy-app` (`origin`). Live på Vercel
-  (`buddy-app-iota.vercel.app`, auto-deploy vid push till `main`). Domänen
-  `minbuddy.se` är köpt men väntade senast på godkännande hos One.com.
+  (auto-deploy vid push till `main`), publik på `www.minbuddy.se` (apex
+  `minbuddy.se` redirectar dit). `buddy-app-iota.vercel.app` fungerar
+  fortfarande men är inte längre den kanoniska adressen.
 
 ## Mappstruktur
 

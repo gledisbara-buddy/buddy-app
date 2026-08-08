@@ -2,7 +2,7 @@ import type { MetadataRoute } from "next";
 import { GUIDES } from "@/lib/guides";
 import { NEWS_ARTICLES } from "@/lib/news";
 
-const BASE_URL = "https://buddy-app-iota.vercel.app";
+const BASE_URL = "https://www.minbuddy.se";
 
 const STATIC_ROUTES = [
   "",

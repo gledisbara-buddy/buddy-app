@@ -1,6 +1,6 @@
 import type { MetadataRoute } from "next";
 
-const BASE_URL = "https://buddy-app-iota.vercel.app";
+const BASE_URL = "https://www.minbuddy.se";
 
 // Allt bakom inloggning eller utan SEO-värde ska inte crawlas — bara de
 // publika marknadsföringssidorna i (marketing) ska vara indexerbara.
