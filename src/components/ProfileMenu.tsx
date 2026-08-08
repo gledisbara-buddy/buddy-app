@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Gift, HelpCircle, LayoutDashboard, LogOut, Settings, Shield, User } from "lucide-react";
+import { Gift, HelpCircle, Inbox, LayoutDashboard, LogOut, Settings, Shield, User } from "lucide-react";
 import { useBuddy } from "@/lib/buddy-context";
 
 export function ProfileMenu() {
@@ -65,6 +65,12 @@ export function ProfileMenu() {
               className="w-full flex items-center gap-3 px-4 py-2.5 text-sm hover:bg-frost text-left"
             >
               <User size={16} className="text-forest" /> Min profil
+            </button>
+            <button
+              onClick={() => go("/mina-arenden")}
+              className="w-full flex items-center gap-3 px-4 py-2.5 text-sm hover:bg-frost text-left"
+            >
+              <Inbox size={16} className="text-forest" /> Mina ärenden
             </button>
             <button
               onClick={() => go("/varva-en-van")}

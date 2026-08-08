@@ -15,6 +15,13 @@ export const MONTHS = [
 ];
 export const TIME_SLOTS = ["09:00", "10:30", "12:00", "13:30", "15:00", "16:30"];
 
+// Delas mellan BookSpecialist.tsx (bokningsflödet) och MyCasesView.tsx
+// ("Mina ärenden") som båda behöver resolva samma ämnes-id:n till etiketter.
+export const FIXED_TOPICS = [
+  { id: "OVRIGT", label: "Övrigt" },
+  { id: "HELHET", label: "Total helhetslösning" },
+] as const;
+
 export function nextWeekdays(count: number): Date[] {
   const days: Date[] = [];
   const cursor = new Date();
@@ -25,6 +32,19 @@ export function nextWeekdays(count: number): Date[] {
     cursor.setDate(cursor.getDate() + 1);
   }
   return days;
+}
+
+// Parsar en YYYY-MM-DD-sträng till ett lokalt Date-objekt — motsatsen till
+// toIsoDate i BookSpecialist.tsx, medvetet inte new Date(iso) eftersom det
+// tolkas som UTC-midnatt och kan hamna på fel kalenderdag lokalt.
+export function parseIsoDate(iso: string): Date {
+  const [y, m, d] = iso.split("-").map(Number);
+  return new Date(y, m - 1, d);
+}
+
+export function formatBookingDay(iso: string): string {
+  const d = parseIsoDate(iso);
+  return `${WEEKDAYS[d.getDay()].slice(0, 3)} ${d.getDate()} ${MONTHS[d.getMonth()]}`;
 }
 
 function toIcsUtc(d: Date): string {

@@ -31,6 +31,30 @@ export type ClaimInput = {
   allvarlighetsgrad?: string;
 };
 
+// Kundens egna bokningar/anmälningar, för "Mina ärenden" — inte samma sak
+// som Booking/ClaimInput ovan (det kunden skickar in), utan det som läses
+// tillbaka från Supabase efteråt, inklusive status satt av en anställd.
+export type BookingRecord = {
+  id: string;
+  topics: string[];
+  extraNote: string | null;
+  meetingType: "video" | "phone";
+  day: string;
+  time: string;
+  status: "ny" | "hanterad";
+  createdAt: string;
+};
+
+export type ClaimRecord = {
+  id: string;
+  photoCount: number;
+  receiptCount: number;
+  skadetyp: string | null;
+  allvarlighetsgrad: string | null;
+  status: "ny" | "hanterad";
+  createdAt: string;
+};
+
 type BuddyState = {
   // Sant fram tills den första sessions-kontrollen mot Supabase är klar —
   // guardade sidor ska vänta med att redirecta till /kom-igang tills dess.
@@ -52,6 +76,8 @@ type BuddyState = {
   setReadyToCompare: (ready: boolean) => void;
   // Sant om e-posten finns i `employees`-tabellen — styr åtkomst till /internt.
   isEmployee: boolean;
+  bookings: BookingRecord[];
+  claims: ClaimRecord[];
   submitBooking: (input: BookingInput) => void;
   submitClaim: (input: ClaimInput) => void;
   logout: () => void;
@@ -70,6 +96,52 @@ type ProfileRow = {
 type ItemRow = { kind: string; data: InsuranceItem };
 type PolicyRow = { item_id: string; data: Quote };
 
+type BookingRow = {
+  id: string;
+  topics: string[];
+  extra_note: string | null;
+  meeting_type: "video" | "phone";
+  day: string;
+  time: string;
+  status: "ny" | "hanterad";
+  created_at: string;
+};
+
+type ClaimRow = {
+  id: string;
+  photo_count: number;
+  receipt_count: number;
+  skadetyp: string | null;
+  allvarlighetsgrad: string | null;
+  status: "ny" | "hanterad";
+  created_at: string;
+};
+
+function mapBookingRow(r: BookingRow): BookingRecord {
+  return {
+    id: r.id,
+    topics: r.topics,
+    extraNote: r.extra_note,
+    meetingType: r.meeting_type,
+    day: r.day,
+    time: r.time,
+    status: r.status,
+    createdAt: r.created_at,
+  };
+}
+
+function mapClaimRow(r: ClaimRow): ClaimRecord {
+  return {
+    id: r.id,
+    photoCount: r.photo_count,
+    receiptCount: r.receipt_count,
+    skadetyp: r.skadetyp,
+    allvarlighetsgrad: r.allvarlighetsgrad,
+    status: r.status,
+    createdAt: r.created_at,
+  };
+}
+
 function logWriteError(label: string) {
   return (result: { error: { message: string } | null }) => {
     if (result.error) console.error(`Buddy: kunde inte spara (${label})`, result.error.message);
@@ -86,6 +158,8 @@ export function BuddyProvider({ children }: { children: ReactNode }) {
   const [policies, setPolicies] = useState<Record<string, Quote>>({});
   const [readyToCompare, setReadyToCompareState] = useState(false);
   const [isEmployee, setIsEmployee] = useState(false);
+  const [bookings, setBookings] = useState<BookingRecord[]>([]);
+  const [claims, setClaims] = useState<ClaimRecord[]>([]);
 
   const resetLocalState = () => {
     setUserId(null);
@@ -95,16 +169,29 @@ export function BuddyProvider({ children }: { children: ReactNode }) {
     setPolicies({});
     setReadyToCompareState(false);
     setIsEmployee(false);
+    setBookings([]);
+    setClaims([]);
   };
 
   const loadForUser = useCallback(
     async (uid: string, email: string | undefined) => {
-      const [{ data: profileRow }, { data: itemRows }, { data: policyRows }, { data: employeeRow }] = await Promise.all([
-        supabase.from("profiles").select("user_type, name, personnummer, phone, ready_to_compare").eq("id", uid).single(),
-        supabase.from("items").select("kind, data").eq("user_id", uid),
-        supabase.from("policies").select("item_id, data").eq("user_id", uid),
-        email ? supabase.from("employees").select("email").eq("email", email).maybeSingle() : Promise.resolve({ data: null }),
-      ]);
+      const [{ data: profileRow }, { data: itemRows }, { data: policyRows }, { data: employeeRow }, { data: bookingRows }, { data: claimRows }] =
+        await Promise.all([
+          supabase.from("profiles").select("user_type, name, personnummer, phone, ready_to_compare").eq("id", uid).single(),
+          supabase.from("items").select("kind, data").eq("user_id", uid),
+          supabase.from("policies").select("item_id, data").eq("user_id", uid),
+          email ? supabase.from("employees").select("email").eq("email", email).maybeSingle() : Promise.resolve({ data: null }),
+          supabase
+            .from("bookings")
+            .select("id, topics, extra_note, meeting_type, day, time, status, created_at")
+            .eq("user_id", uid)
+            .order("day", { ascending: true }),
+          supabase
+            .from("claims")
+            .select("id, photo_count, receipt_count, skadetyp, allvarlighetsgrad, status, created_at")
+            .eq("user_id", uid)
+            .order("created_at", { ascending: false }),
+        ]);
 
       if (profileRow) {
         const row = profileRow as ProfileRow;
@@ -120,6 +207,8 @@ export function BuddyProvider({ children }: { children: ReactNode }) {
       setItems(((itemRows ?? []) as ItemRow[]).map((r) => r.data));
       setPolicies(Object.fromEntries(((policyRows ?? []) as PolicyRow[]).map((r) => [r.item_id, r.data])));
       setIsEmployee(!!employeeRow);
+      setBookings(((bookingRows ?? []) as BookingRow[]).map(mapBookingRow));
+      setClaims(((claimRows ?? []) as ClaimRow[]).map(mapClaimRow));
     },
     [supabase]
   );
@@ -237,7 +326,12 @@ export function BuddyProvider({ children }: { children: ReactNode }) {
           time: input.time,
           contact: input.contact,
         })
-        .then(logWriteError("bokning"));
+        .select("id, topics, extra_note, meeting_type, day, time, status, created_at")
+        .single()
+        .then((result) => {
+          logWriteError("bokning")(result);
+          if (result.data) setBookings((prev) => [...prev, mapBookingRow(result.data as BookingRow)]);
+        });
     },
     [supabase, userId]
   );
@@ -255,7 +349,12 @@ export function BuddyProvider({ children }: { children: ReactNode }) {
           skadetyp: input.skadetyp ?? null,
           allvarlighetsgrad: input.allvarlighetsgrad ?? null,
         })
-        .then(logWriteError("skadeanmälan"));
+        .select("id, photo_count, receipt_count, skadetyp, allvarlighetsgrad, status, created_at")
+        .single()
+        .then((result) => {
+          logWriteError("skadeanmälan")(result);
+          if (result.data) setClaims((prev) => [mapClaimRow(result.data as ClaimRow), ...prev]);
+        });
     },
     [supabase, userId]
   );
@@ -278,6 +377,8 @@ export function BuddyProvider({ children }: { children: ReactNode }) {
       readyToCompare,
       setReadyToCompare,
       isEmployee,
+      bookings,
+      claims,
       submitBooking,
       submitClaim,
       logout,
@@ -295,6 +396,8 @@ export function BuddyProvider({ children }: { children: ReactNode }) {
       readyToCompare,
       setReadyToCompare,
       isEmployee,
+      bookings,
+      claims,
       submitBooking,
       submitClaim,
       logout,

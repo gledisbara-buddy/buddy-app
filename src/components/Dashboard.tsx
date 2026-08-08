@@ -24,6 +24,7 @@ import { ConfirmDialog, Overlay } from "@/components/Overlay";
 import { TopBar } from "@/components/TopBar";
 import { ProfileMenu } from "@/components/ProfileMenu";
 import { useBuddy } from "@/lib/buddy-context";
+import { formatBookingDay } from "@/lib/booking";
 import { daysUntilSwedishDate } from "@/lib/dates";
 import { isComparableItem, ITEM_CATEGORIES, ITEM_GROUPS, itemSummary, itemTitle, type ItemGroupId } from "@/lib/items";
 
@@ -44,7 +45,7 @@ const INTRO_POINTS = [
 
 export function Dashboard({ showIntro: initialShowIntro }: { showIntro?: boolean }) {
   const router = useRouter();
-  const { userType, loading, profile, items, removeItem, policies, readyToCompare, setReadyToCompare } = useBuddy();
+  const { userType, loading, profile, items, removeItem, policies, readyToCompare, setReadyToCompare, bookings } = useBuddy();
   const [activeGroup, setActiveGroup] = useState<ItemGroupId | null>(null);
   const [showIntro, setShowIntro] = useState(!!initialShowIntro);
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
@@ -81,6 +82,14 @@ export function Dashboard({ showIntro: initialShowIntro }: { showIntro?: boolean
       return [{ item, quote, days }];
     })
     .sort((a, b) => a.days - b.days);
+
+  // Bara nästa kommande bokning visas som banner — ISO-datum (YYYY-MM-DD)
+  // går att jämföra direkt som strängar, ingen datumparsning behövs här.
+  const now = new Date();
+  const todayIso = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
+  const upcomingBooking = [...bookings]
+    .filter((b) => b.day >= todayIso)
+    .sort((a, b) => (a.day === b.day ? a.time.localeCompare(b.time) : a.day.localeCompare(b.day)))[0];
 
   return (
     <div className="min-h-screen w-full">
@@ -161,6 +170,30 @@ export function Dashboard({ showIntro: initialShowIntro }: { showIntro?: boolean
               className="bd-btn flex items-center gap-1.5 text-sm font-semibold px-4 py-2.5 rounded-full text-white bg-forest flex-none"
             >
               Klar? Nu jämför vi allt <ArrowRight size={14} />
+            </button>
+          </div>
+        )}
+
+        {upcomingBooking && (
+          <div className="rounded-2xl border border-line p-5 mb-6 flex items-center justify-between gap-4 flex-wrap bg-frost-2">
+            <div className="flex items-center gap-3">
+              <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-none bg-white">
+                <CalendarDays size={16} className="text-forest" />
+              </div>
+              <div>
+                <div className="text-sm font-semibold">
+                  Du har ett bokat {upcomingBooking.meetingType === "video" ? "videosamtal" : "telefonsamtal"}
+                </div>
+                <div className="text-xs text-slate">
+                  {formatBookingDay(upcomingBooking.day)} kl. {upcomingBooking.time} · med en rådgivare från Buddy
+                </div>
+              </div>
+            </div>
+            <button
+              onClick={() => router.push("/mina-arenden")}
+              className="bd-btn flex items-center gap-1.5 text-sm font-semibold px-4 py-2.5 rounded-full text-white bg-forest flex-none"
+            >
+              Se detaljer <ArrowRight size={14} />
             </button>
           </div>
         )}

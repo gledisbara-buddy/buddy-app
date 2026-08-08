@@ -6,7 +6,7 @@ import { ArrowLeft, CalendarPlus, Check, Clock, Phone, Video } from "lucide-reac
 import { Logo } from "@/components/Logo";
 import { ProgressDots } from "@/components/ProgressDots";
 import { useBuddy } from "@/lib/buddy-context";
-import { buildIcsFile, MONTHS, nextWeekdays, TIME_SLOTS, WEEKDAYS } from "@/lib/booking";
+import { buildIcsFile, FIXED_TOPICS, MONTHS, nextWeekdays, TIME_SLOTS, WEEKDAYS } from "@/lib/booking";
 import { itemSummary, itemTitle } from "@/lib/items";
 
 function toIsoDate(d: Date): string {
@@ -14,10 +14,6 @@ function toIsoDate(d: Date): string {
 }
 
 type MeetingType = "video" | "phone";
-const FIXED_TOPICS = [
-  { id: "OVRIGT", label: "Övrigt" },
-  { id: "HELHET", label: "Total helhetslösning" },
-] as const;
 
 export function BookSpecialist() {
   const router = useRouter();
