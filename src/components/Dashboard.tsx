@@ -8,6 +8,7 @@ import {
   Baby,
   CalendarDays,
   ChevronRight,
+  Gift,
   HeartPulse,
   LayoutGrid,
   MessageCircle,
@@ -424,6 +425,24 @@ export function Dashboard({ showIntro: initialShowIntro }: { showIntro?: boolean
               <ArrowRight size={14} className="ml-auto text-slate" />
             </button>
           </div>
+        </div>
+
+        <div className="rounded-2xl border border-line p-5 mb-4 bg-white flex items-center justify-between gap-4 flex-wrap">
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-none bg-frost-2">
+              <Gift size={16} className="text-forest" />
+            </div>
+            <div>
+              <div className="text-sm font-semibold">Värva en vän</div>
+              <div className="text-xs text-slate">Ni får 150 kr var när hen tecknar sin första försäkring.</div>
+            </div>
+          </div>
+          <button
+            onClick={() => router.push("/varva-en-van")}
+            className="bd-btn flex items-center gap-1.5 text-sm font-semibold px-4 py-2 rounded-full text-white bg-forest flex-none"
+          >
+            Värva en vän <ArrowRight size={14} />
+          </button>
         </div>
 
         <div className="rounded-2xl border border-line p-5 flex items-start gap-3 bg-frost-2">
