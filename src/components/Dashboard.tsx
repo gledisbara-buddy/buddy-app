@@ -163,37 +163,69 @@ export function Dashboard({ showIntro: initialShowIntro }: { showIntro?: boolean
           </div>
         )}
 
-        {upcomingRenewals.length > 0 && (
-          <div className="rounded-2xl border border-line p-5 mb-6 bg-white">
-            <div className="flex items-center gap-2 mb-3">
-              <CalendarDays size={16} className="text-forest" />
-              <span className="text-sm font-semibold">Kommande förfallodatum</span>
-            </div>
-            <div className="flex flex-col gap-3">
-              {upcomingRenewals.map(({ item, quote, days }) => (
-                <div key={item.id} className="flex items-center justify-between gap-3 flex-wrap">
-                  <div className="text-sm">
-                    <span className="font-medium">{itemTitle(item)}</span>{" "}
-                    <span className="text-slate">
-                      hos {quote.name} förnyas {quote.forfallodatum}
-                    </span>
-                  </div>
-                  <div className="flex items-center gap-3 flex-none">
-                    <span className={`text-xs font-semibold ${days <= 30 ? "text-amber-deep" : "text-slate"}`}>
-                      Om {days} {days === 1 ? "dag" : "dagar"}
-                    </span>
-                    <button
-                      onClick={() => router.push(`/compare/${item.id}`)}
-                      className="text-sm font-semibold flex items-center gap-1 text-forest whitespace-nowrap"
-                    >
-                      Jämför nu <ArrowRight size={14} />
-                    </button>
-                  </div>
+        <div className="rounded-2xl border border-line bg-white mb-6 overflow-hidden">
+          <div className="px-5 pt-4 pb-2 text-sm font-semibold">Mer att göra</div>
+          <div className="divide-y divide-line">
+            {upcomingRenewals.map(({ item, quote, days }) => (
+              <button
+                key={item.id}
+                onClick={() => router.push(`/compare/${item.id}`)}
+                className="w-full flex items-center gap-3 px-5 py-3 text-left hover:bg-frost"
+              >
+                <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-none bg-frost-2">
+                  <CalendarDays size={15} className="text-forest" />
                 </div>
-              ))}
-            </div>
+                <div className="flex-1 min-w-0 text-sm font-medium truncate">
+                  {itemTitle(item)} hos {quote.name} förnyas {quote.forfallodatum}
+                </div>
+                <span className={`text-xs font-semibold flex-none ${days <= 30 ? "text-amber-deep" : "text-slate"}`}>
+                  Om {days} {days === 1 ? "dag" : "dagar"}
+                </span>
+                <ArrowRight size={14} className="text-slate flex-none" />
+              </button>
+            ))}
+            <button
+              onClick={() => router.push("/halsokoll")}
+              className="w-full flex items-center gap-3 px-5 py-3 text-left hover:bg-frost"
+            >
+              <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-none bg-frost-2">
+                <HeartPulse size={15} className="text-forest" />
+              </div>
+              <span className="flex-1 text-sm font-medium">Årlig hälsokoll</span>
+              <ArrowRight size={14} className="text-slate flex-none" />
+            </button>
+            <button
+              onClick={() => router.push("/livshandelser?event=flytt")}
+              className="w-full flex items-center gap-3 px-5 py-3 text-left hover:bg-frost"
+            >
+              <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-none bg-frost-2">
+                <Truck size={15} className="text-forest" />
+              </div>
+              <span className="flex-1 text-sm font-medium">Jag ska flytta</span>
+              <ArrowRight size={14} className="text-slate flex-none" />
+            </button>
+            <button
+              onClick={() => router.push("/livshandelser?event=barn")}
+              className="w-full flex items-center gap-3 px-5 py-3 text-left hover:bg-frost"
+            >
+              <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-none bg-frost-2">
+                <Baby size={15} className="text-forest" />
+              </div>
+              <span className="flex-1 text-sm font-medium">Vi väntar barn</span>
+              <ArrowRight size={14} className="text-slate flex-none" />
+            </button>
+            <button
+              onClick={() => router.push("/varva-en-van")}
+              className="w-full flex items-center gap-3 px-5 py-3 text-left hover:bg-frost"
+            >
+              <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-none bg-frost-2">
+                <Gift size={15} className="text-forest" />
+              </div>
+              <span className="flex-1 text-sm font-medium">Värva en vän</span>
+              <ArrowRight size={14} className="text-slate flex-none" />
+            </button>
           </div>
-        )}
+        </div>
 
         {!active ? (
           <div className="grid md:grid-cols-3 gap-4 mb-8">
@@ -324,7 +356,7 @@ export function Dashboard({ showIntro: initialShowIntro }: { showIntro?: boolean
           </div>
         )}
 
-        <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
+        <div className="grid md:grid-cols-3 gap-4 mb-4">
           <div
             className="rounded-2xl p-6 text-white flex flex-col justify-between bg-ink"
             style={{ minHeight: 150 }}
@@ -381,68 +413,6 @@ export function Dashboard({ showIntro: initialShowIntro }: { showIntro?: boolean
               Boka möte
             </button>
           </div>
-          <div
-            className="rounded-2xl p-6 border border-line flex flex-col justify-between bg-white"
-            style={{ minHeight: 150 }}
-          >
-            <div>
-              <div className="flex items-center gap-2 mb-2">
-                <HeartPulse size={17} className="text-forest" />
-                <span className="text-sm font-semibold">Årlig hälsokoll</span>
-              </div>
-              <p className="text-sm text-slate">Få en samlad bild av allt du har hos oss.</p>
-            </div>
-            <button
-              onClick={() => router.push("/halsokoll")}
-              className="bd-btn self-start mt-4 px-4 py-2 rounded-full text-sm font-semibold text-white bg-forest"
-            >
-              Gör hälsokollen
-            </button>
-          </div>
-        </div>
-
-        <div className="rounded-2xl border border-line p-5 mb-4 bg-white">
-          <div className="text-sm font-semibold mb-3">Något på gång i livet?</div>
-          <div className="grid sm:grid-cols-2 gap-3">
-            <button
-              onClick={() => router.push("/livshandelser?event=flytt")}
-              className="flex items-center gap-3 rounded-xl border border-line p-3 text-left hover:bg-frost"
-            >
-              <div className="w-9 h-9 rounded-lg flex items-center justify-center flex-none bg-frost-2">
-                <Truck size={16} className="text-forest" />
-              </div>
-              <span className="text-sm font-medium">Jag ska flytta</span>
-              <ArrowRight size={14} className="ml-auto text-slate" />
-            </button>
-            <button
-              onClick={() => router.push("/livshandelser?event=barn")}
-              className="flex items-center gap-3 rounded-xl border border-line p-3 text-left hover:bg-frost"
-            >
-              <div className="w-9 h-9 rounded-lg flex items-center justify-center flex-none bg-frost-2">
-                <Baby size={16} className="text-forest" />
-              </div>
-              <span className="text-sm font-medium">Vi väntar barn</span>
-              <ArrowRight size={14} className="ml-auto text-slate" />
-            </button>
-          </div>
-        </div>
-
-        <div className="rounded-2xl border border-line p-5 mb-4 bg-white flex items-center justify-between gap-4 flex-wrap">
-          <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-none bg-frost-2">
-              <Gift size={16} className="text-forest" />
-            </div>
-            <div>
-              <div className="text-sm font-semibold">Värva en vän</div>
-              <div className="text-xs text-slate">Ni får 150 kr var när hen tecknar sin första försäkring.</div>
-            </div>
-          </div>
-          <button
-            onClick={() => router.push("/varva-en-van")}
-            className="bd-btn flex items-center gap-1.5 text-sm font-semibold px-4 py-2 rounded-full text-white bg-forest flex-none"
-          >
-            Värva en vän <ArrowRight size={14} />
-          </button>
         </div>
 
         <div className="rounded-2xl border border-line p-5 flex items-start gap-3 bg-frost-2">
