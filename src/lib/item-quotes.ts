@@ -1,15 +1,17 @@
 import type { ComparableItem, TelekomTyp } from "@/lib/items";
 import type { Quote } from "@/lib/quote";
 
-const RATING = { klarsaker: 4.6, hemgrund: 4.2, nordvakt: 4.4 };
-const SELF_RISK = { klarsaker: 1500, hemgrund: 2000, nordvakt: 1200 };
+const RATING = { klarsaker: 4.6, hemgrund: 4.2, nordvakt: 4.4, bjornskydd: 3.9 };
+const SELF_RISK = { klarsaker: 1500, hemgrund: 2000, nordvakt: 1200, bjornskydd: 2200 };
 
 // Simulerade avtalsdetaljer för det avancerade jämförelseläget — varje
 // fiktivt bolag har en konsekvent "personlighet" genom alla fem kategorier:
 // Klarsäker (dyrast, högst betyg) har generösast villkor, Hemgrund
 // (billigast, lägst betyg) har strängast, Nordvakt ligger mitt emellan.
+// Björnskydd är helt digitalt och billigast av de fyra, men med högst
+// självrisk, lägst ersättningstak och utan telefonsupport.
 const TERMS: Record<
-  "klarsaker" | "hemgrund" | "nordvakt",
+  "klarsaker" | "hemgrund" | "nordvakt" | "bjornskydd",
   { karenstid: string; ersattningstak: string; bindningstid: string; uppsagningstid: string; undantag: string[] }
 > = {
   klarsaker: {
@@ -33,9 +35,16 @@ const TERMS: Record<
     uppsagningstid: "30 dagar",
     undantag: ["Grov vårdslöshet", "Krig och terrorism", "Skador vid uthyrning i andra hand"],
   },
+  bjornskydd: {
+    karenstid: "48 timmar för vattenskador",
+    ersattningstak: "800 000 kr per skada",
+    bindningstid: "Ingen bindningstid",
+    uppsagningstid: "14 dagar",
+    undantag: ["Grov vårdslöshet", "Skador som kunnat förebyggas med underhåll", "Telefonsupport ingår ej (endast chatt/app)"],
+  },
 };
 
-function build(id: "klarsaker" | "hemgrund" | "nordvakt", name: string, price: number, highlights: string[]): Quote {
+function build(id: "klarsaker" | "hemgrund" | "nordvakt" | "bjornskydd", name: string, price: number, highlights: string[]): Quote {
   return {
     id,
     name,
@@ -72,6 +81,11 @@ function boendeQuotes(item: Extract<ComparableItem, { kind: "boende" }>, needs: 
         "Extra skydd vid vattenskada i förvaringen",
         "Prisgaranti — matchar lägre pris hos annat bolag",
       ]),
+      build("bjornskydd", "Björnskydd", 75 * mult + extrasCost, [
+        "Billigast av de fyra, tecknas och hanteras helt i app",
+        "Högre självrisk (2200 kr) och lägre ersättningstak (800 000 kr)",
+        "Telefonsupport ingår ej — endast chatt och app",
+      ]),
     ].sort((a, b) => a.price - b.price);
   }
 
@@ -98,6 +112,11 @@ function boendeQuotes(item: Extract<ComparableItem, { kind: "boende" }>, needs: 
       "Lägst självrisk av de tre",
       "Extra starkt reseskydd (90 dagar)",
       "Prisgaranti — matchar lägre pris hos annat bolag",
+    ]),
+    build("bjornskydd", "Björnskydd", base(75), [
+      "Billigast av de fyra, tecknas och hanteras helt i app",
+      "Högre självrisk (2200 kr) och lägre ersättningstak (800 000 kr)",
+      "Telefonsupport ingår ej — endast chatt och app",
     ]),
   ].sort((a, b) => a.price - b.price);
 }
@@ -134,6 +153,11 @@ function bilQuotes(item: Extract<ComparableItem, { kind: "bil" }>, needs: string
       "Hyrbil ingår vid verkstadsbesök",
       "Prisgaranti — matchar lägre pris hos annat bolag",
     ]),
+    build("bjornskydd", "Björnskydd", 185 * mult + extrasCost, [
+      "Billigast av de fyra, tecknas och hanteras helt i app",
+      "Högre självrisk (2200 kr) och lägre ersättningstak (800 000 kr)",
+      "Telefonsupport ingår ej — endast chatt och app",
+    ]),
   ].sort((a, b) => a.price - b.price);
 }
 
@@ -159,6 +183,11 @@ function ovrigtFordonQuotes(item: Extract<ComparableItem, { kind: "ovrigt_fordon
       "Inkluderar assistans vid haveri",
       "Prisgaranti — matchar lägre pris hos annat bolag",
     ]),
+    build("bjornskydd", "Björnskydd", 65 * mult + extrasCost, [
+      "Billigast av de fyra, tecknas och hanteras helt i app",
+      "Högre självrisk (2200 kr) och lägre ersättningstak (800 000 kr)",
+      "Telefonsupport ingår ej — endast chatt och app",
+    ]),
   ].sort((a, b) => a.price - b.price);
 }
 
@@ -183,6 +212,11 @@ function personQuotes(item: Extract<ComparableItem, { kind: "person" }>, needs: 
       "Lägst självrisk av de tre",
       "Extra ersättning vid längre sjukskrivning",
       "Prisgaranti — matchar lägre pris hos annat bolag",
+    ]),
+    build("bjornskydd", "Björnskydd", base(39), [
+      "Billigast av de fyra, tecknas och hanteras helt i app",
+      "Högre självrisk (2200 kr) och lägre ersättningstak (800 000 kr)",
+      "Telefonsupport ingår ej — endast chatt och app",
     ]),
   ].sort((a, b) => a.price - b.price);
 }
@@ -212,6 +246,11 @@ function djurQuotes(item: Extract<ComparableItem, { kind: "djur" }>, needs: stri
       "Livförsäkring för djuret ingår",
       "Prisgaranti — matchar lägre pris hos annat bolag",
     ]),
+    build("bjornskydd", "Björnskydd", 89 * mult + extrasCost, [
+      "Billigast av de fyra, tecknas och hanteras helt i app",
+      "Högre självrisk (2200 kr) och lägre ersättningstak (800 000 kr)",
+      "Telefonsupport ingår ej — endast chatt och app",
+    ]),
   ].sort((a, b) => a.price - b.price);
 }
 
@@ -226,6 +265,7 @@ const TELEKOM_ALT = [
   { id: "klarnat", name: "Klarnät", rating: 4.5, mult: 0.85 },
   { id: "fiberpunkt", name: "Fiberpunkt", rating: 4.3, mult: 0.95 },
   { id: "sambandet", name: "Sambandet", rating: 4.1, mult: 1.1 },
+  { id: "surfpunkt", name: "Surfpunkt", rating: 4.2, mult: 0.9 },
 ];
 
 const TELEKOM_HIGHLIGHTS: Record<TelekomTyp, string[][]> = {
@@ -233,16 +273,19 @@ const TELEKOM_HIGHLIGHTS: Record<TelekomTyp, string[][]> = {
     ["Samma datamängd, lägre pris", "Ingen bindningstid", "Byt när du vill"],
     ["Bra nätverkstäckning", "Fri surf inom EU", "Kundservice dygnet runt"],
     ["Prisgaranti i 24 månader", "Familjerabatt vid fler abonnemang", "5G ingår"],
+    ["Bra balans mellan pris och surfmängd", "Fri surf i Norden", "Enkel digital ansökan"],
   ],
   bredband: [
     ["Samma hastighet, lägre pris", "Ingen bindningstid", "Fri installation"],
     ["Stabil uppkoppling", "Router ingår", "Kundservice dygnet runt"],
     ["Prisgaranti i 24 månader", "Dubbel hastighet första året", "Bonus vid byte"],
+    ["Bra balans mellan pris och hastighet", "Ingen installationsavgift", "Enkel digital ansökan"],
   ],
   tv_streaming: [
     ["Liknande utbud, lägre pris", "Ingen bindningstid", "Avsluta när du vill"],
     ["Bredare kanalutbud", "Flera profiler ingår", "4K ingår"],
     ["Bonusinnehåll ingår", "Dela med hela familjen", "Nedladdning offline"],
+    ["Bra balans mellan pris och utbud", "Ingen bindningstid", "Enkel digital ansökan"],
   ],
 };
 
@@ -278,7 +321,14 @@ const KREDITKORT_CARDS = [
     name: "Guldkortet",
     rating: 4.2,
     prioritet: "hog_kreditgrans",
-    highlights: ["Hög kreditgräns", "Utökad reseförsäkring ingår", "Prioriterad kundservice"],
+    highlights: ["Hög kreditgräns", "Ingen övre gräns för uttag", "Prioriterad kundservice"],
+  },
+  {
+    id: "silverkortet",
+    name: "Silverkortet",
+    rating: 4.3,
+    prioritet: "reseforsakring",
+    highlights: ["Utökad reseförsäkring ingår", "Avbeställningsskydd ingår", "Reseavtal upp till 90 dagar"],
   },
 ];
 
@@ -286,7 +336,7 @@ function kreditkortQuotes(item: Extract<ComparableItem, { kind: "kreditkort" }>,
   const extrasCost = needs.length * 12;
   if (item.harReddan) {
     const baseMonthly = (item.arsavgift ?? 495) / 12;
-    const mults = [0, 0.6, 1.3];
+    const mults = [0, 0.6, 1.3, 0.9];
     return KREDITKORT_CARDS.map((c, i) => ({
       id: c.id,
       name: c.name,
@@ -298,11 +348,11 @@ function kreditkortQuotes(item: Extract<ComparableItem, { kind: "kreditkort" }>,
 
   // Utforskar nytt kort — inget nuvarande pris att jämföra mot, så visa tre fasta
   // alternativ med olika styrkor och sätt det som matchar önskad prioritet överst.
-  const flatPrices: Record<string, number> = { klarkort: 0, kontokraft: 29, guldkortet: 79 };
+  const flatPrices: Record<string, number> = { klarkort: 0, kontokraft: 29, guldkortet: 79, silverkortet: 49 };
   const priorityToId: Record<string, string> = {
     lag_avgift: "klarkort",
     bonus: "kontokraft",
-    reseforsakring: "guldkortet",
+    reseforsakring: "silverkortet",
     hog_kreditgrans: "guldkortet",
   };
   const preferredId = item.onskadPrioritet ? priorityToId[item.onskadPrioritet] : undefined;
@@ -325,6 +375,7 @@ function elQuotes(item: Extract<ComparableItem, { kind: "el" }>, needs: string[]
     { id: "klarstrom", name: "Klarström", price: Math.round(baseMonthly * 0.88) + extrasCost, rating: 4.3, highlights: ["Rörligt pris, ingen bindningstid", "100% förnybar el", "Enkel uppsägning"] },
     { id: "kraftpunkt", name: "Kraftpunkt", price: Math.round(baseMonthly * 0.95) + extrasCost, rating: 4.5, highlights: ["Fast pris i 12 månader", "Prisgaranti", "Ingen påslagsavgift"] },
     { id: "voltec", name: "Voltec", price: Math.round(baseMonthly * 1.08) + extrasCost, rating: 4.0, highlights: ["Fast pris i 24 månader", "Bonus vid tecknande", "Elbilsrabatt"] },
+    { id: "solkraft", name: "Solkraft", price: Math.round(baseMonthly * 1.25) + extrasCost, rating: 4.7, highlights: ["100% solenergi, garanterat ursprung", "Högst kundbetyg av de fyra", "Överskott återinvesteras i ny solkraft"] },
   ].sort((a, b) => a.price - b.price);
 }
 

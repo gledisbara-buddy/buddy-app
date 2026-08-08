@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Check, ChevronDown, ChevronUp, Loader2, ShieldCheck, Star } from "lucide-react";
+import { Check, ChevronDown, ChevronUp, Loader2, ShieldCheck, Star, Zap } from "lucide-react";
 import { Logo } from "@/components/Logo";
 import { NeedsAnalysis } from "@/components/NeedsAnalysis";
 import { Overlay } from "@/components/Overlay";
@@ -60,6 +60,100 @@ function AdvancedDetails({ quote, dark }: { quote: Quote; dark?: boolean }) {
   );
 }
 
+// Fullständig jämförelsetabell för Försäkring-gruppen — med fyra bolag räcker
+// inte längre de tre korten ovanför för att visa alla alternativ på en gång.
+function ComparisonTable({
+  quotes,
+  current,
+  winnerId,
+  cheapestId,
+  detailLevel,
+  onSign,
+}: {
+  quotes: Quote[];
+  current?: Quote;
+  winnerId: string;
+  cheapestId: string;
+  detailLevel: "enkel" | "avancerat";
+  onSign: (quote: Quote) => void;
+}) {
+  const rows: { quote: Quote; isCurrent?: boolean }[] = [
+    ...(current ? [{ quote: current, isCurrent: true }] : []),
+    ...quotes.map((quote) => ({ quote })),
+  ];
+
+  return (
+    <div className="overflow-x-auto">
+      <table className="w-full text-sm border-collapse min-w-[640px]">
+        <thead>
+          <tr className="text-left text-xs text-slate">
+            <th className="py-2 pr-3 font-semibold">Bolag</th>
+            <th className="py-2 px-3 font-semibold">Betyg</th>
+            <th className="py-2 px-3 font-semibold">Pris/mån</th>
+            {detailLevel === "avancerat" && (
+              <>
+                <th className="py-2 px-3 font-semibold">Självrisk</th>
+                <th className="py-2 px-3 font-semibold">Karenstid</th>
+                <th className="py-2 px-3 font-semibold">Ersättningstak</th>
+                <th className="py-2 px-3 font-semibold">Bindningstid</th>
+                <th className="py-2 px-3 font-semibold">Uppsägningstid</th>
+                <th className="py-2 px-3 font-semibold">Undantag</th>
+              </>
+            )}
+            <th className="py-2 pl-3" />
+          </tr>
+        </thead>
+        <tbody>
+          {rows.map(({ quote, isCurrent }) => {
+            const isWinner = !isCurrent && quote.id === winnerId;
+            const isCheapest = !isCurrent && quote.id === cheapestId;
+            return (
+              <tr key={quote.id} className="border-t border-line">
+                <td className="py-3 pr-3">
+                  <div className="font-semibold">{isCurrent ? "Din nuvarande" : quote.name}</div>
+                  {isCurrent && <div className="text-xs text-slate">{quote.name}</div>}
+                  {isWinner && (
+                    <span className="inline-flex items-center gap-1 text-xs font-semibold mt-0.5 text-forest">
+                      <Star size={11} fill="currentColor" /> Bäst för dig
+                    </span>
+                  )}
+                  {isCheapest && !isWinner && (
+                    <span className="inline-block text-xs font-semibold mt-0.5 text-forest">Billigast</span>
+                  )}
+                </td>
+                <td className="py-3 px-3 text-slate">{quote.rating != null ? `${quote.rating} / 5` : "–"}</td>
+                <td className="py-3 px-3 font-semibold">{quote.price} kr</td>
+                {detailLevel === "avancerat" && (
+                  <>
+                    <td className="py-3 px-3 text-slate">
+                      {quote.selfRisk != null ? `${quote.selfRisk.toLocaleString("sv-SE")} kr` : "–"}
+                    </td>
+                    <td className="py-3 px-3 text-slate">{quote.karenstid ?? "–"}</td>
+                    <td className="py-3 px-3 text-slate">{quote.ersattningstak ?? "–"}</td>
+                    <td className="py-3 px-3 text-slate">{quote.bindningstid ?? "–"}</td>
+                    <td className="py-3 px-3 text-slate">{quote.uppsagningstid ?? "–"}</td>
+                    <td className="py-3 px-3 text-slate max-w-[220px]">{quote.undantag?.join(", ") ?? "–"}</td>
+                  </>
+                )}
+                <td className="py-3 pl-3 text-right">
+                  {!isCurrent && (
+                    <button
+                      onClick={() => onSign(quote)}
+                      className="bd-btn text-xs font-semibold px-3 py-1.5 rounded-full text-white bg-forest whitespace-nowrap"
+                    >
+                      Teckna
+                    </button>
+                  )}
+                </td>
+              </tr>
+            );
+          })}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
 export function CompareFlow({ itemId }: { itemId: string }) {
   const router = useRouter();
   const { items, policies, setPolicy } = useBuddy();
@@ -82,6 +176,7 @@ export function CompareFlow({ itemId }: { itemId: string }) {
   const [expanded, setExpanded] = useState<string | null>(null);
   const [showAutoFetch, setShowAutoFetch] = useState(false);
   const [detailLevel, setDetailLevel] = useState<"enkel" | "avancerat">("enkel");
+  const [showTable, setShowTable] = useState(false);
 
   useEffect(() => {
     if (phase === "loading") {
@@ -289,6 +384,27 @@ export function CompareFlow({ itemId }: { itemId: string }) {
                 </div>
               </div>
 
+              <div className="mt-6">
+                <button
+                  onClick={() => setShowTable((v) => !v)}
+                  className="text-xs font-semibold text-forest hover:opacity-80"
+                >
+                  {showTable ? "Dölj tabellen" : "Se alla fyra alternativ i en tabell"}
+                </button>
+                {showTable && (
+                  <div className="mt-4 bg-white rounded-3xl border border-line p-5 bd-fade">
+                    <ComparisonTable
+                      quotes={quotes}
+                      current={current}
+                      winnerId={winnerId}
+                      cheapestId={cheapest.id}
+                      detailLevel={detailLevel}
+                      onSign={handleSign}
+                    />
+                  </div>
+                )}
+              </div>
+
               <p className="text-xs text-center mt-8 text-slate">
                 Bolagsnamn i den här prototypen är fiktiva exempel.
               </p>
@@ -314,6 +430,19 @@ export function CompareFlow({ itemId }: { itemId: string }) {
               <p className="text-sm mb-8 text-slate">
                 Baserat på {label.toLowerCase()} — {itemSummary(item)}.
               </p>
+
+              {item.kind === "el" && (
+                <div className="rounded-2xl p-4 mb-6 flex items-start gap-3 bg-frost-2">
+                  <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-none bg-white">
+                    <Zap size={15} className="text-amber-deep" />
+                  </div>
+                  <p className="text-xs text-ink">
+                    {item.avtalstyp === "fast"
+                      ? "Du har fast pris, så det spelar ingen roll när på dygnet du drar ström — priset är detsamma oavsett tid."
+                      : "Med rörligt pris är elen ofta billigast natt och tidig morgon (ca 02–06) och dyrast under kvällstopparna (ca 17–19). Lägg tunga sysslor som tvätt, diskmaskin och laddning på natten för att sänka snittpriset."}
+                  </p>
+                </div>
+              )}
 
               <div
                 className="rounded-3xl p-6 md:p-7 mb-5 relative bg-ink-deep"

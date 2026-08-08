@@ -13,6 +13,17 @@ import {
 } from "@/lib/items";
 import type { AnslutningTyp, InsuranceItem, TelekomTyp } from "@/lib/items";
 
+// Uppskattad nätverkstäckning (andel av Sveriges befolkning) per operatör —
+// Halebop och Comviq körs på samma nät som Telia respektive Tele2.
+const MOBIL_NATVERKSTACKNING: Record<string, number> = {
+  Telia: 99,
+  Tele2: 97,
+  Telenor: 96,
+  Tre: 95,
+  Halebop: 99,
+  Comviq: 97,
+};
+
 export function TelekomForm({
   onSave,
   onCancel,
@@ -69,6 +80,11 @@ export function TelekomForm({
         <Field label="Operatör">
           <PillGroupWithOther options={TELEKOM_MOBIL_OPERATORER} value={operatorMobil} onChange={setOperatorMobil} />
         </Field>
+        {MOBIL_NATVERKSTACKNING[operatorMobil] != null && (
+          <p className="text-xs -mt-2 mb-4 text-slate">
+            Uppskattad nätverkstäckning: {MOBIL_NATVERKSTACKNING[operatorMobil]}% av Sveriges befolkning.
+          </p>
+        )}
         <Field label="Har du obegränsat med data?">
           <BoolPill value={obegransatData} onChange={setObegransatData} />
         </Field>
