@@ -241,7 +241,7 @@ export type ComparableItem =
   | TelekomItem
   | KreditkortItem
   | ElItem;
-const COMPARABLE_KINDS: ItemKind[] = ["boende", "bil", "ovrigt_fordon", "person", "djur", "telekom", "kreditkort", "el"];
+export const COMPARABLE_KINDS: ItemKind[] = ["boende", "bil", "ovrigt_fordon", "person", "djur", "telekom", "kreditkort", "el"];
 export function isComparableItem(item: InsuranceItem): item is ComparableItem {
   return COMPARABLE_KINDS.includes(item.kind);
 }

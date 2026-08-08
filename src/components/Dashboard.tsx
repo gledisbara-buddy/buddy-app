@@ -7,6 +7,7 @@ import {
   ArrowRight,
   CalendarDays,
   ChevronRight,
+  HeartPulse,
   LayoutGrid,
   MessageCircle,
   Plus,
@@ -20,6 +21,7 @@ import { Overlay } from "@/components/Overlay";
 import { TopBar } from "@/components/TopBar";
 import { ProfileMenu } from "@/components/ProfileMenu";
 import { useBuddy } from "@/lib/buddy-context";
+import { daysUntilSwedishDate } from "@/lib/dates";
 import { PRIORITY_OPTIONS } from "@/lib/insurance";
 import { isComparableItem, ITEM_CATEGORIES, ITEM_GROUPS, itemSummary, itemTitle, type ItemGroupId } from "@/lib/items";
 
@@ -65,6 +67,19 @@ export function Dashboard({ showIntro: initialShowIntro }: { showIntro?: boolean
   });
 
   const active = activeGroup ? groups.find((g) => g.id === activeGroup) : undefined;
+
+  // Bevakning: förfallodatum finns bara på auto-hämtade ("fetched") offerter —
+  // så fort något är jämfört och tecknat behövs ingen påminnelse längre.
+  const upcomingRenewals = items
+    .filter(isComparableItem)
+    .flatMap((item) => {
+      const quote = policies[item.id];
+      if (quote?.source !== "fetched" || !quote.forfallodatum) return [];
+      const days = daysUntilSwedishDate(quote.forfallodatum);
+      if (days == null) return [];
+      return [{ item, quote, days }];
+    })
+    .sort((a, b) => a.days - b.days);
 
   return (
     <div className="min-h-screen w-full">
@@ -142,6 +157,38 @@ export function Dashboard({ showIntro: initialShowIntro }: { showIntro?: boolean
             >
               Klar? Nu jämför vi allt <ArrowRight size={14} />
             </button>
+          </div>
+        )}
+
+        {upcomingRenewals.length > 0 && (
+          <div className="rounded-2xl border border-line p-5 mb-6 bg-white">
+            <div className="flex items-center gap-2 mb-3">
+              <CalendarDays size={16} className="text-forest" />
+              <span className="text-sm font-semibold">Kommande förfallodatum</span>
+            </div>
+            <div className="flex flex-col gap-3">
+              {upcomingRenewals.map(({ item, quote, days }) => (
+                <div key={item.id} className="flex items-center justify-between gap-3 flex-wrap">
+                  <div className="text-sm">
+                    <span className="font-medium">{itemTitle(item)}</span>{" "}
+                    <span className="text-slate">
+                      hos {quote.name} förnyas {quote.forfallodatum}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-3 flex-none">
+                    <span className={`text-xs font-semibold ${days <= 30 ? "text-amber-deep" : "text-slate"}`}>
+                      Om {days} {days === 1 ? "dag" : "dagar"}
+                    </span>
+                    <button
+                      onClick={() => router.push(`/compare/${item.id}`)}
+                      className="text-sm font-semibold flex items-center gap-1 text-forest whitespace-nowrap"
+                    >
+                      Jämför nu <ArrowRight size={14} />
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
         )}
 
@@ -274,7 +321,7 @@ export function Dashboard({ showIntro: initialShowIntro }: { showIntro?: boolean
           </div>
         )}
 
-        <div className="grid md:grid-cols-3 gap-4 mb-4">
+        <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
           <div
             className="rounded-2xl p-6 text-white flex flex-col justify-between bg-ink"
             style={{ minHeight: 150 }}
@@ -329,6 +376,24 @@ export function Dashboard({ showIntro: initialShowIntro }: { showIntro?: boolean
               className="bd-btn self-start mt-4 px-4 py-2 rounded-full text-sm font-semibold text-white bg-forest"
             >
               Boka möte
+            </button>
+          </div>
+          <div
+            className="rounded-2xl p-6 border border-line flex flex-col justify-between bg-white"
+            style={{ minHeight: 150 }}
+          >
+            <div>
+              <div className="flex items-center gap-2 mb-2">
+                <HeartPulse size={17} className="text-forest" />
+                <span className="text-sm font-semibold">Årlig hälsokoll</span>
+              </div>
+              <p className="text-sm text-slate">Få en samlad bild av allt du har hos oss.</p>
+            </div>
+            <button
+              onClick={() => router.push("/halsokoll")}
+              className="bd-btn self-start mt-4 px-4 py-2 rounded-full text-sm font-semibold text-white bg-forest"
+            >
+              Gör hälsokollen
             </button>
           </div>
         </div>
