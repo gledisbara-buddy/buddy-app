@@ -7,6 +7,7 @@ import { ProfileMenu } from "@/components/ProfileMenu";
 import { RequestsInbox } from "@/components/internal/RequestsInbox";
 import { CustomerSearchRail } from "@/components/internal/CustomerSearchRail";
 import { CustomerWorkspace } from "@/components/internal/CustomerWorkspace";
+import { MfaGate } from "@/components/internal/MfaGate";
 import { useBuddy } from "@/lib/buddy-context";
 import { createClient } from "@/lib/supabase/client";
 import { saveField } from "@/lib/activity-log";
@@ -66,56 +67,58 @@ export function InternalView() {
   if (loading || !userType || !isEmployee) return null;
 
   return (
-    <div className="min-h-screen w-full">
-      <TopBar onBack={() => router.push("/dashboard")} right={<ProfileMenu />} />
-      <div className={`mx-auto px-5 md:px-10 py-10 bd-fade ${tab === "kundsok" ? "max-w-6xl" : "max-w-3xl"}`}>
-        <span className="bd-eyebrow">Internt</span>
-        <h1 className="bd-display text-3xl mt-2 mb-6">Anställdvy</h1>
+    <MfaGate>
+      <div className="min-h-screen w-full">
+        <TopBar onBack={() => router.push("/dashboard")} right={<ProfileMenu />} />
+        <div className={`mx-auto px-5 md:px-10 py-10 bd-fade ${tab === "kundsok" ? "max-w-6xl" : "max-w-3xl"}`}>
+          <span className="bd-eyebrow">Internt</span>
+          <h1 className="bd-display text-3xl mt-2 mb-6">Anställdvy</h1>
 
-        <div className="flex items-center gap-1 mb-6 p-1 rounded-full w-fit bg-frost-2">
-          <button
-            onClick={() => setTab("forfragningar")}
-            className="px-4 py-1.5 rounded-full text-xs font-semibold"
-            style={
-              tab === "forfragningar"
-                ? { background: "white", color: "var(--color-ink)", boxShadow: "0 1px 3px rgba(0,0,0,.08)" }
-                : { color: "var(--color-slate)" }
-            }
-          >
-            Förfrågningar
-          </button>
-          <button
-            onClick={() => setTab("kundsok")}
-            className="px-4 py-1.5 rounded-full text-xs font-semibold"
-            style={
-              tab === "kundsok"
-                ? { background: "white", color: "var(--color-ink)", boxShadow: "0 1px 3px rgba(0,0,0,.08)" }
-                : { color: "var(--color-slate)" }
-            }
-          >
-            Kundsök
-          </button>
-        </div>
-
-        {tab === "forfragningar" ? (
-          <RequestsInbox />
-        ) : (
-          <div className="flex flex-col md:flex-row gap-6">
-            <CustomerSearchRail
-              selectedCustomer={selectedCustomer}
-              onSelectCustomer={fetchCustomer}
-              onHouseholdChanged={() => selectedCustomer && fetchCustomer(selectedCustomer.id)}
-            />
-            {selectedCustomer ? (
-              <CustomerWorkspace customer={selectedCustomer} actorEmail={profile?.email ?? ""} onFieldSave={handleFieldSave} />
-            ) : (
-              <div className="flex-1 flex items-center justify-center text-sm text-slate py-20">
-                Sök upp en kund till vänster för att komma igång.
-              </div>
-            )}
+          <div className="flex items-center gap-1 mb-6 p-1 rounded-full w-fit bg-frost-2">
+            <button
+              onClick={() => setTab("forfragningar")}
+              className="px-4 py-1.5 rounded-full text-xs font-semibold"
+              style={
+                tab === "forfragningar"
+                  ? { background: "white", color: "var(--color-ink)", boxShadow: "0 1px 3px rgba(0,0,0,.08)" }
+                  : { color: "var(--color-slate)" }
+              }
+            >
+              Förfrågningar
+            </button>
+            <button
+              onClick={() => setTab("kundsok")}
+              className="px-4 py-1.5 rounded-full text-xs font-semibold"
+              style={
+                tab === "kundsok"
+                  ? { background: "white", color: "var(--color-ink)", boxShadow: "0 1px 3px rgba(0,0,0,.08)" }
+                  : { color: "var(--color-slate)" }
+              }
+            >
+              Kundsök
+            </button>
           </div>
-        )}
+
+          {tab === "forfragningar" ? (
+            <RequestsInbox />
+          ) : (
+            <div className="flex flex-col md:flex-row gap-6">
+              <CustomerSearchRail
+                selectedCustomer={selectedCustomer}
+                onSelectCustomer={fetchCustomer}
+                onHouseholdChanged={() => selectedCustomer && fetchCustomer(selectedCustomer.id)}
+              />
+              {selectedCustomer ? (
+                <CustomerWorkspace customer={selectedCustomer} actorEmail={profile?.email ?? ""} onFieldSave={handleFieldSave} />
+              ) : (
+                <div className="flex-1 flex items-center justify-center text-sm text-slate py-20">
+                  Sök upp en kund till vänster för att komma igång.
+                </div>
+              )}
+            </div>
+          )}
+        </div>
       </div>
-    </div>
+    </MfaGate>
   );
 }
