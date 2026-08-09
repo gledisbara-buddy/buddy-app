@@ -20,6 +20,9 @@ export function AuthForm({ userType }: { userType: UserType }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [checkInbox, setCheckInbox] = useState(false);
+  const [code, setCode] = useState("");
+  const [verifying, setVerifying] = useState(false);
+  const [resendMessage, setResendMessage] = useState<string | null>(null);
 
   const valid = email.trim().length > 3 && password.length >= 6;
 
@@ -61,6 +64,32 @@ export function AuthForm({ userType }: { userType: UserType }) {
     }
   };
 
+  const handleVerifyCode = async () => {
+    if (code.trim().length < 6 || verifying) return;
+    setVerifying(true);
+    setError(null);
+    const supabase = createClient();
+    const { error: verifyError } = await supabase.auth.verifyOtp({
+      email: email.trim(),
+      token: code.trim(),
+      type: "signup",
+    });
+    setVerifying(false);
+    if (verifyError) {
+      setError("Fel kod, eller så har den gått ut. Kontrollera koden eller skicka en ny.");
+      return;
+    }
+    router.push("/onboarding");
+  };
+
+  const handleResendCode = async () => {
+    setError(null);
+    setResendMessage(null);
+    const supabase = createClient();
+    const { error: resendError } = await supabase.auth.resend({ type: "signup", email: email.trim() });
+    setResendMessage(resendError ? "Kunde inte skicka en ny kod just nu." : "Ny kod skickad.");
+  };
+
   if (checkInbox) {
     return (
       <div className="min-h-screen w-full flex flex-col">
@@ -73,10 +102,31 @@ export function AuthForm({ userType }: { userType: UserType }) {
             <div className="w-16 h-16 rounded-full flex items-center justify-center bg-forest mx-auto mb-4">
               <Mail size={26} color="white" />
             </div>
-            <h1 className="bd-display text-2xl mb-2">Kolla din mejl</h1>
-            <p className="text-sm text-slate">
-              Vi har skickat en bekräftelselänk till {email.trim()}. Klicka på den för att aktivera kontot.
+            <h1 className="bd-display text-2xl mb-2">Bekräfta din mejladress</h1>
+            <p className="text-sm text-slate mb-6">
+              Vi har skickat en 6-siffrig kod till {email.trim()}. Ange den nedan för att aktivera kontot.
             </p>
+            <div className="bg-white rounded-2xl border border-line p-6 text-left">
+              <input
+                value={code}
+                onChange={(e) => setCode(e.target.value)}
+                placeholder="6 siffror"
+                inputMode="numeric"
+                className={`${inputClass} mb-4 text-center tracking-widest`}
+              />
+              {error && <p className="text-sm text-red-600 mb-4">{error}</p>}
+              {resendMessage && <p className="text-sm mb-4 text-slate">{resendMessage}</p>}
+              <button
+                onClick={handleVerifyCode}
+                disabled={code.trim().length < 6 || verifying}
+                className="bd-btn w-full flex items-center justify-center gap-2 py-3.5 rounded-full font-semibold text-white text-[15px] bg-forest disabled:opacity-50 mb-3"
+              >
+                {verifying ? <Loader2 size={17} className="bd-spin" /> : <><Check size={17} /> Bekräfta</>}
+              </button>
+              <button onClick={handleResendCode} className="w-full text-center text-sm text-slate hover:text-ink">
+                Fick du ingen kod? Skicka igen
+              </button>
+            </div>
           </div>
         </div>
       </div>
