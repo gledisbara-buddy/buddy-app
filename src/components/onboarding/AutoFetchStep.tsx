@@ -102,6 +102,7 @@ export function AutoFetchStep({
           <div className="text-sm text-slate">Öppna BankID-appen i din mobil</div>
         </div>
         <Loader2 size={18} className="bd-spin text-forest" />
+        <p className="text-xs text-slate">Simulerad identifiering i den här prototypen.</p>
       </div>
     );
   }
@@ -116,6 +117,7 @@ export function AutoFetchStep({
           <div className="font-semibold text-[15px] mb-1">Hämtar din information…</div>
           <div className="text-sm text-slate">Ansluter till {bolag}</div>
         </div>
+        <p className="text-xs text-slate">Simulerad identifiering i den här prototypen.</p>
       </div>
     );
   }

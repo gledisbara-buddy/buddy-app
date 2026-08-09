@@ -11,7 +11,7 @@ export default function CookiesPage() {
     <LegalPage
       eyebrow="Juridik"
       title="Cookies"
-      updated="1 januari 2026"
+      updated="9 augusti 2026"
       sections={[
         {
           heading: "Vad är cookies?",
@@ -19,7 +19,7 @@ export default function CookiesPage() {
         },
         {
           heading: "Hur använder vi dem?",
-          body: "Vi använder nödvändiga cookies för inloggning och grundläggande funktionalitet. Vi använder inte cookies för reklamspårning.",
+          body: "Vi använder endast nödvändiga cookies för inloggning och grundläggande funktionalitet (t.ex. att hålla dig inloggad mellan besök). Vi använder inga cookies för reklamspårning eller delar cookie-data med tredjepartsannonsörer, och behöver därför inte fråga om samtycke.",
         },
         {
           heading: "Hantera cookies",

@@ -29,6 +29,6 @@ export const FAQ_ITEMS: FaqItem[] = [
   {
     question: "Är mina uppgifter säkra?",
     answer:
-      "Du loggar in med BankID och dina uppgifter används enbart för att ge dig relevanta förslag. Läs mer i vår integritetspolicy.",
+      "Ditt konto skyddas med lösenord, och dina uppgifter används enbart för att ge dig relevanta förslag — vi säljer dem aldrig vidare. Läs mer i vår integritetspolicy.",
   },
 ];

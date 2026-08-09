@@ -24,7 +24,7 @@ export function LegalPage({
       </div>
       <div className="rounded-2xl border border-line p-5 mt-10 bg-frost-2">
         <p className="text-xs text-ink">
-          Det här är exempeltext för en designprototyp och utgör inte faktiska juridiska villkor.
+          Det här är ett utkast som beskriver tjänsten så som den fungerar idag, och ersätter inte juridisk rådgivning — låt en jurist granska texten innan den används i skarp drift.
         </p>
       </div>
     </div>
