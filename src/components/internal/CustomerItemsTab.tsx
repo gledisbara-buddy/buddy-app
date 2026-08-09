@@ -7,6 +7,7 @@ import { ConfirmDialog } from "@/components/Overlay";
 import { itemSummary, itemTitle, type InsuranceItem } from "@/lib/items";
 import type { Quote } from "@/lib/quote";
 import { EditableField } from "@/components/internal/EditableField";
+import { sendTransactionalEmail } from "@/lib/email";
 
 type ConfirmAction = { kind: "delete"; itemId: string; title: string } | { kind: "cancel"; itemId: string };
 
@@ -14,7 +15,15 @@ type ConfirmAction = { kind: "delete"; itemId: string; title: string } | { kind:
 // jsonb-schema med en form per sakslag — utanför scope här. Det som
 // faktiskt behöver kunna rättas manuellt av en anställd är det tecknade
 // avtalets bolag/pris, så bara policies.data redigeras, inte items.data.
-export function CustomerItemsTab({ customerId, actorEmail }: { customerId: string; actorEmail: string }) {
+export function CustomerItemsTab({
+  customerId,
+  actorEmail,
+  customerEmail,
+}: {
+  customerId: string;
+  actorEmail: string;
+  customerEmail: string | null;
+}) {
   const [items, setItems] = useState<InsuranceItem[]>([]);
   const [policies, setPolicies] = useState<Record<string, Quote>>({});
   const [loading, setLoading] = useState(true);
@@ -77,7 +86,7 @@ export function CustomerItemsTab({ customerId, actorEmail }: { customerId: strin
     if (!confirmAction || confirmAction.kind !== "cancel") return;
     const current = policies[confirmAction.itemId];
     if (!current) return;
-    await updatePolicyField(
+    const ok = await updatePolicyField(
       confirmAction.itemId,
       "cancellationPending",
       false,
@@ -85,6 +94,19 @@ export function CustomerItemsTab({ customerId, actorEmail }: { customerId: strin
       { ...current, cancellationPending: true, cancellationRequestedAt: new Date().toISOString() }
     );
     setConfirmAction(null);
+    if (ok && customerEmail) {
+      const supabase = createClient();
+      const { data } = await supabase.auth.getSession();
+      const token = data.session?.access_token;
+      if (token) {
+        sendTransactionalEmail(token, {
+          type: "cancellation_confirmation",
+          to: customerEmail,
+          bolag: current.name,
+          forfallodatum: current.forfallodatum,
+        });
+      }
+    }
   };
 
   const undoCancellation = async (itemId: string) => {

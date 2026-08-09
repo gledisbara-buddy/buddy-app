@@ -6,6 +6,7 @@ import { createClient } from "@/lib/supabase/client";
 import { ConfirmDialog } from "@/components/Overlay";
 import { EditableField } from "@/components/internal/EditableField";
 import { saveField } from "@/lib/activity-log";
+import { sendTransactionalEmail } from "@/lib/email";
 import type { ChatMessage } from "@/lib/claim";
 
 type BookingRow = {
@@ -52,7 +53,15 @@ function statusColor(status: BookingRow["status"] | ClaimRow["status"]): string 
 // att rätta, inte bara statusen växla. "Avboka" (bara bokningar) skiljer
 // sig från radering: mötet blir inte av, men historiken finns kvar i
 // motsats till en permanent raderad felaktig post.
-export function CustomerCasesTab({ customerId, actorEmail }: { customerId: string; actorEmail: string }) {
+export function CustomerCasesTab({
+  customerId,
+  actorEmail,
+  customerEmail,
+}: {
+  customerId: string;
+  actorEmail: string;
+  customerEmail: string | null;
+}) {
   const [bookings, setBookings] = useState<BookingRow[]>([]);
   const [claims, setClaims] = useState<ClaimRow[]>([]);
   const [loading, setLoading] = useState(true);
@@ -101,6 +110,11 @@ export function CustomerCasesTab({ customerId, actorEmail }: { customerId: strin
       newValue: status,
     });
     if (ok) setClaims((prev) => prev.map((c) => (c.id === row.id ? { ...c, status } : c)));
+    if (ok && customerEmail) {
+      const { data } = await supabase.auth.getSession();
+      const token = data.session?.access_token;
+      if (token) sendTransactionalEmail(token, { type: "claim_status_changed", to: customerEmail, status });
+    }
   };
 
   const saveBookingField = async (row: BookingRow, field: keyof BookingRow, value: string) => {

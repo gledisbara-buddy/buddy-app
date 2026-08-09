@@ -101,8 +101,8 @@ export function CustomerWorkspace({
         ))}
       </div>
 
-      {tab === "saker" && <CustomerItemsTab customerId={customer.id} actorEmail={actorEmail} />}
-      {tab === "arenden" && <CustomerCasesTab customerId={customer.id} actorEmail={actorEmail} />}
+      {tab === "saker" && <CustomerItemsTab customerId={customer.id} actorEmail={actorEmail} customerEmail={customer.email} />}
+      {tab === "arenden" && <CustomerCasesTab customerId={customer.id} actorEmail={actorEmail} customerEmail={customer.email} />}
       {tab === "anteckningar" && <CustomerNotesTab customerId={customer.id} actorEmail={actorEmail} />}
       {tab === "aktivitet" && <CustomerActivityTab customerId={customer.id} />}
     </div>

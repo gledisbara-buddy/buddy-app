@@ -7,6 +7,7 @@ import type { Quote } from "@/lib/quote";
 import type { InsuranceItem } from "@/lib/items";
 import type { ChatMessage } from "@/lib/claim";
 import { generateHouseholdCode, type HouseholdRelation } from "@/lib/household";
+import { sendTransactionalEmail } from "@/lib/email";
 
 export type Profile = {
   name: string;
@@ -511,12 +512,25 @@ export function BuddyProvider({ children }: { children: ReactNode }) {
         })
         .select("id, topics, extra_note, meeting_type, day, time, status, created_at")
         .single()
-        .then((result) => {
+        .then(async (result) => {
           logWriteError("bokning")(result);
           if (result.data) setBookings((prev) => [...prev, mapBookingRow(result.data as BookingRow)]);
+          if (result.data && profile?.email) {
+            const { data } = await supabase.auth.getSession();
+            const token = data.session?.access_token;
+            if (token) {
+              sendTransactionalEmail(token, {
+                type: "booking_confirmation",
+                to: profile.email,
+                day: input.day,
+                time: input.time,
+                meetingType: input.meetingType,
+              });
+            }
+          }
         });
     },
-    [supabase, userId]
+    [supabase, userId, profile]
   );
 
   const submitClaim = useCallback(
