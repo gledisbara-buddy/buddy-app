@@ -22,6 +22,19 @@ export type Profile = {
 // användares profiler, bara summerade tal.
 export type ReferralStats = { total: number; qualified: number };
 
+// Uppgifterna som samlas in i CompareFlow.tsx:s teckna-flöde innan ett
+// avtal faktiskt sparas. Bara betalningstyp, aldrig kontouppgifter — se
+// CompareFlow.tsx för resonemanget.
+export type CheckoutInfo = {
+  name: string;
+  personnummer: string;
+  betalningsmetod: "autogiro" | "faktura" | "efaktura";
+  hasOldPolicy: boolean;
+  oldBolag?: string;
+  oldAvtalsnummer?: string;
+  wantsCancellationHelp?: boolean;
+};
+
 export type BookingInput = {
   topics: string[];
   extraNote: string;
@@ -84,7 +97,7 @@ type BuddyState = {
   addItem: (item: InsuranceItem) => void;
   removeItem: (id: string) => void;
   policies: Record<string, Quote>;
-  setPolicy: (insuranceId: string, quote: Quote) => void;
+  setPolicy: (insuranceId: string, quote: Quote, checkout?: CheckoutInfo) => void;
   // Sparade behovsanalys-svar per sak, så en kund slipper göra om analysen
   // varje gång den öppnar jämförelsen igen. Omvalideras mot aktuell
   // undertyp av CompareFlow vid inläsning, inte här.
@@ -366,13 +379,12 @@ export function BuddyProvider({ children }: { children: ReactNode }) {
   );
 
   const setPolicy = useCallback(
-    (insuranceId: string, quote: Quote) => {
+    (insuranceId: string, quote: Quote, checkout?: CheckoutInfo) => {
       setPolicies((prev) => ({ ...prev, [insuranceId]: quote }));
       if (!userId) return;
-      supabase
-        .from("policies")
-        .upsert({ item_id: insuranceId, user_id: userId, data: quote })
-        .then(logWriteError("offert"));
+      const row: Record<string, unknown> = { item_id: insuranceId, user_id: userId, data: quote };
+      if (checkout) row.checkout = checkout;
+      supabase.from("policies").upsert(row).then(logWriteError("offert"));
     },
     [supabase, userId]
   );

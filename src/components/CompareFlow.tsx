@@ -2,17 +2,122 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Check, CircleDot, Loader2, ShieldCheck, Star, Zap } from "lucide-react";
+import { ArrowLeft, ArrowRight, Check, CircleDot, Loader2, ShieldCheck, Star, Zap } from "lucide-react";
 import { Logo } from "@/components/Logo";
 import { NeedsAnalysis } from "@/components/NeedsAnalysis";
 import { Overlay } from "@/components/Overlay";
+import { FullmaktSigning } from "@/components/FullmaktSigning";
 import { AutoFetchStep } from "@/components/onboarding/AutoFetchStep";
-import { useBuddy } from "@/lib/buddy-context";
+import { BoolPill, Field, PillGroup, inputClass } from "@/components/onboarding/shared";
+import { useBuddy, type CheckoutInfo } from "@/lib/buddy-context";
 import { computeItemQuotes } from "@/lib/item-quotes";
 import { isComparableItem, itemSummary, itemTitle } from "@/lib/items";
 import { getAvailableNeedIds, NEED_LABELS, type NeedsKind } from "@/lib/needs";
 import type { FetchableKind } from "@/lib/policy-fetch";
 import { pickWinner, type Quote } from "@/lib/quote";
+
+type Betalningsmetod = CheckoutInfo["betalningsmetod"];
+
+const BETALNINGSMETOD_LABELS: Record<Betalningsmetod, string> = {
+  autogiro: "Autogiro",
+  faktura: "Faktura",
+  efaktura: "E-faktura",
+};
+
+function CheckoutForm({
+  quoteName,
+  name,
+  setName,
+  personnummer,
+  setPersonnummer,
+  betalningsmetod,
+  setBetalningsmetod,
+  hasOldPolicy,
+  setHasOldPolicy,
+  oldBolag,
+  setOldBolag,
+  oldAvtalsnummer,
+  setOldAvtalsnummer,
+  onSubmit,
+  onBack,
+}: {
+  quoteName: string;
+  name: string;
+  setName: (v: string) => void;
+  personnummer: string;
+  setPersonnummer: (v: string) => void;
+  betalningsmetod: Betalningsmetod | null;
+  setBetalningsmetod: (v: Betalningsmetod) => void;
+  hasOldPolicy: boolean | null;
+  setHasOldPolicy: (v: boolean) => void;
+  oldBolag: string;
+  setOldBolag: (v: string) => void;
+  oldAvtalsnummer: string;
+  setOldAvtalsnummer: (v: string) => void;
+  onSubmit: () => void;
+  onBack: () => void;
+}) {
+  const valid =
+    name.trim().length > 0 &&
+    personnummer.trim().length >= 10 &&
+    !!betalningsmetod &&
+    hasOldPolicy !== null &&
+    (!hasOldPolicy || oldBolag.trim().length > 0);
+
+  return (
+    <>
+      <button onClick={onBack} className="flex items-center gap-1.5 text-sm mb-5 opacity-60 hover:opacity-100">
+        <ArrowLeft size={15} /> Tillbaka
+      </button>
+      <span className="bd-eyebrow">Teckna</span>
+      <h1 className="bd-display text-2xl mt-3 mb-2">Dina uppgifter</h1>
+      <p className="text-sm mb-6 text-slate">Sista steget innan du tecknar {quoteName}.</p>
+
+      <div className="bg-white rounded-2xl border border-line p-6">
+        <Field label="Namn">
+          <input className={inputClass} value={name} onChange={(e) => setName(e.target.value)} placeholder="T.ex. Sam" />
+        </Field>
+        <Field label="Personnummer">
+          <input
+            className={inputClass}
+            value={personnummer}
+            onChange={(e) => setPersonnummer(e.target.value)}
+            placeholder="ÅÅÅÅMMDD-XXXX"
+          />
+        </Field>
+        <Field label="Betalningsmetod">
+          <PillGroup
+            options={["autogiro", "faktura", "efaktura"] as const}
+            labels={BETALNINGSMETOD_LABELS}
+            value={betalningsmetod}
+            onChange={setBetalningsmetod}
+          />
+        </Field>
+        <Field label="Har du en nuvarande försäkring som ska ersättas?">
+          <BoolPill value={hasOldPolicy} onChange={setHasOldPolicy} />
+        </Field>
+        {hasOldPolicy && (
+          <>
+            <Field label="Vilket bolag?">
+              <input className={inputClass} value={oldBolag} onChange={(e) => setOldBolag(e.target.value)} placeholder="T.ex. Hemgrund" />
+            </Field>
+            <Field label="Avtalsnummer (valfritt)">
+              <input className={inputClass} value={oldAvtalsnummer} onChange={(e) => setOldAvtalsnummer(e.target.value)} />
+            </Field>
+          </>
+        )}
+      </div>
+
+      <button
+        onClick={onSubmit}
+        disabled={!valid}
+        className="bd-btn w-full mt-5 flex items-center justify-center gap-2 py-3.5 rounded-full font-semibold text-white text-[15px] bg-forest disabled:opacity-40"
+      >
+        Fortsätt <ArrowRight size={16} />
+      </button>
+    </>
+  );
+}
 
 // Avtalsdetaljer för det avancerade jämförelseläget — bara satt för
 // Försäkring-gruppens offerter, så komponenten renderar inget om fälten saknas.
@@ -178,7 +283,7 @@ function ComparisonTable({
 
 export function CompareFlow({ itemId }: { itemId: string }) {
   const router = useRouter();
-  const { items, policies, setPolicy, itemNeeds, saveItemNeeds } = useBuddy();
+  const { items, policies, setPolicy, itemNeeds, saveItemNeeds, profile } = useBuddy();
   const found = items.find((i) => i.id === itemId);
   const item = found && isComparableItem(found) ? found : undefined;
 
@@ -200,12 +305,25 @@ export function CompareFlow({ itemId }: { itemId: string }) {
     item && hasNeedsStep
       ? (itemNeeds[item.id] ?? []).filter((id) => getAvailableNeedIds(item.kind as NeedsKind, item).includes(id))
       : [];
-  const [phase, setPhase] = useState<"needs" | "loading" | "results" | "signed">(hasNeedsStep ? "needs" : "loading");
+  const [phase, setPhase] = useState<"needs" | "loading" | "results" | "checkout" | "cancellation" | "signed">(
+    hasNeedsStep ? "needs" : "loading"
+  );
   const [signedQuote, setSignedQuote] = useState<Quote | null>(null);
   const [needs, setNeeds] = useState<string[]>(initialNeeds);
   const [showAutoFetch, setShowAutoFetch] = useState(false);
   const [detailLevel, setDetailLevel] = useState<"enkel" | "avancerat">("enkel");
   const [showTable, setShowTable] = useState(false);
+
+  // Insamlat i checkout/cancellation-faserna, skrivet i ett enda setPolicy-anrop
+  // när flödet är klart (se finalizeSign) — ingen delvis jsonb-merge behövs.
+  const [pendingQuote, setPendingQuote] = useState<Quote | null>(null);
+  const [checkoutName, setCheckoutName] = useState(profile?.name ?? "");
+  const [checkoutPersonnummer, setCheckoutPersonnummer] = useState(profile?.personnummer ?? "");
+  const [betalningsmetod, setBetalningsmetod] = useState<Betalningsmetod | null>(null);
+  const [hasOldPolicy, setHasOldPolicy] = useState<boolean | null>(null);
+  const [oldBolag, setOldBolag] = useState("");
+  const [oldAvtalsnummer, setOldAvtalsnummer] = useState("");
+  const [wantsCancellationHelp, setWantsCancellationHelp] = useState<boolean | undefined>(undefined);
 
   useEffect(() => {
     if (phase === "loading") {
@@ -226,9 +344,29 @@ export function CompareFlow({ itemId }: { itemId: string }) {
   const current = currentPolicy?.source === "fetched" ? currentPolicy : undefined;
 
   const handleSign = (quote: Quote) => {
-    setPolicy(item.id, { ...quote, source: "compared" });
-    setSignedQuote(quote);
+    setPendingQuote(quote);
+    setPhase("checkout");
+  };
+
+  const finalizeSign = (cancellationHelp?: boolean) => {
+    if (!pendingQuote || !betalningsmetod) return;
+    setPolicy(item.id, { ...pendingQuote, source: "compared" }, {
+      name: checkoutName.trim(),
+      personnummer: checkoutPersonnummer.trim(),
+      betalningsmetod,
+      hasOldPolicy: !!hasOldPolicy,
+      oldBolag: hasOldPolicy ? oldBolag.trim() || undefined : undefined,
+      oldAvtalsnummer: hasOldPolicy ? oldAvtalsnummer.trim() || undefined : undefined,
+      wantsCancellationHelp: cancellationHelp,
+    });
+    setWantsCancellationHelp(cancellationHelp);
+    setSignedQuote(pendingQuote);
     setPhase("signed");
+  };
+
+  const handleCheckoutSubmit = () => {
+    if (hasOldPolicy) setPhase("cancellation");
+    else finalizeSign();
   };
 
   return (
@@ -551,6 +689,75 @@ export function CompareFlow({ itemId }: { itemId: string }) {
         </>
       )}
 
+      {phase === "checkout" && pendingQuote && (
+        <div className="min-h-screen w-full flex flex-col">
+          <div className="w-full flex items-center justify-between px-6 py-5">
+            <Logo />
+            <div className="w-6" />
+          </div>
+          <div className="flex-1 flex items-start justify-center px-5 pb-16">
+            <div className="w-full max-w-md bd-fade">
+              {!profile?.fullmaktSignedAt ? (
+                <FullmaktSigning name={checkoutName || undefined} onDone={() => {}} />
+              ) : (
+                <CheckoutForm
+                  quoteName={pendingQuote.name}
+                  name={checkoutName}
+                  setName={setCheckoutName}
+                  personnummer={checkoutPersonnummer}
+                  setPersonnummer={setCheckoutPersonnummer}
+                  betalningsmetod={betalningsmetod}
+                  setBetalningsmetod={setBetalningsmetod}
+                  hasOldPolicy={hasOldPolicy}
+                  setHasOldPolicy={setHasOldPolicy}
+                  oldBolag={oldBolag}
+                  setOldBolag={setOldBolag}
+                  oldAvtalsnummer={oldAvtalsnummer}
+                  setOldAvtalsnummer={setOldAvtalsnummer}
+                  onSubmit={handleCheckoutSubmit}
+                  onBack={() => setPhase("results")}
+                />
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {phase === "cancellation" && pendingQuote && (
+        <div className="min-h-screen w-full flex flex-col">
+          <div className="w-full flex items-center justify-between px-6 py-5">
+            <Logo />
+            <div className="w-6" />
+          </div>
+          <div className="flex-1 flex items-center justify-center px-5 pb-16">
+            <div className="w-full max-w-md bd-fade">
+              <span className="bd-eyebrow">Nästan klart</span>
+              <h1 className="bd-display text-2xl mt-3 mb-2">
+                Vill du att Buddy hjälper dig säga upp {oldBolag.trim() || "din nuvarande försäkring"}?
+              </h1>
+              <p className="text-sm mb-6 text-slate">
+                Det är Buddy — inte {pendingQuote.name} — som i så fall sköter uppsägningen åt dig, med stöd av
+                din fullmakt.
+              </p>
+              <div className="flex flex-col gap-3">
+                <button
+                  onClick={() => finalizeSign(true)}
+                  className="bd-btn w-full flex items-center justify-center gap-2 py-3.5 rounded-full font-semibold text-white text-[15px] bg-forest"
+                >
+                  Ja, hjälp mig säga upp
+                </button>
+                <button
+                  onClick={() => finalizeSign(false)}
+                  className="w-full text-sm font-semibold py-3 text-slate"
+                >
+                  Nej, jag gör det själv
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       {phase === "signed" && signedQuote && (
         <div className="min-h-screen w-full flex flex-col">
           <div className="w-full flex items-center justify-between px-6 py-5">
@@ -617,6 +824,15 @@ export function CompareFlow({ itemId }: { itemId: string }) {
                   </div>
                 ))}
               </div>
+              {wantsCancellationHelp && (
+                <div className="rounded-2xl p-4 mb-6 flex items-start gap-3 bg-frost-2">
+                  <ShieldCheck size={15} className="flex-none mt-0.5 text-forest" />
+                  <p className="text-xs text-ink">
+                    Buddy hör av sig för att hjälpa dig säga upp din försäkring hos{" "}
+                    {oldBolag.trim() || "ditt tidigare bolag"} — du behöver inte göra något själv.
+                  </p>
+                </div>
+              )}
               <button
                 onClick={() => router.push("/dashboard")}
                 className="bd-btn w-full py-3.5 rounded-full font-semibold text-white text-[15px] bg-forest mb-3"
