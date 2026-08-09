@@ -6,6 +6,7 @@ import type { UserType } from "@/lib/types";
 import type { Quote } from "@/lib/quote";
 import type { InsuranceItem } from "@/lib/items";
 import type { ChatMessage } from "@/lib/claim";
+import { generateHouseholdCode, type HouseholdRelation } from "@/lib/household";
 
 export type Profile = {
   name: string;
@@ -33,6 +34,18 @@ export type CheckoutInfo = {
   oldBolag?: string;
   oldAvtalsnummer?: string;
   wantsCancellationHelp?: boolean;
+};
+
+// Hushållet är ett separat begrepp från de försäkringsobjekt av typen
+// "person" som redan finns i items.ts (barn/partner som skydds-objekt,
+// inte egna inloggningar) — se src/lib/household.ts.
+export type HouseholdMember = { id: string; name: string; relation: HouseholdRelation | null };
+export type Household = {
+  id: string;
+  name: string;
+  inviteCode: string;
+  relation: HouseholdRelation | null; // den inloggades egen roll i hushållet
+  members: HouseholdMember[]; // ko-medlemmar, inte en själv
 };
 
 export type BookingInput = {
@@ -93,6 +106,11 @@ type BuddyState = {
   // updateProfile eftersom den även behöver skriva ett server-satt
   // tidsstämpel, inte bara ett client-valt fält.
   recordFullmaktSigned: (pdfPath: string) => void;
+  // Null om kunden inte har gått med i eller skapat ett hushåll än.
+  household: Household | null;
+  createHousehold: (name: string) => Promise<boolean>;
+  joinHousehold: (code: string, relation: HouseholdRelation) => Promise<boolean>;
+  leaveHousehold: () => void;
   items: InsuranceItem[];
   addItem: (item: InsuranceItem) => void;
   removeItem: (id: string) => void;
@@ -158,6 +176,24 @@ type ClaimRow = {
   created_at: string;
 };
 
+type HouseholdRpcRow = {
+  id: string;
+  name: string;
+  invite_code: string;
+  my_relation: HouseholdRelation | null;
+  members: HouseholdMember[] | null;
+};
+
+function mapHouseholdRow(row: HouseholdRpcRow): Household {
+  return {
+    id: row.id,
+    name: row.name,
+    inviteCode: row.invite_code,
+    relation: row.my_relation,
+    members: row.members ?? [],
+  };
+}
+
 function mapBookingRow(r: BookingRow): BookingRecord {
   return {
     id: r.id,
@@ -201,6 +237,7 @@ export function BuddyProvider({ children }: { children: ReactNode }) {
   const [readyToCompare, setReadyToCompareState] = useState(false);
   const [isEmployee, setIsEmployee] = useState(false);
   const [referralStats, setReferralStats] = useState<ReferralStats | null>(null);
+  const [household, setHousehold] = useState<Household | null>(null);
   const [bookings, setBookings] = useState<BookingRecord[]>([]);
   const [claims, setClaims] = useState<ClaimRecord[]>([]);
 
@@ -214,6 +251,7 @@ export function BuddyProvider({ children }: { children: ReactNode }) {
     setReadyToCompareState(false);
     setIsEmployee(false);
     setReferralStats(null);
+    setHousehold(null);
     setBookings([]);
     setClaims([]);
   };
@@ -229,6 +267,7 @@ export function BuddyProvider({ children }: { children: ReactNode }) {
         { data: claimRows },
         { data: referralTotal },
         { data: referralQualified },
+        { data: householdRow },
       ] = await Promise.all([
         supabase
           .from("profiles")
@@ -250,6 +289,7 @@ export function BuddyProvider({ children }: { children: ReactNode }) {
           .order("created_at", { ascending: false }),
         supabase.rpc("count_referral_signups", { referrer: uid }),
         supabase.rpc("count_qualified_referrals", { referrer: uid }),
+        supabase.rpc("get_my_household").maybeSingle(),
       ]);
 
       if (profileRow) {
@@ -274,6 +314,7 @@ export function BuddyProvider({ children }: { children: ReactNode }) {
       setPolicies(Object.fromEntries(((policyRows ?? []) as PolicyRow[]).map((r) => [r.item_id, r.data])));
       setIsEmployee(!!employeeRow);
       setReferralStats({ total: (referralTotal as number | null) ?? 0, qualified: (referralQualified as number | null) ?? 0 });
+      setHousehold(householdRow ? mapHouseholdRow(householdRow as HouseholdRpcRow) : null);
       setBookings(((bookingRows ?? []) as BookingRow[]).map(mapBookingRow));
       setClaims(((claimRows ?? []) as ClaimRow[]).map(mapClaimRow));
     },
@@ -346,6 +387,53 @@ export function BuddyProvider({ children }: { children: ReactNode }) {
     },
     [supabase, userId]
   );
+
+  const createHousehold = useCallback(
+    async (name: string): Promise<boolean> => {
+      if (!userId) return false;
+      const insertOnce = () =>
+        supabase
+          .from("households")
+          .insert({ name: name.trim(), invite_code: generateHouseholdCode(name || profile?.name), created_by: userId })
+          .select("id, name, invite_code")
+          .single();
+
+      let { data, error } = await insertOnce();
+      if (error) ({ data, error } = await insertOnce());
+      if (error || !data) return false;
+
+      const row = data as { id: string; name: string; invite_code: string };
+      const { error: linkError } = await supabase.from("profiles").update({ household_id: row.id }).eq("id", userId);
+      if (linkError) return false;
+
+      setHousehold({ id: row.id, name: row.name, inviteCode: row.invite_code, relation: null, members: [] });
+      return true;
+    },
+    [supabase, userId, profile?.name]
+  );
+
+  const joinHousehold = useCallback(
+    async (code: string, relation: HouseholdRelation): Promise<boolean> => {
+      if (!userId) return false;
+      const { data, error } = await supabase.rpc("join_household", { code: code.trim(), relation });
+      if (error || !data) return false;
+
+      const { data: hh } = await supabase.rpc("get_my_household").maybeSingle();
+      if (hh) setHousehold(mapHouseholdRow(hh as HouseholdRpcRow));
+      return true;
+    },
+    [supabase, userId]
+  );
+
+  const leaveHousehold = useCallback(() => {
+    setHousehold(null);
+    if (!userId) return;
+    supabase
+      .from("profiles")
+      .update({ household_id: null, household_relation: null })
+      .eq("id", userId)
+      .then(logWriteError("hushåll"));
+  }, [supabase, userId]);
 
   const addItem = useCallback(
     (item: InsuranceItem) => {
@@ -466,6 +554,10 @@ export function BuddyProvider({ children }: { children: ReactNode }) {
       profile,
       updateProfile,
       recordFullmaktSigned,
+      household,
+      createHousehold,
+      joinHousehold,
+      leaveHousehold,
       items,
       addItem,
       removeItem,
@@ -491,6 +583,10 @@ export function BuddyProvider({ children }: { children: ReactNode }) {
       profile,
       updateProfile,
       recordFullmaktSigned,
+      household,
+      createHousehold,
+      joinHousehold,
+      leaveHousehold,
       items,
       addItem,
       removeItem,

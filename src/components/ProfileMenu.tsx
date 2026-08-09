@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Gift, HelpCircle, Inbox, LayoutDashboard, LogOut, Settings, Shield, User } from "lucide-react";
+import { Gift, HelpCircle, Home, Inbox, LayoutDashboard, LogOut, Settings, Shield, User } from "lucide-react";
 import { useBuddy } from "@/lib/buddy-context";
 
 export function ProfileMenu() {
@@ -77,6 +77,12 @@ export function ProfileMenu() {
               className="w-full flex items-center gap-3 px-4 py-2.5 text-sm hover:bg-frost text-left"
             >
               <Gift size={16} className="text-forest" /> Värva en vän
+            </button>
+            <button
+              onClick={() => go("/hushall")}
+              className="w-full flex items-center gap-3 px-4 py-2.5 text-sm hover:bg-frost text-left"
+            >
+              <Home size={16} className="text-forest" /> Hushåll
             </button>
             <button
               onClick={() => go("/installningar")}
