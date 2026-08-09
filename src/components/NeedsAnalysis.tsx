@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { ArrowLeft, Check, ListChecks, Loader2, Sparkles } from "lucide-react";
-import { BoolPill, MultiPillGroup } from "@/components/onboarding/shared";
+import { BoolPill, MultiPillGroup, PillGroup } from "@/components/onboarding/shared";
 import type { ComparableItem } from "@/lib/items";
 import {
   getAvailableNeedIds,
@@ -51,18 +51,29 @@ export function NeedsAnalysis({
   item,
   onDone,
   onBack,
+  initialConfirmed,
 }: {
   kind: NeedsKind;
   item: ComparableItem;
   onDone: (needs: string[]) => void;
   onBack: () => void;
+  // Tidigare sparade (och redan omvaliderade) behov för den här saken — om
+  // satt hoppar guiden direkt till bekräfta-skärmen förifylld, istället för
+  // att tvinga en omgång genom hela frågebatteriet igen.
+  initialConfirmed?: string[];
 }) {
-  const [phase, setPhase] = useState<Phase>("choice");
+  const [phase, setPhase] = useState<Phase>(initialConfirmed && initialConfirmed.length > 0 ? "confirm" : "choice");
   const [freeText, setFreeText] = useState("");
   const [history, setHistory] = useState<HistoryEntry[]>([]);
-  const [confirmed, setConfirmed] = useState<string[]>([]);
+  const [confirmed, setConfirmed] = useState<string[]>(initialConfirmed ?? []);
 
-  const questions = getNeedQuestions(kind, item);
+  const allQuestions = getNeedQuestions(kind, item);
+  // Uppföljningsfrågor med dependsOn syns bara när det behovet redan lagts
+  // till av ett tidigare svar — annars skulle t.ex. "hur ofta reser du?"
+  // dyka upp även för den som svarat nej på reseskydd.
+  const questions = allQuestions.filter(
+    (q) => !q.dependsOn || history.some((h) => h.addedIds.includes(q.dependsOn!.needId))
+  );
   const availableIds = getAvailableNeedIds(kind, item);
   const labels = NEED_LABELS[kind];
   const currentIndex = history.length;
@@ -87,6 +98,15 @@ export function NeedsAnalysis({
       addedIds: yes ? [currentQuestion.id] : [],
       answerLabel: yes ? "Ja" : "Nej",
     };
+    const next = [...history, entry];
+    setHistory(next);
+    if (next.length >= questions.length) finishQuestions(next);
+  };
+
+  const answerChoice = (id: string) => {
+    if (!currentQuestion || currentQuestion.type !== "choice") return;
+    const opt = currentQuestion.options.find((o) => o.id === id);
+    const entry: HistoryEntry = { question: currentQuestion, addedIds: [id], answerLabel: opt?.label ?? id };
     const next = [...history, entry];
     setHistory(next);
     if (next.length >= questions.length) finishQuestions(next);
@@ -232,6 +252,13 @@ export function NeedsAnalysis({
         </div>
         {currentQuestion.type === "yesno" ? (
           <BoolPill value={null} onChange={answerYesNo} />
+        ) : currentQuestion.type === "choice" ? (
+          <PillGroup
+            options={currentQuestion.options.map((o) => o.id)}
+            labels={Object.fromEntries(currentQuestion.options.map((o) => [o.id, o.label]))}
+            value={null}
+            onChange={answerChoice}
+          />
         ) : (
           <>
             <MultiPillGroup

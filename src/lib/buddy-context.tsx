@@ -70,6 +70,11 @@ type BuddyState = {
   removeItem: (id: string) => void;
   policies: Record<string, Quote>;
   setPolicy: (insuranceId: string, quote: Quote) => void;
+  // Sparade behovsanalys-svar per sak, så en kund slipper göra om analysen
+  // varje gång den öppnar jämförelsen igen. Omvalideras mot aktuell
+  // undertyp av CompareFlow vid inläsning, inte här.
+  itemNeeds: Record<string, string[]>;
+  saveItemNeeds: (itemId: string, needs: string[]) => void;
   // Skiljer lägg-in-fasen från jämför-fasen — sätts till true när kunden
   // uttryckligen säger att den är redo, låses aldrig om under sessionen.
   readyToCompare: boolean;
@@ -93,7 +98,7 @@ type ProfileRow = {
   ready_to_compare: boolean;
 };
 
-type ItemRow = { kind: string; data: InsuranceItem };
+type ItemRow = { kind: string; data: InsuranceItem; needs: string[] | null };
 type PolicyRow = { item_id: string; data: Quote };
 
 type BookingRow = {
@@ -156,6 +161,7 @@ export function BuddyProvider({ children }: { children: ReactNode }) {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [items, setItems] = useState<InsuranceItem[]>([]);
   const [policies, setPolicies] = useState<Record<string, Quote>>({});
+  const [itemNeeds, setItemNeeds] = useState<Record<string, string[]>>({});
   const [readyToCompare, setReadyToCompareState] = useState(false);
   const [isEmployee, setIsEmployee] = useState(false);
   const [bookings, setBookings] = useState<BookingRecord[]>([]);
@@ -167,6 +173,7 @@ export function BuddyProvider({ children }: { children: ReactNode }) {
     setProfile(null);
     setItems([]);
     setPolicies({});
+    setItemNeeds({});
     setReadyToCompareState(false);
     setIsEmployee(false);
     setBookings([]);
@@ -178,7 +185,7 @@ export function BuddyProvider({ children }: { children: ReactNode }) {
       const [{ data: profileRow }, { data: itemRows }, { data: policyRows }, { data: employeeRow }, { data: bookingRows }, { data: claimRows }] =
         await Promise.all([
           supabase.from("profiles").select("user_type, name, personnummer, phone, ready_to_compare").eq("id", uid).single(),
-          supabase.from("items").select("kind, data").eq("user_id", uid),
+          supabase.from("items").select("kind, data, needs").eq("user_id", uid),
           supabase.from("policies").select("item_id, data").eq("user_id", uid),
           email ? supabase.from("employees").select("email").eq("email", email).maybeSingle() : Promise.resolve({ data: null }),
           supabase
@@ -204,7 +211,11 @@ export function BuddyProvider({ children }: { children: ReactNode }) {
         });
         setReadyToCompareState(row.ready_to_compare);
       }
-      setItems(((itemRows ?? []) as ItemRow[]).map((r) => r.data));
+      const itemRowsTyped = (itemRows ?? []) as ItemRow[];
+      setItems(itemRowsTyped.map((r) => r.data));
+      setItemNeeds(
+        Object.fromEntries(itemRowsTyped.filter((r) => r.needs && r.needs.length > 0).map((r) => [r.data.id, r.needs as string[]]))
+      );
       setPolicies(Object.fromEntries(((policyRows ?? []) as PolicyRow[]).map((r) => [r.item_id, r.data])));
       setIsEmployee(!!employeeRow);
       setBookings(((bookingRows ?? []) as BookingRow[]).map(mapBookingRow));
@@ -285,6 +296,11 @@ export function BuddyProvider({ children }: { children: ReactNode }) {
         delete rest[id];
         return rest;
       });
+      setItemNeeds((prev) => {
+        const rest = { ...prev };
+        delete rest[id];
+        return rest;
+      });
       if (!userId) return;
       supabase.from("items").delete().eq("id", id).then(logWriteError("borttagning"));
     },
@@ -299,6 +315,15 @@ export function BuddyProvider({ children }: { children: ReactNode }) {
         .from("policies")
         .upsert({ item_id: insuranceId, user_id: userId, data: quote })
         .then(logWriteError("offert"));
+    },
+    [supabase, userId]
+  );
+
+  const saveItemNeeds = useCallback(
+    (itemId: string, needs: string[]) => {
+      setItemNeeds((prev) => ({ ...prev, [itemId]: needs }));
+      if (!userId) return;
+      supabase.from("items").update({ needs }).eq("id", itemId).then(logWriteError("behov"));
     },
     [supabase, userId]
   );
@@ -374,6 +399,8 @@ export function BuddyProvider({ children }: { children: ReactNode }) {
       removeItem,
       policies,
       setPolicy,
+      itemNeeds,
+      saveItemNeeds,
       readyToCompare,
       setReadyToCompare,
       isEmployee,
@@ -393,6 +420,8 @@ export function BuddyProvider({ children }: { children: ReactNode }) {
       removeItem,
       policies,
       setPolicy,
+      itemNeeds,
+      saveItemNeeds,
       readyToCompare,
       setReadyToCompare,
       isEmployee,

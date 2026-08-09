@@ -17,6 +17,10 @@ export type Quote = {
   bindningstid?: string;
   uppsagningstid?: string;
   undantag?: string[];
+  // Vilka av kundens behov (från behovsanalysen) som gjort att just det här
+  // bolaget valdes ut som en bra matchning — rent förklarande metadata,
+  // påverkar inte pickWinner nedan.
+  matchedNeeds?: string[];
 };
 
 // "Bästa helhetsvärde" — väger ihop betyg och pris istället för att bara

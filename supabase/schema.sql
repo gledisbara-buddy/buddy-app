@@ -51,6 +51,11 @@ create table if not exists public.items (
   created_at timestamptz not null default now()
 );
 
+-- Sparade behovsanalys-svar (needs-id:n) för saken — så kunden slipper göra
+-- om analysen varje gång den jämför igen. Läses om och omvalideras mot
+-- getAvailableNeedIds vid inläsning (undertypen kan ha ändrats sedan sist).
+alter table public.items add column if not exists needs jsonb;
+
 alter table public.items enable row level security;
 
 drop policy if exists "items_all_own" on public.items;

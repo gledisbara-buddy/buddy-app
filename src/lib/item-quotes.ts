@@ -1,5 +1,81 @@
 import type { ComparableItem, TelekomTyp } from "@/lib/items";
+import type { NeedsKind } from "@/lib/needs";
 import type { Quote } from "@/lib/quote";
+
+// Kopplar behovs-id:n till vilka bolag som faktiskt matchar dem — byggt på
+// bolagens redan etablerade "personligheter" (se highlights nedan), inte
+// gissat. Bara till för att förklara "varför" i CompareFlow — påverkar
+// aldrig priset eller vem som vinner.
+const NEED_COMPANY_MATCH: Record<NeedsKind, Record<string, string[]>> = {
+  boende: {
+    resa: ["nordvakt"],
+    resa_lang: ["nordvakt"],
+    drulle: ["klarsaker"],
+    hemmakontor: ["klarsaker"],
+    vardefulla_saker: ["klarsaker"],
+  },
+  bil: {
+    hyrbil: ["nordvakt"],
+    assistans: ["klarsaker"],
+    utlandskorning: ["klarsaker"],
+    ungForare: ["nordvakt"],
+    nyutbildad_forare: ["nordvakt"],
+    tillbehor: ["klarsaker"],
+  },
+  ovrigt_fordon: {
+    stold: ["klarsaker"],
+    sparning_installerad: ["klarsaker"],
+    transport: ["nordvakt"],
+    bogserar: ["nordvakt"],
+    tillbehor: ["klarsaker"],
+  },
+  person: {
+    risksport: ["klarsaker"],
+    risksport_extrem: ["klarsaker"],
+    risksport_motor: ["klarsaker"],
+    hogriskyrke: ["nordvakt"],
+    barnIHushall: ["klarsaker"],
+  },
+  djur: {
+    liv: ["nordvakt"],
+    kronisk: ["klarsaker"],
+    kronisk_diagnostiserad: ["klarsaker"],
+    tavling: ["klarsaker"],
+  },
+  telekom: {
+    utomlands: ["fiberpunkt"],
+    storforbrukare: ["sambandet"],
+    data_mycket: ["sambandet"],
+    data_obegransad: ["sambandet"],
+    flera_anvandare: ["sambandet"],
+    bindningstid: ["klarnat"],
+  },
+  kreditkort: {
+    utlandsresor: ["silverkortet"],
+    stora_kop: ["guldkortet"],
+    stora_kop_elektronik: ["guldkortet"],
+    kontantuttag: ["guldkortet"],
+    poang: ["kontokraft"],
+  },
+  el: {
+    fastpris_trygghet: ["kraftpunkt"],
+    hog_forbrukning: ["kraftpunkt"],
+    forbrukning_varmepump: ["kraftpunkt"],
+    miljo: ["solkraft"],
+    solceller: ["solkraft"],
+    elbil: ["voltec"],
+    forbrukning_elbil: ["voltec"],
+  },
+};
+
+function withMatchedNeeds(kind: NeedsKind, needs: string[], quotes: Quote[]): Quote[] {
+  const map = NEED_COMPANY_MATCH[kind];
+  if (needs.length === 0) return quotes;
+  return quotes.map((q) => {
+    const matched = needs.filter((id) => map[id]?.includes(q.id));
+    return matched.length > 0 ? { ...q, matchedNeeds: matched } : q;
+  });
+}
 
 const RATING = { klarsaker: 4.6, hemgrund: 4.2, nordvakt: 4.4, bjornskydd: 3.9 };
 const SELF_RISK = { klarsaker: 1500, hemgrund: 2000, nordvakt: 1200, bjornskydd: 2200 };
@@ -65,28 +141,32 @@ function boendeQuotes(item: Extract<ComparableItem, { kind: "boende" }>, needs: 
     const valueMult = item.uppskattatVarde < 10000 ? 0.8 : item.uppskattatVarde < 30000 ? 1 : 1.3;
     const sizeMult = item.storlekM2 < 5 ? 0.8 : item.storlekM2 < 15 ? 1 : 1.3;
     const mult = valueMult * sizeMult;
-    return [
-      build("klarsaker", "Klarsäker", 99 * mult + extrasCost, [
-        "Fullvärdesskydd för det du magasinerar, ingen övre gräns",
-        "Gäller även vid brand och inbrott i förvaringen",
-        "Skadeanmälan digitalt, snittbeslut inom 2 dagar",
-      ]),
-      build("hemgrund", "Hemgrund", 89 * mult + extrasCost, [
-        "Lägst grundpris av de tre",
-        "Bra grundskydd, färre tillägg ingår",
-        "Telefonsupport vardagar 8–17",
-      ]),
-      build("nordvakt", "Nordvakt", 105 * mult + extrasCost, [
-        "Lägst självrisk av de tre",
-        "Extra skydd vid vattenskada i förvaringen",
-        "Prisgaranti — matchar lägre pris hos annat bolag",
-      ]),
-      build("bjornskydd", "Björnskydd", 75 * mult + extrasCost, [
-        "Billigast av de fyra, tecknas och hanteras helt i app",
-        "Högre självrisk (2200 kr) och lägre ersättningstak (800 000 kr)",
-        "Telefonsupport ingår ej — endast chatt och app",
-      ]),
-    ].sort((a, b) => a.price - b.price);
+    return withMatchedNeeds(
+      "boende",
+      needs,
+      [
+        build("klarsaker", "Klarsäker", 99 * mult + extrasCost, [
+          "Fullvärdesskydd för det du magasinerar, ingen övre gräns",
+          "Gäller även vid brand och inbrott i förvaringen",
+          "Skadeanmälan digitalt, snittbeslut inom 2 dagar",
+        ]),
+        build("hemgrund", "Hemgrund", 89 * mult + extrasCost, [
+          "Lägst grundpris av de tre",
+          "Bra grundskydd, färre tillägg ingår",
+          "Telefonsupport vardagar 8–17",
+        ]),
+        build("nordvakt", "Nordvakt", 105 * mult + extrasCost, [
+          "Lägst självrisk av de tre",
+          "Extra skydd vid vattenskada i förvaringen",
+          "Prisgaranti — matchar lägre pris hos annat bolag",
+        ]),
+        build("bjornskydd", "Björnskydd", 75 * mult + extrasCost, [
+          "Billigast av de fyra, tecknas och hanteras helt i app",
+          "Högre självrisk (2200 kr) och lägre ersättningstak (800 000 kr)",
+          "Telefonsupport ingår ej — endast chatt och app",
+        ]),
+      ].sort((a, b) => a.price - b.price)
+    );
   }
 
   const typMult = { hyresratt: 1, bostadsratt: 1.1, villa: 1.35, fritidshus: 1.3, fritidsbostadsratt: 1.15 }[item.typ];
@@ -97,28 +177,32 @@ function boendeQuotes(item: Extract<ComparableItem, { kind: "boende" }>, needs: 
 
   const base = (v: number) => (v * typMult * boytaMult + personAdd) * larmMult + extrasCost;
 
-  return [
-    build("klarsaker", "Klarsäker", base(99), [
-      "Fullvärdesskydd för lösöre, ingen övre gräns",
-      "Drulleskydd ingår redan i grundpriset",
-      "Skadeanmälan digitalt, snittbeslut inom 2 dagar",
-    ]),
-    build("hemgrund", "Hemgrund", base(89), [
-      "Lägst grundpris av de tre",
-      "Bra grundskydd, färre tillägg ingår",
-      "Telefonsupport vardagar 8–17",
-    ]),
-    build("nordvakt", "Nordvakt", base(105), [
-      "Lägst självrisk av de tre",
-      "Extra starkt reseskydd (90 dagar)",
-      "Prisgaranti — matchar lägre pris hos annat bolag",
-    ]),
-    build("bjornskydd", "Björnskydd", base(75), [
-      "Billigast av de fyra, tecknas och hanteras helt i app",
-      "Högre självrisk (2200 kr) och lägre ersättningstak (800 000 kr)",
-      "Telefonsupport ingår ej — endast chatt och app",
-    ]),
-  ].sort((a, b) => a.price - b.price);
+  return withMatchedNeeds(
+    "boende",
+    needs,
+    [
+      build("klarsaker", "Klarsäker", base(99), [
+        "Fullvärdesskydd för lösöre, ingen övre gräns",
+        "Drulleskydd ingår redan i grundpriset",
+        "Skadeanmälan digitalt, snittbeslut inom 2 dagar",
+      ]),
+      build("hemgrund", "Hemgrund", base(89), [
+        "Lägst grundpris av de tre",
+        "Bra grundskydd, färre tillägg ingår",
+        "Telefonsupport vardagar 8–17",
+      ]),
+      build("nordvakt", "Nordvakt", base(105), [
+        "Lägst självrisk av de tre",
+        "Extra starkt reseskydd (90 dagar)",
+        "Prisgaranti — matchar lägre pris hos annat bolag",
+      ]),
+      build("bjornskydd", "Björnskydd", base(75), [
+        "Billigast av de fyra, tecknas och hanteras helt i app",
+        "Högre självrisk (2200 kr) och lägre ersättningstak (800 000 kr)",
+        "Telefonsupport ingår ej — endast chatt och app",
+      ]),
+    ].sort((a, b) => a.price - b.price)
+  );
 }
 
 function bilQuotes(item: Extract<ComparableItem, { kind: "bil" }>, needs: string[]): Quote[] {
@@ -137,28 +221,32 @@ function bilQuotes(item: Extract<ComparableItem, { kind: "bil" }>, needs: string
   const mult = ageMult * korMult * forvaringMult;
   const extrasCost = needs.length * 20;
 
-  return [
-    build("klarsaker", "Klarsäker", 249 * mult + extrasCost, [
-      "Vagnskadegaranti i 3 år",
-      "Fri bilbärgning i hela Europa",
-      "Skadeanmälan digitalt, snittbeslut inom 2 dagar",
-    ]),
-    build("hemgrund", "Hemgrund", 219 * mult + extrasCost, [
-      "Lägst grundpris av de tre",
-      "Bra grundskydd i trafik- och halvförsäkring",
-      "Telefonsupport vardagar 8–17",
-    ]),
-    build("nordvakt", "Nordvakt", 265 * mult + extrasCost, [
-      "Lägst självrisk av de tre",
-      "Hyrbil ingår vid verkstadsbesök",
-      "Prisgaranti — matchar lägre pris hos annat bolag",
-    ]),
-    build("bjornskydd", "Björnskydd", 185 * mult + extrasCost, [
-      "Billigast av de fyra, tecknas och hanteras helt i app",
-      "Högre självrisk (2200 kr) och lägre ersättningstak (800 000 kr)",
-      "Telefonsupport ingår ej — endast chatt och app",
-    ]),
-  ].sort((a, b) => a.price - b.price);
+  return withMatchedNeeds(
+    "bil",
+    needs,
+    [
+      build("klarsaker", "Klarsäker", 249 * mult + extrasCost, [
+        "Vagnskadegaranti i 3 år",
+        "Fri bilbärgning i hela Europa",
+        "Skadeanmälan digitalt, snittbeslut inom 2 dagar",
+      ]),
+      build("hemgrund", "Hemgrund", 219 * mult + extrasCost, [
+        "Lägst grundpris av de tre",
+        "Bra grundskydd i trafik- och halvförsäkring",
+        "Telefonsupport vardagar 8–17",
+      ]),
+      build("nordvakt", "Nordvakt", 265 * mult + extrasCost, [
+        "Lägst självrisk av de tre",
+        "Hyrbil ingår vid verkstadsbesök",
+        "Prisgaranti — matchar lägre pris hos annat bolag",
+      ]),
+      build("bjornskydd", "Björnskydd", 185 * mult + extrasCost, [
+        "Billigast av de fyra, tecknas och hanteras helt i app",
+        "Högre självrisk (2200 kr) och lägre ersättningstak (800 000 kr)",
+        "Telefonsupport ingår ej — endast chatt och app",
+      ]),
+    ].sort((a, b) => a.price - b.price)
+  );
 }
 
 function ovrigtFordonQuotes(item: Extract<ComparableItem, { kind: "ovrigt_fordon" }>, needs: string[]): Quote[] {
@@ -167,28 +255,32 @@ function ovrigtFordonQuotes(item: Extract<ComparableItem, { kind: "ovrigt_fordon
   const mult = typMult * effektMult;
   const extrasCost = needs.length * 12;
 
-  return [
-    build("klarsaker", "Klarsäker", 89 * mult + extrasCost, [
-      "Fullvärdesskydd, ingen övre gräns",
-      "Gäller även utomlands",
-      "Skadeanmälan digitalt, snittbeslut inom 2 dagar",
-    ]),
-    build("hemgrund", "Hemgrund", 79 * mult + extrasCost, [
-      "Lägst grundpris av de tre",
-      "Bra grundskydd, färre tillägg ingår",
-      "Telefonsupport vardagar 8–17",
-    ]),
-    build("nordvakt", "Nordvakt", 95 * mult + extrasCost, [
-      "Lägst självrisk av de tre",
-      "Inkluderar assistans vid haveri",
-      "Prisgaranti — matchar lägre pris hos annat bolag",
-    ]),
-    build("bjornskydd", "Björnskydd", 65 * mult + extrasCost, [
-      "Billigast av de fyra, tecknas och hanteras helt i app",
-      "Högre självrisk (2200 kr) och lägre ersättningstak (800 000 kr)",
-      "Telefonsupport ingår ej — endast chatt och app",
-    ]),
-  ].sort((a, b) => a.price - b.price);
+  return withMatchedNeeds(
+    "ovrigt_fordon",
+    needs,
+    [
+      build("klarsaker", "Klarsäker", 89 * mult + extrasCost, [
+        "Fullvärdesskydd, ingen övre gräns",
+        "Gäller även utomlands",
+        "Skadeanmälan digitalt, snittbeslut inom 2 dagar",
+      ]),
+      build("hemgrund", "Hemgrund", 79 * mult + extrasCost, [
+        "Lägst grundpris av de tre",
+        "Bra grundskydd, färre tillägg ingår",
+        "Telefonsupport vardagar 8–17",
+      ]),
+      build("nordvakt", "Nordvakt", 95 * mult + extrasCost, [
+        "Lägst självrisk av de tre",
+        "Inkluderar assistans vid haveri",
+        "Prisgaranti — matchar lägre pris hos annat bolag",
+      ]),
+      build("bjornskydd", "Björnskydd", 65 * mult + extrasCost, [
+        "Billigast av de fyra, tecknas och hanteras helt i app",
+        "Högre självrisk (2200 kr) och lägre ersättningstak (800 000 kr)",
+        "Telefonsupport ingår ej — endast chatt och app",
+      ]),
+    ].sort((a, b) => a.price - b.price)
+  );
 }
 
 function personQuotes(item: Extract<ComparableItem, { kind: "person" }>, needs: string[]): Quote[] {
@@ -197,28 +289,32 @@ function personQuotes(item: Extract<ComparableItem, { kind: "person" }>, needs: 
   const extrasCost = needs.length * 12;
   const base = (v: number) => v * relationMult + skyddAdd + extrasCost;
 
-  return [
-    build("klarsaker", "Klarsäker", base(59), [
-      "Ersättning oavsett vems fel skadan var",
-      "Gäller dygnet runt, även på fritiden",
-      "Skadeanmälan digitalt, snittbeslut inom 2 dagar",
-    ]),
-    build("hemgrund", "Hemgrund", base(49), [
-      "Lägst grundpris av de tre",
-      "Bra grundskydd, färre tillägg ingår",
-      "Telefonsupport vardagar 8–17",
-    ]),
-    build("nordvakt", "Nordvakt", base(65), [
-      "Lägst självrisk av de tre",
-      "Extra ersättning vid längre sjukskrivning",
-      "Prisgaranti — matchar lägre pris hos annat bolag",
-    ]),
-    build("bjornskydd", "Björnskydd", base(39), [
-      "Billigast av de fyra, tecknas och hanteras helt i app",
-      "Högre självrisk (2200 kr) och lägre ersättningstak (800 000 kr)",
-      "Telefonsupport ingår ej — endast chatt och app",
-    ]),
-  ].sort((a, b) => a.price - b.price);
+  return withMatchedNeeds(
+    "person",
+    needs,
+    [
+      build("klarsaker", "Klarsäker", base(59), [
+        "Ersättning oavsett vems fel skadan var",
+        "Gäller dygnet runt, även på fritiden",
+        "Skadeanmälan digitalt, snittbeslut inom 2 dagar",
+      ]),
+      build("hemgrund", "Hemgrund", base(49), [
+        "Lägst grundpris av de tre",
+        "Bra grundskydd, färre tillägg ingår",
+        "Telefonsupport vardagar 8–17",
+      ]),
+      build("nordvakt", "Nordvakt", base(65), [
+        "Lägst självrisk av de tre",
+        "Extra ersättning vid längre sjukskrivning",
+        "Prisgaranti — matchar lägre pris hos annat bolag",
+      ]),
+      build("bjornskydd", "Björnskydd", base(39), [
+        "Billigast av de fyra, tecknas och hanteras helt i app",
+        "Högre självrisk (2200 kr) och lägre ersättningstak (800 000 kr)",
+        "Telefonsupport ingår ej — endast chatt och app",
+      ]),
+    ].sort((a, b) => a.price - b.price)
+  );
 }
 
 function djurQuotes(item: Extract<ComparableItem, { kind: "djur" }>, needs: string[]): Quote[] {
@@ -230,28 +326,32 @@ function djurQuotes(item: Extract<ComparableItem, { kind: "djur" }>, needs: stri
   const mult = typMult * viktMult * ageMult * kastreradMult;
   const extrasCost = needs.length * 12;
 
-  return [
-    build("klarsaker", "Klarsäker", 129 * mult + extrasCost, [
-      "Ersätter veterinärvård utan övre gräns",
-      "Gäller från dag ett, ingen karenstid på olycksfall",
-      "Skadeanmälan digitalt, snittbeslut inom 2 dagar",
-    ]),
-    build("hemgrund", "Hemgrund", 109 * mult + extrasCost, [
-      "Lägst grundpris av de tre",
-      "Bra grundskydd för veterinärvård",
-      "Telefonsupport vardagar 8–17",
-    ]),
-    build("nordvakt", "Nordvakt", 145 * mult + extrasCost, [
-      "Lägst självrisk av de tre",
-      "Livförsäkring för djuret ingår",
-      "Prisgaranti — matchar lägre pris hos annat bolag",
-    ]),
-    build("bjornskydd", "Björnskydd", 89 * mult + extrasCost, [
-      "Billigast av de fyra, tecknas och hanteras helt i app",
-      "Högre självrisk (2200 kr) och lägre ersättningstak (800 000 kr)",
-      "Telefonsupport ingår ej — endast chatt och app",
-    ]),
-  ].sort((a, b) => a.price - b.price);
+  return withMatchedNeeds(
+    "djur",
+    needs,
+    [
+      build("klarsaker", "Klarsäker", 129 * mult + extrasCost, [
+        "Ersätter veterinärvård utan övre gräns",
+        "Gäller från dag ett, ingen karenstid på olycksfall",
+        "Skadeanmälan digitalt, snittbeslut inom 2 dagar",
+      ]),
+      build("hemgrund", "Hemgrund", 109 * mult + extrasCost, [
+        "Lägst grundpris av de tre",
+        "Bra grundskydd för veterinärvård",
+        "Telefonsupport vardagar 8–17",
+      ]),
+      build("nordvakt", "Nordvakt", 145 * mult + extrasCost, [
+        "Lägst självrisk av de tre",
+        "Livförsäkring för djuret ingår",
+        "Prisgaranti — matchar lägre pris hos annat bolag",
+      ]),
+      build("bjornskydd", "Björnskydd", 89 * mult + extrasCost, [
+        "Billigast av de fyra, tecknas och hanteras helt i app",
+        "Högre självrisk (2200 kr) och lägre ersättningstak (800 000 kr)",
+        "Telefonsupport ingår ej — endast chatt och app",
+      ]),
+    ].sort((a, b) => a.price - b.price)
+  );
 }
 
 // Telekom, kreditkort och el har redan ett pris kunden själv angett (till skillnad
@@ -292,13 +392,17 @@ const TELEKOM_HIGHLIGHTS: Record<TelekomTyp, string[][]> = {
 function telekomQuotes(item: Extract<ComparableItem, { kind: "telekom" }>, needs: string[]): Quote[] {
   const highlightSets = TELEKOM_HIGHLIGHTS[item.typ];
   const extrasCost = needs.length * 12;
-  return TELEKOM_ALT.map((alt, i) => ({
-    id: alt.id,
-    name: alt.name,
-    price: Math.max(29, Math.round(item.prisPerManad * alt.mult) + extrasCost),
-    rating: alt.rating,
-    highlights: highlightSets[i],
-  })).sort((a, b) => a.price - b.price);
+  return withMatchedNeeds(
+    "telekom",
+    needs,
+    TELEKOM_ALT.map((alt, i) => ({
+      id: alt.id,
+      name: alt.name,
+      price: Math.max(29, Math.round(item.prisPerManad * alt.mult) + extrasCost),
+      rating: alt.rating,
+      highlights: highlightSets[i],
+    })).sort((a, b) => a.price - b.price)
+  );
 }
 
 const KREDITKORT_CARDS = [
@@ -337,13 +441,17 @@ function kreditkortQuotes(item: Extract<ComparableItem, { kind: "kreditkort" }>,
   if (item.harReddan) {
     const baseMonthly = (item.arsavgift ?? 495) / 12;
     const mults = [0, 0.6, 1.3, 0.9];
-    return KREDITKORT_CARDS.map((c, i) => ({
-      id: c.id,
-      name: c.name,
-      price: Math.max(0, Math.round(baseMonthly * mults[i]) + extrasCost),
-      rating: c.rating,
-      highlights: c.highlights,
-    })).sort((a, b) => a.price - b.price);
+    return withMatchedNeeds(
+      "kreditkort",
+      needs,
+      KREDITKORT_CARDS.map((c, i) => ({
+        id: c.id,
+        name: c.name,
+        price: Math.max(0, Math.round(baseMonthly * mults[i]) + extrasCost),
+        rating: c.rating,
+        highlights: c.highlights,
+      })).sort((a, b) => a.price - b.price)
+    );
   }
 
   // Utforskar nytt kort — inget nuvarande pris att jämföra mot, så visa tre fasta
@@ -359,24 +467,32 @@ function kreditkortQuotes(item: Extract<ComparableItem, { kind: "kreditkort" }>,
   const ordered = preferredId
     ? [...KREDITKORT_CARDS].sort((a, b) => (a.id === preferredId ? -1 : b.id === preferredId ? 1 : 0))
     : KREDITKORT_CARDS;
-  return ordered.map((c) => ({
-    id: c.id,
-    name: c.name,
-    price: flatPrices[c.id] + extrasCost,
-    rating: c.rating,
-    highlights: c.highlights,
-  }));
+  return withMatchedNeeds(
+    "kreditkort",
+    needs,
+    ordered.map((c) => ({
+      id: c.id,
+      name: c.name,
+      price: flatPrices[c.id] + extrasCost,
+      rating: c.rating,
+      highlights: c.highlights,
+    }))
+  );
 }
 
 function elQuotes(item: Extract<ComparableItem, { kind: "el" }>, needs: string[]): Quote[] {
   const baseMonthly = ((item.arsforbrukningKwh ?? 5000) * 1.2) / 12;
   const extrasCost = needs.length * 12;
-  return [
-    { id: "klarstrom", name: "Klarström", price: Math.round(baseMonthly * 0.88) + extrasCost, rating: 4.3, highlights: ["Rörligt pris, ingen bindningstid", "100% förnybar el", "Enkel uppsägning"] },
-    { id: "kraftpunkt", name: "Kraftpunkt", price: Math.round(baseMonthly * 0.95) + extrasCost, rating: 4.5, highlights: ["Fast pris i 12 månader", "Prisgaranti", "Ingen påslagsavgift"] },
-    { id: "voltec", name: "Voltec", price: Math.round(baseMonthly * 1.08) + extrasCost, rating: 4.0, highlights: ["Fast pris i 24 månader", "Bonus vid tecknande", "Elbilsrabatt"] },
-    { id: "solkraft", name: "Solkraft", price: Math.round(baseMonthly * 1.25) + extrasCost, rating: 4.7, highlights: ["100% solenergi, garanterat ursprung", "Högst kundbetyg av de fyra", "Överskott återinvesteras i ny solkraft"] },
-  ].sort((a, b) => a.price - b.price);
+  return withMatchedNeeds(
+    "el",
+    needs,
+    [
+      { id: "klarstrom", name: "Klarström", price: Math.round(baseMonthly * 0.88) + extrasCost, rating: 4.3, highlights: ["Rörligt pris, ingen bindningstid", "100% förnybar el", "Enkel uppsägning"] },
+      { id: "kraftpunkt", name: "Kraftpunkt", price: Math.round(baseMonthly * 0.95) + extrasCost, rating: 4.5, highlights: ["Fast pris i 12 månader", "Prisgaranti", "Ingen påslagsavgift"] },
+      { id: "voltec", name: "Voltec", price: Math.round(baseMonthly * 1.08) + extrasCost, rating: 4.0, highlights: ["Fast pris i 24 månader", "Bonus vid tecknande", "Elbilsrabatt"] },
+      { id: "solkraft", name: "Solkraft", price: Math.round(baseMonthly * 1.25) + extrasCost, rating: 4.7, highlights: ["100% solenergi, garanterat ursprung", "Högst kundbetyg av de fyra", "Överskott återinvesteras i ny solkraft"] },
+    ].sort((a, b) => a.price - b.price)
+  );
 }
 
 export function computeItemQuotes(item: ComparableItem, extras: string[]): Quote[] {

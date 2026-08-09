@@ -15,9 +15,17 @@ export type NeedsKind =
 
 export type NeedOption = { id: string; label: string };
 
+// Gör en fråga villkorad på ett tidigare svar — den syns bara i guiden om
+// needId:t redan finns bland de behov som lagts till (dvs frågan besvarades
+// med "ja", eller en multi/choice-fråga där den optionen valdes).
+export type NeedDependsOn = { needId: string };
+
 export type NeedQuestion =
-  | { id: string; label: string; type: "yesno"; prompt: string }
-  | { id: string; type: "multi"; prompt: string; options: NeedOption[] };
+  | { id: string; label: string; type: "yesno"; prompt: string; dependsOn?: NeedDependsOn }
+  | { id: string; type: "multi"; prompt: string; options: NeedOption[]; dependsOn?: NeedDependsOn }
+  // Precis som "multi" men bara ett val åt gången — för uppföljningsfrågor
+  // där svaren är ömsesidigt uteslutande (t.ex. "hur ofta" snarare än "vilka").
+  | { id: string; type: "choice"; prompt: string; options: NeedOption[]; dependsOn?: NeedDependsOn };
 
 const BOENDE_QUESTIONS: NeedQuestion[] = [
   {
@@ -36,6 +44,16 @@ const BOENDE_QUESTIONS: NeedQuestion[] = [
     label: "Reseskydd",
     type: "yesno",
     prompt: "Reser du utomlands minst en gång per år och vill ha ett starkare reseskydd?",
+  },
+  {
+    id: "resa_langd",
+    type: "choice",
+    dependsOn: { needId: "resa" },
+    prompt: "Hur länge är du borta i regel när du reser?",
+    options: [
+      { id: "resa_kort", label: "Oftast under 2 veckor" },
+      { id: "resa_lang", label: "Ofta mer än 2 veckor" },
+    ],
   },
   {
     id: "drulle",
@@ -83,6 +101,13 @@ const BIL_QUESTIONS: NeedQuestion[] = [
     prompt: "Körs bilen regelbundet av en förare under 25 år?",
   },
   {
+    id: "nyutbildad_forare",
+    label: "Nyligen tagit körkort",
+    type: "yesno",
+    dependsOn: { needId: "ungForare" },
+    prompt: "Har den föraren haft körkort i mindre än två år?",
+  },
+  {
     id: "flerforare",
     label: "Flera regelbundna förare",
     type: "yesno",
@@ -108,6 +133,13 @@ const OVRIGT_FORDON_QUESTIONS: NeedQuestion[] = [
     label: "Högt värde / stöldrisk",
     type: "yesno",
     prompt: "Är fordonet av högt värde eller står det där stöldrisken är förhöjd?",
+  },
+  {
+    id: "sparning_installerad",
+    label: "GPS-spårning eller larm",
+    type: "yesno",
+    dependsOn: { needId: "stold" },
+    prompt: "Finns det GPS-spårning eller larm installerat på fordonet?",
   },
   {
     id: "transport",
@@ -141,6 +173,16 @@ const PERSON_QUESTIONS: NeedQuestion[] = [
     label: "Riskfylld sport eller hobby",
     type: "yesno",
     prompt: "Utövar personen en riskfylld sport eller hobby, till exempel dykning, klättring eller motorsport?",
+  },
+  {
+    id: "risksport_typ",
+    type: "choice",
+    dependsOn: { needId: "risksport" },
+    prompt: "Vilken typ av riskfylld aktivitet handlar det om?",
+    options: [
+      { id: "risksport_extrem", label: "Extremsport, t.ex. dykning eller klättring" },
+      { id: "risksport_motor", label: "Motorsport" },
+    ],
   },
   {
     id: "dubbelskydd",
@@ -182,6 +224,13 @@ const DJUR_QUESTIONS: NeedQuestion[] = [
     prompt: "Har djuret en kronisk sjukdom eller är det äldre (över 8 år)?",
   },
   {
+    id: "kronisk_diagnostiserad",
+    label: "Redan diagnostiserad",
+    type: "yesno",
+    dependsOn: { needId: "kronisk" },
+    prompt: "Är sjukdomen redan diagnostiserad av en veterinär?",
+  },
+  {
     id: "rasbetingad",
     label: "Rasbetingad sjukdomsrisk",
     type: "yesno",
@@ -207,6 +256,16 @@ const TELEKOM_QUESTIONS: NeedQuestion[] = [
     label: "Streamar/laddar ner mycket",
     type: "yesno",
     prompt: "Streamar eller laddar du ner mycket, till exempel filmer eller stora filer?",
+  },
+  {
+    id: "data_niva",
+    type: "choice",
+    dependsOn: { needId: "storforbrukare" },
+    prompt: "Ungefär hur mycket mobildata drar du per månad?",
+    options: [
+      { id: "data_mycket", label: "Över 50 GB" },
+      { id: "data_obegransad", label: "Vill helst ha obegränsat" },
+    ],
   },
   {
     id: "hemarbete",
@@ -240,6 +299,13 @@ const KREDITKORT_QUESTIONS: NeedQuestion[] = [
     label: "Köpskydd / förlängd garanti",
     type: "yesno",
     prompt: "Gör du ofta större inköp och vill ha köpskydd eller förlängd garanti?",
+  },
+  {
+    id: "stora_kop_elektronik",
+    label: "Ofta elektronik eller resor",
+    type: "yesno",
+    dependsOn: { needId: "stora_kop" },
+    prompt: "Handlar de större köpen ofta om elektronik eller resor?",
   },
   {
     id: "kontantuttag",
@@ -285,6 +351,16 @@ const EL_QUESTIONS: NeedQuestion[] = [
     label: "Hög elförbrukning",
     type: "yesno",
     prompt: "Har du hög elförbrukning, till exempel på grund av värmepump, elbil eller ett stort hus?",
+  },
+  {
+    id: "forbrukning_typ",
+    type: "choice",
+    dependsOn: { needId: "hog_forbrukning" },
+    prompt: "Vad drar mest el hos dig?",
+    options: [
+      { id: "forbrukning_varmepump", label: "Värmepump eller uppvärmning" },
+      { id: "forbrukning_elbil", label: "Elbilsladdning" },
+    ],
   },
   {
     id: "solceller",
@@ -361,6 +437,8 @@ const NEED_KEYWORDS: Record<NeedsKind, Record<string, string[]>> = {
     smycken: ["smycke", "smycken", "klocka", "klockor", "diamant", "guld"],
     elektronik: ["elektronik", "dator", "hemmabio", "ljudanläggning", "kamera"],
     resa: ["resa", "resor", "reser", "utomlands", "semester", "utlandsresa"],
+    resa_kort: ["kortare resor", "en vecka", "veckas resa"],
+    resa_lang: ["långresa", "flera veckor", "länge borta", "månad utomlands"],
     drulle: ["drulle", "allrisk", "tappar", "olyckshändelse"],
     hemmakontor: ["hemmakontor", "jobbar hemifrån", "distansarbete", "kontorsutrustning"],
     andrahand: ["andrahand", "inneboende", "hyr ut", "andrahandsuthyrning"],
@@ -370,12 +448,14 @@ const NEED_KEYWORDS: Record<NeedsKind, Record<string, string[]>> = {
     assistans: ["assistans", "vägassistans", "bärgning", "bogsering"],
     utlandskorning: ["utomlands", "utlandskörning", "europa", "semester"],
     ungForare: ["ung förare", "under 25", "tonåring", "nyutbildad"],
+    nyutbildad_forare: ["nytt körkort", "nybliven förare", "nyutbildad förare"],
     flerforare: ["flera förare", "delar bilen", "familjebil", "fler som kör"],
     tillbehor: ["fälgar", "dragkrok", "tillbehör", "ljudanläggning"],
   },
   ovrigt_fordon: {
     sasongsforvaring: ["förvaras inomhus", "garage", "vinterförvaring", "säsongsförvaring"],
     stold: ["stöld", "stöldrisk", "högt värde", "dyrbar"],
+    sparning_installerad: ["gps", "spårsändare", "larm installerat", "stöldskydd"],
     transport: ["transport", "bogsering", "bärgning", "hemtransport"],
     tillbehor: ["tillbehör", "extrautrustning"],
     bogserar: ["bogserar", "trailer", "släpvagn", "drar en"],
@@ -383,6 +463,8 @@ const NEED_KEYWORDS: Record<NeedsKind, Record<string, string[]>> = {
   person: {
     reser: ["resa", "reser", "utomlands", "semester"],
     risksport: ["riskfylld", "dykning", "klättring", "motorsport", "extremsport"],
+    risksport_extrem: ["dykning", "klättring", "bergsklättring", "extremsport"],
+    risksport_motor: ["motorsport", "motocross", "racing"],
     dubbelskydd: ["jobbet", "arbetsgivare", "tjänstepension", "kollektivavtal"],
     barnIHushall: ["barn", "barnförsäkring", "hushållet"],
     hogriskyrke: ["fysiskt krävande", "riskfyllt yrke", "byggarbetare", "brandman"],
@@ -391,12 +473,15 @@ const NEED_KEYWORDS: Record<NeedsKind, Record<string, string[]>> = {
     liv: ["livförsäkring", "avlivas", "dör"],
     tavling: ["tävlar", "tävling", "avel", "avlar"],
     kronisk: ["kronisk", "sjukdom", "gammal", "äldre"],
+    kronisk_diagnostiserad: ["diagnostiserad", "fått diagnos", "konstaterad sjukdom"],
     rasbetingad: ["ärftlig", "rasbetingad", "höftledsdysplasi", "rasrisk"],
     flerdjurshushall: ["flera djur", "fler husdjur", "syskon"],
   },
   telekom: {
     utomlands: ["utomlands", "resa", "reser", "roaming"],
     storforbrukare: ["streama", "streamar", "ladda ner", "mycket data", "4k"],
+    data_mycket: ["50 gb", "mycket data", "stor databudget"],
+    data_obegransad: ["obegränsat", "obegränsad data", "fri surf"],
     hemarbete: ["jobbar hemifrån", "distansarbete", "hemmakontor", "stabil uppkoppling"],
     flera_anvandare: ["flera i hushållet", "familj", "delar", "flera användare"],
     bindningstid: ["bindningstid", "ingen bindning", "byta när jag vill"],
@@ -404,6 +489,7 @@ const NEED_KEYWORDS: Record<NeedsKind, Record<string, string[]>> = {
   kreditkort: {
     utlandsresor: ["utomlands", "resa", "reser", "utlandsköp"],
     stora_kop: ["stora inköp", "köpskydd", "garanti", "dyra köp"],
+    stora_kop_elektronik: ["elektronik", "dator", "tv", "resa", "flygbiljetter"],
     kontantuttag: ["kontanter", "uttag", "ta ut pengar"],
     delat_kort: ["extrakort", "familjemedlem", "dela kortet"],
     poang: ["bonus", "poäng", "cashback", "rabatt"],
@@ -413,6 +499,8 @@ const NEED_KEYWORDS: Record<NeedsKind, Record<string, string[]>> = {
     fastpris_trygghet: ["fast pris", "trygghet", "förutsägbart"],
     miljo: ["miljö", "förnybar", "grön el", "miljömärkt"],
     hog_forbrukning: ["värmepump", "stort hus", "hög förbrukning"],
+    forbrukning_varmepump: ["värmepump", "uppvärmning", "elvärme"],
+    forbrukning_elbil: ["elbil", "laddar bilen", "elbilsladdning"],
     solceller: ["solceller", "sälja el", "överskott"],
   },
 };

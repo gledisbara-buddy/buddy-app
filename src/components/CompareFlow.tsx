@@ -10,7 +10,7 @@ import { AutoFetchStep } from "@/components/onboarding/AutoFetchStep";
 import { useBuddy } from "@/lib/buddy-context";
 import { computeItemQuotes } from "@/lib/item-quotes";
 import { isComparableItem, itemSummary, itemTitle } from "@/lib/items";
-import type { NeedsKind } from "@/lib/needs";
+import { getAvailableNeedIds, NEED_LABELS, type NeedsKind } from "@/lib/needs";
 import type { FetchableKind } from "@/lib/policy-fetch";
 import { pickWinner, type Quote } from "@/lib/quote";
 
@@ -60,6 +60,20 @@ function AdvancedDetails({ quote, dark }: { quote: Quote; dark?: boolean }) {
   );
 }
 
+// Visar varför just det här bolaget föreslogs, baserat på svaren i
+// behovsanalysen — bara satt när minst ett av kundens behov faktiskt
+// matchar bolagets styrkor (se NEED_COMPANY_MATCH i item-quotes.ts).
+function MatchedNeedsLine({ quote, labels, dark }: { quote: Quote; labels: Record<string, string>; dark?: boolean }) {
+  if (!quote.matchedNeeds || quote.matchedNeeds.length === 0) return null;
+  const text = quote.matchedNeeds.map((id) => labels[id] ?? id).join(", ");
+  return (
+    <div className="text-xs mb-4 flex items-start gap-1.5" style={{ color: dark ? "rgba(255,255,255,.85)" : "var(--color-forest)" }}>
+      <Star size={12} className="mt-0.5 flex-none" fill="currentColor" />
+      <span>Matchar dina behov: {text}</span>
+    </div>
+  );
+}
+
 // Fullständig jämförelsetabell för Försäkring-gruppen — med fyra bolag räcker
 // inte längre de tre korten ovanför för att visa alla alternativ på en gång.
 function ComparisonTable({
@@ -68,6 +82,7 @@ function ComparisonTable({
   winnerId,
   cheapestId,
   detailLevel,
+  needLabels,
   onSign,
 }: {
   quotes: Quote[];
@@ -75,6 +90,7 @@ function ComparisonTable({
   winnerId: string;
   cheapestId: string;
   detailLevel: "enkel" | "avancerat";
+  needLabels: Record<string, string>;
   onSign: (quote: Quote) => void;
 }) {
   const rows: { quote: Quote; isCurrent?: boolean }[] = [
@@ -98,6 +114,7 @@ function ComparisonTable({
                 <th className="py-2 px-3 font-semibold">Bindningstid</th>
                 <th className="py-2 px-3 font-semibold">Uppsägningstid</th>
                 <th className="py-2 px-3 font-semibold">Undantag</th>
+                <th className="py-2 px-3 font-semibold">Matchar behov</th>
               </>
             )}
             <th className="py-2 pl-3" />
@@ -133,6 +150,11 @@ function ComparisonTable({
                     <td className="py-3 px-3 text-slate">{quote.bindningstid ?? "–"}</td>
                     <td className="py-3 px-3 text-slate">{quote.uppsagningstid ?? "–"}</td>
                     <td className="py-3 px-3 text-slate max-w-[220px]">{quote.undantag?.join(", ") ?? "–"}</td>
+                    <td className="py-3 px-3 text-slate max-w-[200px]">
+                      {quote.matchedNeeds && quote.matchedNeeds.length > 0
+                        ? quote.matchedNeeds.map((id) => needLabels[id] ?? id).join(", ")
+                        : "–"}
+                    </td>
                   </>
                 )}
                 <td className="py-3 pl-3 text-right">
@@ -156,7 +178,7 @@ function ComparisonTable({
 
 export function CompareFlow({ itemId }: { itemId: string }) {
   const router = useRouter();
-  const { items, policies, setPolicy } = useBuddy();
+  const { items, policies, setPolicy, itemNeeds, saveItemNeeds } = useBuddy();
   const found = items.find((i) => i.id === itemId);
   const item = found && isComparableItem(found) ? found : undefined;
 
@@ -171,8 +193,15 @@ export function CompareFlow({ itemId }: { itemId: string }) {
   const NEEDS_KINDS: NeedsKind[] = [...FORSAKRING_KINDS, "telekom", "kreditkort", "el"];
   const isForsakringGroup = !!item && (FORSAKRING_KINDS as string[]).includes(item.kind);
   const hasNeedsStep = !!item && (NEEDS_KINDS as string[]).includes(item.kind);
+  // Tidigare sparade behov, omvaliderade mot sakens aktuella undertyp — en
+  // sparad "resa"-post kan t.ex. ha blivit ogiltig om boendet ändrats till
+  // magasinering sedan sist.
+  const initialNeeds =
+    item && hasNeedsStep
+      ? (itemNeeds[item.id] ?? []).filter((id) => getAvailableNeedIds(item.kind as NeedsKind, item).includes(id))
+      : [];
   const [phase, setPhase] = useState<"needs" | "loading" | "results">(hasNeedsStep ? "needs" : "loading");
-  const [needs, setNeeds] = useState<string[]>([]);
+  const [needs, setNeeds] = useState<string[]>(initialNeeds);
   const [showAutoFetch, setShowAutoFetch] = useState(false);
   const [detailLevel, setDetailLevel] = useState<"enkel" | "avancerat">("enkel");
   const [showTable, setShowTable] = useState(false);
@@ -214,8 +243,10 @@ export function CompareFlow({ itemId }: { itemId: string }) {
                 kind={item.kind as NeedsKind}
                 item={item}
                 onBack={() => router.push("/dashboard")}
+                initialConfirmed={initialNeeds.length > 0 ? initialNeeds : undefined}
                 onDone={(result) => {
                   setNeeds(result);
+                  saveItemNeeds(item.id, result);
                   setPhase("loading");
                 }}
               />
@@ -366,6 +397,7 @@ export function CompareFlow({ itemId }: { itemId: string }) {
                       </div>
                     ))}
                   </div>
+                  <MatchedNeedsLine quote={winner} labels={NEED_LABELS[item.kind as NeedsKind]} dark />
                   {winner.selfRisk != null && (
                     <div className="text-xs mb-4" style={{ color: "rgba(255,255,255,.55)" }}>
                       Självrisk: {winner.selfRisk.toLocaleString("sv-SE")} kr
@@ -397,6 +429,7 @@ export function CompareFlow({ itemId }: { itemId: string }) {
                       winnerId={winnerId}
                       cheapestId={cheapest.id}
                       detailLevel={detailLevel}
+                      needLabels={NEED_LABELS[item.kind as NeedsKind]}
                       onSign={handleSign}
                     />
                   </div>
@@ -473,6 +506,7 @@ export function CompareFlow({ itemId }: { itemId: string }) {
                     </div>
                   ))}
                 </div>
+                <MatchedNeedsLine quote={winner} labels={NEED_LABELS[item.kind as NeedsKind]} dark />
                 {winner.selfRisk != null && (
                   <div className="text-xs mb-5" style={{ color: "rgba(255,255,255,.55)" }}>
                     Självrisk: {winner.selfRisk.toLocaleString("sv-SE")} kr
@@ -501,6 +535,7 @@ export function CompareFlow({ itemId }: { itemId: string }) {
                       winnerId={winnerId}
                       cheapestId={cheapest.id}
                       detailLevel="enkel"
+                      needLabels={NEED_LABELS[item.kind as NeedsKind]}
                       onSign={handleSign}
                     />
                   </div>
