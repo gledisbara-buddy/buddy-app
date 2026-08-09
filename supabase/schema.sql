@@ -168,17 +168,41 @@ drop policy if exists "policies_select_employee" on public.policies;
 create policy "policies_select_employee" on public.policies
   for select using (exists (select 1 from public.employees where email = auth.jwt() ->> 'email'));
 
+-- Värva en vän: egen kod per användare (satt en gång i appen, se
+-- Onboarding.tsx) och vem som värvade vem. Uppslaget av referral_code_used
+-- görs i triggerfunktionen nedan (SECURITY DEFINER, kringgår RLS säkert)
+-- istället för klientsidan, som annars skulle kräva en policy som läcker
+-- andra användares profiler.
+alter table public.profiles add column if not exists referral_code text unique;
+alter table public.profiles add column if not exists referred_by uuid references public.profiles(id);
+
+-- Fullmakt: signeringsstatus + sökväg till PDF:en i Storage-bucketen
+-- "fullmakter" (se policies längst ner i filen).
+alter table public.profiles add column if not exists fullmakt_signed_at timestamptz;
+alter table public.profiles add column if not exists fullmakt_pdf_path text;
+
 -- Skapar automatiskt en profiles-rad när någon registrerar sig.
--- user_type och name skickas med som user-metadata vid signup.
+-- user_type och name skickas med som user-metadata vid signup, liksom en
+-- ev. angiven värvningskod (referral_code_used) som slås upp till ett
+-- riktigt användar-id här.
 create or replace function public.handle_new_user()
 returns trigger as $$
+declare
+  v_referrer_id uuid;
 begin
-  insert into public.profiles (id, user_type, name, email)
+  if new.raw_user_meta_data->>'referral_code_used' is not null then
+    select id into v_referrer_id from public.profiles
+    where referral_code = upper(new.raw_user_meta_data->>'referral_code_used')
+    limit 1;
+  end if;
+
+  insert into public.profiles (id, user_type, name, email, referred_by)
   values (
     new.id,
     coalesce(new.raw_user_meta_data->>'user_type', 'privat'),
     coalesce(new.raw_user_meta_data->>'name', ''),
-    new.email
+    new.email,
+    v_referrer_id
   );
   return new;
 end;
@@ -188,6 +212,44 @@ drop trigger if exists on_auth_user_created on auth.users;
 create trigger on_auth_user_created
   after insert on auth.users
   for each row execute function public.handle_new_user();
+
+-- Två räknefunktioner för värvningsstatistik — returnerar bara ett tal,
+-- exponerar aldrig rådata om andra användares profiler till klienten.
+create or replace function public.count_referral_signups(referrer uuid)
+returns int language sql security definer set search_path = public stable as $$
+  select count(*)::int from public.profiles where referred_by = referrer;
+$$;
+
+create or replace function public.count_qualified_referrals(referrer uuid)
+returns int language sql security definer set search_path = public stable as $$
+  select count(*)::int from public.profiles p
+  where p.referred_by = referrer
+    and p.ready_to_compare = true
+    and exists (select 1 from public.items i where i.user_id = p.id);
+$$;
+
+-- Fullmakt-PDF:er, en per kund. Privat bucket — bara ägaren eller en
+-- anställd får läsa, samma mönster som RLS på övriga tabeller.
+insert into storage.buckets (id, name, public) values ('fullmakter', 'fullmakter', false)
+  on conflict (id) do nothing;
+
+drop policy if exists "fullmakt_insert_own" on storage.objects;
+create policy "fullmakt_insert_own" on storage.objects
+  for insert with check (bucket_id = 'fullmakter' and (storage.foldername(name))[1] = auth.uid()::text);
+
+drop policy if exists "fullmakt_select_own_or_employee" on storage.objects;
+create policy "fullmakt_select_own_or_employee" on storage.objects
+  for select using (
+    bucket_id = 'fullmakter' and (
+      (storage.foldername(name))[1] = auth.uid()::text
+      or exists (select 1 from public.employees where email = auth.jwt() ->> 'email')
+    )
+  );
+
+-- Teckna-flödets insamlade köpuppgifter (namn/personnummer/betalningsmetod
+-- och ev. uppsägningshjälp) — en per tecknad sak, skrivs i samma upsert
+-- som redan sätter policies.data.
+alter table public.policies add column if not exists checkout jsonb;
 
 -- Lägg till dig själv som anställd (byt ut e-postadressen):
 -- insert into public.employees (email) values ('din@epost.se')

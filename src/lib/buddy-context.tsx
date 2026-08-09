@@ -12,7 +12,13 @@ export type Profile = {
   personnummer?: string;
   email?: string;
   phone?: string;
+  referralCode?: string;
 };
+
+// Räknat via två SECURITY DEFINER-funktioner i Supabase (count_referral_signups
+// / count_qualified_referrals) — exponerar aldrig rådata om andra
+// användares profiler, bara summerade tal.
+export type ReferralStats = { total: number; qualified: number };
 
 export type BookingInput = {
   topics: string[];
@@ -81,6 +87,11 @@ type BuddyState = {
   setReadyToCompare: (ready: boolean) => void;
   // Sant om e-posten finns i `employees`-tabellen — styr åtkomst till /internt.
   isEmployee: boolean;
+  referralStats: ReferralStats | null;
+  // Sant vid 5+ kvalificerade värvningar (lagt till en sak + nått
+  // jämförelseresultat) — styr rätten till kostnadsfri hjälp vid
+  // skadereglering, se ClaimFlow.tsx/InternalView.tsx.
+  hasClaimPerk: boolean;
   bookings: BookingRecord[];
   claims: ClaimRecord[];
   submitBooking: (input: BookingInput) => void;
@@ -96,6 +107,7 @@ type ProfileRow = {
   personnummer: string | null;
   phone: string | null;
   ready_to_compare: boolean;
+  referral_code: string | null;
 };
 
 type ItemRow = { kind: string; data: InsuranceItem; needs: string[] | null };
@@ -164,6 +176,7 @@ export function BuddyProvider({ children }: { children: ReactNode }) {
   const [itemNeeds, setItemNeeds] = useState<Record<string, string[]>>({});
   const [readyToCompare, setReadyToCompareState] = useState(false);
   const [isEmployee, setIsEmployee] = useState(false);
+  const [referralStats, setReferralStats] = useState<ReferralStats | null>(null);
   const [bookings, setBookings] = useState<BookingRecord[]>([]);
   const [claims, setClaims] = useState<ClaimRecord[]>([]);
 
@@ -176,29 +189,44 @@ export function BuddyProvider({ children }: { children: ReactNode }) {
     setItemNeeds({});
     setReadyToCompareState(false);
     setIsEmployee(false);
+    setReferralStats(null);
     setBookings([]);
     setClaims([]);
   };
 
   const loadForUser = useCallback(
     async (uid: string, email: string | undefined) => {
-      const [{ data: profileRow }, { data: itemRows }, { data: policyRows }, { data: employeeRow }, { data: bookingRows }, { data: claimRows }] =
-        await Promise.all([
-          supabase.from("profiles").select("user_type, name, personnummer, phone, ready_to_compare").eq("id", uid).single(),
-          supabase.from("items").select("kind, data, needs").eq("user_id", uid),
-          supabase.from("policies").select("item_id, data").eq("user_id", uid),
-          email ? supabase.from("employees").select("email").eq("email", email).maybeSingle() : Promise.resolve({ data: null }),
-          supabase
-            .from("bookings")
-            .select("id, topics, extra_note, meeting_type, day, time, status, created_at")
-            .eq("user_id", uid)
-            .order("day", { ascending: true }),
-          supabase
-            .from("claims")
-            .select("id, photo_count, receipt_count, skadetyp, allvarlighetsgrad, status, created_at")
-            .eq("user_id", uid)
-            .order("created_at", { ascending: false }),
-        ]);
+      const [
+        { data: profileRow },
+        { data: itemRows },
+        { data: policyRows },
+        { data: employeeRow },
+        { data: bookingRows },
+        { data: claimRows },
+        { data: referralTotal },
+        { data: referralQualified },
+      ] = await Promise.all([
+        supabase
+          .from("profiles")
+          .select("user_type, name, personnummer, phone, ready_to_compare, referral_code")
+          .eq("id", uid)
+          .single(),
+        supabase.from("items").select("kind, data, needs").eq("user_id", uid),
+        supabase.from("policies").select("item_id, data").eq("user_id", uid),
+        email ? supabase.from("employees").select("email").eq("email", email).maybeSingle() : Promise.resolve({ data: null }),
+        supabase
+          .from("bookings")
+          .select("id, topics, extra_note, meeting_type, day, time, status, created_at")
+          .eq("user_id", uid)
+          .order("day", { ascending: true }),
+        supabase
+          .from("claims")
+          .select("id, photo_count, receipt_count, skadetyp, allvarlighetsgrad, status, created_at")
+          .eq("user_id", uid)
+          .order("created_at", { ascending: false }),
+        supabase.rpc("count_referral_signups", { referrer: uid }),
+        supabase.rpc("count_qualified_referrals", { referrer: uid }),
+      ]);
 
       if (profileRow) {
         const row = profileRow as ProfileRow;
@@ -208,6 +236,7 @@ export function BuddyProvider({ children }: { children: ReactNode }) {
           personnummer: row.personnummer ?? undefined,
           phone: row.phone ?? undefined,
           email,
+          referralCode: row.referral_code ?? undefined,
         });
         setReadyToCompareState(row.ready_to_compare);
       }
@@ -218,6 +247,7 @@ export function BuddyProvider({ children }: { children: ReactNode }) {
       );
       setPolicies(Object.fromEntries(((policyRows ?? []) as PolicyRow[]).map((r) => [r.item_id, r.data])));
       setIsEmployee(!!employeeRow);
+      setReferralStats({ total: (referralTotal as number | null) ?? 0, qualified: (referralQualified as number | null) ?? 0 });
       setBookings(((bookingRows ?? []) as BookingRow[]).map(mapBookingRow));
       setClaims(((claimRows ?? []) as ClaimRow[]).map(mapClaimRow));
     },
@@ -269,6 +299,7 @@ export function BuddyProvider({ children }: { children: ReactNode }) {
       if (patch.name !== undefined) dbPatch.name = patch.name;
       if (patch.personnummer !== undefined) dbPatch.personnummer = patch.personnummer;
       if (patch.phone !== undefined) dbPatch.phone = patch.phone;
+      if (patch.referralCode !== undefined) dbPatch.referral_code = patch.referralCode;
       if (Object.keys(dbPatch).length > 0) {
         supabase.from("profiles").update(dbPatch).eq("id", userId).then(logWriteError("profil"));
       }
@@ -404,6 +435,8 @@ export function BuddyProvider({ children }: { children: ReactNode }) {
       readyToCompare,
       setReadyToCompare,
       isEmployee,
+      referralStats,
+      hasClaimPerk: (referralStats?.qualified ?? 0) >= 5,
       bookings,
       claims,
       submitBooking,
@@ -425,6 +458,7 @@ export function BuddyProvider({ children }: { children: ReactNode }) {
       readyToCompare,
       setReadyToCompare,
       isEmployee,
+      referralStats,
       bookings,
       claims,
       submitBooking,

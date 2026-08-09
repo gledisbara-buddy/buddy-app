@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Briefcase, Calendar, Check, Search, ShieldAlert } from "lucide-react";
+import { Briefcase, Calendar, Check, Search, ShieldAlert, ShieldCheck } from "lucide-react";
 import { TopBar } from "@/components/TopBar";
 import { ProfileMenu } from "@/components/ProfileMenu";
 import { useBuddy } from "@/lib/buddy-context";
@@ -53,6 +53,7 @@ export function InternalView() {
   const [claims, setClaims] = useState<ClaimRow[]>([]);
   const [profilesById, setProfilesById] = useState<Record<string, ProfileLookup>>({});
   const [itemTitlesById, setItemTitlesById] = useState<Record<string, string>>({});
+  const [claimPerkByUserId, setClaimPerkByUserId] = useState<Record<string, boolean>>({});
   const [requestsLoading, setRequestsLoading] = useState(true);
 
   const [searchQuery, setSearchQuery] = useState("");
@@ -98,6 +99,18 @@ export function InternalView() {
           ((topicItemRows ?? []) as { id: string; data: InsuranceItem }[]).map((r) => [r.id, itemTitle(r.data)])
         )
       );
+
+      // En liten badge per skadeärende om kunden har rätt till
+      // kostnadsfri hjälp (5+ kvalificerade värvningar) — samma
+      // räknefunktion som ReferralView.tsx använder för sig själv.
+      const claimUserIds = Array.from(new Set(cRows.map((r) => r.user_id)));
+      const perkResults = await Promise.all(
+        claimUserIds.map((uid) => supabase.rpc("count_qualified_referrals", { referrer: uid }))
+      );
+      setClaimPerkByUserId(
+        Object.fromEntries(claimUserIds.map((uid, i) => [uid, ((perkResults[i].data as number | null) ?? 0) >= 5]))
+      );
+
       setRequestsLoading(false);
     })();
   }, [loading, isEmployee]);
@@ -234,6 +247,11 @@ export function InternalView() {
                       </div>
                     ) : (
                       <div className="text-sm text-ink mb-3">
+                        {claimPerkByUserId[row.user_id] && (
+                          <div className="flex items-center gap-1.5 text-xs font-semibold mb-1.5 text-forest">
+                            <ShieldCheck size={13} /> Kund har rätt till kostnadsfri hjälp (5+ värvningar)
+                          </div>
+                        )}
                         <div>
                           {row.skadetyp ?? "Okänd skadetyp"} · {row.allvarlighetsgrad ?? "–"}
                         </div>

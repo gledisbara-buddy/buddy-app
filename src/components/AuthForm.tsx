@@ -16,6 +16,7 @@ export function AuthForm({ userType }: { userType: UserType }) {
   const [mode, setMode] = useState<Mode>("signup");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [referralCode, setReferralCode] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [checkInbox, setCheckInbox] = useState(false);
@@ -32,7 +33,7 @@ export function AuthForm({ userType }: { userType: UserType }) {
       const { data, error: signUpError } = await supabase.auth.signUp({
         email: email.trim(),
         password,
-        options: { data: { user_type: userType } },
+        options: { data: { user_type: userType, referral_code_used: referralCode.trim() || null } },
       });
       setLoading(false);
       if (signUpError) {
@@ -124,6 +125,16 @@ export function AuthForm({ userType }: { userType: UserType }) {
                 placeholder="Minst 6 tecken"
               />
             </Field>
+            {mode === "signup" && (
+              <Field label="Värvningskod (valfritt)">
+                <input
+                  className={inputClass}
+                  value={referralCode}
+                  onChange={(e) => setReferralCode(e.target.value)}
+                  placeholder="T.ex. SAM1234"
+                />
+              </Field>
+            )}
 
             {error && <p className="text-sm text-red-600 mb-4">{error}</p>}
 

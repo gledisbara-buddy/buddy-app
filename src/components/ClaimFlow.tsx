@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Camera, Check, CircleDot, Receipt, Send, Sparkles, X } from "lucide-react";
+import { Camera, Check, CircleDot, Receipt, Send, ShieldCheck, Sparkles, X } from "lucide-react";
 import { ConfirmDialog } from "@/components/Overlay";
 import { TopBar } from "@/components/TopBar";
 import { useBuddy } from "@/lib/buddy-context";
@@ -14,7 +14,7 @@ type UploadedFile = { name: string; dataUrl: string };
 
 export function ClaimFlow() {
   const router = useRouter();
-  const { submitClaim } = useBuddy();
+  const { submitClaim, hasClaimPerk } = useBuddy();
   const [phase, setPhase] = useState<Phase>("chat");
   const [messages, setMessages] = useState<ChatMessage[]>([
     { role: "assistant", content: "Hej. Tråkigt att höra att något har hänt — vad är det som har hänt?" },
@@ -111,6 +111,15 @@ export function ClaimFlow() {
         <>
           <div ref={scrollRef} className="bd-scroll flex-1 overflow-y-auto px-5 md:px-8 py-6">
             <div className="max-w-2xl mx-auto flex flex-col gap-4">
+              {hasClaimPerk && (
+                <div className="rounded-2xl p-4 flex items-start gap-3 bg-frost-2">
+                  <ShieldCheck size={16} className="mt-0.5 flex-none text-forest" />
+                  <p className="text-xs text-ink">
+                    Du har kostnadsfri hjälp av en specialist vid skadereglering tack vare dina
+                    värvningar!
+                  </p>
+                </div>
+              )}
               {messages.map((m, i) => (
                 <div
                   key={i}

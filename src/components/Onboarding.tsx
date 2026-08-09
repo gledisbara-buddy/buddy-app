@@ -11,6 +11,7 @@ import { TelekomForm } from "@/components/onboarding/TelekomForm";
 import { KreditkortForm } from "@/components/onboarding/KreditkortForm";
 import { BoolPill, Field, FormActions, MultiPillGroup, PillGroup, PillGroupWithOther, inputClass } from "@/components/onboarding/shared";
 import { useBuddy } from "@/lib/buddy-context";
+import { generateCode } from "@/lib/referral";
 import type { Quote } from "@/lib/quote";
 import type { FetchableKind } from "@/lib/policy-fetch";
 import { lookupVehicle } from "@/lib/vehicle-lookup";
@@ -551,7 +552,10 @@ export function Onboarding({ mode = "full", initialKind }: { mode?: "full" | "ad
   const goToDashboard = () => router.push("/dashboard");
 
   const finishFull = () => {
-    updateProfile({ name: name.trim() });
+    // Värvningskoden genereras och sparas en gång, exakt när namnet sätts
+    // — det är den första punkten i flödet där vi har ett namn att bygga
+    // koden från.
+    updateProfile({ name: name.trim(), referralCode: generateCode(name.trim()) });
     router.push("/dashboard?intro=1");
   };
 
