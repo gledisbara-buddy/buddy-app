@@ -15,7 +15,7 @@ type BookingRow = {
   day: string;
   time: string;
   contact: string;
-  status: "ny" | "hanterad";
+  status: "ny" | "hanterad" | "avbokad";
   created_at: string;
 };
 
@@ -140,8 +140,12 @@ export function RequestsInbox() {
                   </div>
                 </div>
               </div>
-              <span className={`text-xs font-semibold flex-none ${row.status === "ny" ? "text-amber-deep" : "text-forest"}`}>
-                {row.status === "ny" ? "● Ny" : "● Hanterad"}
+              <span
+                className={`text-xs font-semibold flex-none ${
+                  row.status === "ny" ? "text-amber-deep" : row.status === "avbokad" ? "text-slate" : "text-forest"
+                }`}
+              >
+                {row.status === "ny" ? "● Ny" : row.status === "avbokad" ? "● Avbokad" : "● Hanterad"}
               </span>
             </div>
 
@@ -176,12 +180,14 @@ export function RequestsInbox() {
               </div>
             )}
 
-            <button
-              onClick={() => (kind === "booking" ? toggleBookingStatus(row) : toggleClaimStatus(row))}
-              className="text-sm font-semibold flex items-center gap-1 text-forest"
-            >
-              <Check size={14} /> Markera som {row.status === "ny" ? "hanterad" : "ny"}
-            </button>
+            {row.status !== "avbokad" && (
+              <button
+                onClick={() => (kind === "booking" ? toggleBookingStatus(row) : toggleClaimStatus(row))}
+                className="text-sm font-semibold flex items-center gap-1 text-forest"
+              >
+                <Check size={14} /> Markera som {row.status === "ny" ? "hanterad" : "ny"}
+              </button>
+            )}
           </div>
         );
       })}

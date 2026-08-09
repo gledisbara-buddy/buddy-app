@@ -417,3 +417,32 @@ create policy "items_update_employee" on public.items
 drop policy if exists "policies_update_employee" on public.policies;
 create policy "policies_update_employee" on public.policies
   for update using (exists (select 1 from public.employees where email = auth.jwt() ->> 'email'));
+
+-- Ärendehantering: en anställd ska kunna avboka ett möte (skiljt från
+-- "hanterad" — mötet blir inte av) och radera felaktiga/dubbla poster.
+-- Statusvärdet i sig räcker för avboka; radering kräver en ny policy
+-- eftersom bara insert/select/update fanns för bookings/claims innan.
+alter table public.bookings drop constraint if exists bookings_status_check;
+alter table public.bookings add constraint bookings_status_check check (status in ('ny', 'hanterad', 'avbokad'));
+
+drop policy if exists "bookings_delete_employee" on public.bookings;
+create policy "bookings_delete_employee" on public.bookings
+  for delete using (exists (select 1 from public.employees where email = auth.jwt() ->> 'email'));
+
+drop policy if exists "claims_delete_employee" on public.claims;
+create policy "claims_delete_employee" on public.claims
+  for delete using (exists (select 1 from public.employees where email = auth.jwt() ->> 'email'));
+
+-- Försäkringshantering: radering av en sak som aldrig tecknats (items
+-- cascadar till en ev. policies-rad, se "on delete cascade" på
+-- policies.item_id ovan). Uppsägning av ett REDAN tecknat avtal görs
+-- inte med radering — se cancellationPending/cancellationRequestedAt i
+-- src/lib/quote.ts (bara nya jsonb-fält i policies.data, ingen
+-- schemaändring behövs för det).
+drop policy if exists "items_delete_employee" on public.items;
+create policy "items_delete_employee" on public.items
+  for delete using (exists (select 1 from public.employees where email = auth.jwt() ->> 'email'));
+
+drop policy if exists "policies_delete_employee" on public.policies;
+create policy "policies_delete_employee" on public.policies
+  for delete using (exists (select 1 from public.employees where email = auth.jwt() ->> 'email'));

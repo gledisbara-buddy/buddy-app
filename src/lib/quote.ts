@@ -21,6 +21,12 @@ export type Quote = {
   // bolaget valdes ut som en bra matchning — rent förklarande metadata,
   // påverkar inte pickWinner nedan.
   matchedNeeds?: string[];
+  // Satt av en anställd (internt, se CustomerItemsTab.tsx) när kunden bett
+  // om hjälp att säga upp ett redan tecknat avtal — avtalet raderas inte,
+  // det körs bara till forfallodatum. Kunden ser en notis om detta på sin
+  // egen översikt (Dashboard.tsx), så det är alltid synligt, inte tyst.
+  cancellationPending?: boolean;
+  cancellationRequestedAt?: string;
 };
 
 // "Bästa helhetsvärde" — väger ihop betyg och pris istället för att bara

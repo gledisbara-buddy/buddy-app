@@ -102,7 +102,7 @@ export function CustomerWorkspace({
       </div>
 
       {tab === "saker" && <CustomerItemsTab customerId={customer.id} actorEmail={actorEmail} />}
-      {tab === "arenden" && <CustomerCasesTab customerId={customer.id} />}
+      {tab === "arenden" && <CustomerCasesTab customerId={customer.id} actorEmail={actorEmail} />}
       {tab === "anteckningar" && <CustomerNotesTab customerId={customer.id} actorEmail={actorEmail} />}
       {tab === "aktivitet" && <CustomerActivityTab customerId={customer.id} />}
     </div>

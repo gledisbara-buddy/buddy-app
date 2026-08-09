@@ -8,6 +8,7 @@ import {
   Baby,
   CalendarDays,
   ChevronRight,
+  CircleSlash,
   Gift,
   HeartPulse,
   Home,
@@ -121,6 +122,15 @@ export function Dashboard({ showIntro: initialShowIntro }: { showIntro?: boolean
       return [{ item, quote, days }];
     })
     .sort((a, b) => a.days - b.days);
+
+  // Satt av en anställd internt (CustomerItemsTab.tsx) när kunden bett om
+  // hjälp att säga upp ett redan tecknat avtal — visas här så det aldrig
+  // är tyst för kunden att Buddy faktiskt sköter uppsägningen.
+  const pendingCancellations = items.flatMap((item) => {
+    const quote = policies[item.id];
+    if (!quote?.cancellationPending) return [];
+    return [{ item, quote }];
+  });
 
   // Bara nästa kommande bokning visas som banner — ISO-datum (YYYY-MM-DD)
   // går att jämföra direkt som strängar, ingen datumparsning behövs här.
@@ -240,6 +250,23 @@ export function Dashboard({ showIntro: initialShowIntro }: { showIntro?: boolean
             >
               Se detaljer <ArrowRight size={14} />
             </button>
+          </div>
+        )}
+
+        {pendingCancellations.length > 0 && (
+          <div className="rounded-2xl border border-line p-5 mb-6 flex flex-col gap-3 bg-frost-2">
+            {pendingCancellations.map(({ item, quote }) => (
+              <div key={item.id} className="flex items-center gap-3">
+                <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-none bg-white">
+                  <CircleSlash size={16} className="text-forest" />
+                </div>
+                <div className="text-sm">
+                  <span className="font-semibold">Buddy hör av sig till {quote.name}</span> för att säga upp din{" "}
+                  {itemTitle(item).toLowerCase()}
+                  {quote.forfallodatum ? ` till förfallodagen ${quote.forfallodatum}` : ""}.
+                </div>
+              </div>
+            ))}
           </div>
         )}
 

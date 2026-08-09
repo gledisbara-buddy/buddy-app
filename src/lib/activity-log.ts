@@ -10,7 +10,7 @@ type Supabase = ReturnType<typeof createClient>;
 export async function saveField(
   supabase: Supabase,
   params: {
-    table: "profiles" | "items" | "policies";
+    table: "profiles" | "items" | "policies" | "bookings" | "claims";
     idColumn: string;
     id: string;
     targetUserId: string;
