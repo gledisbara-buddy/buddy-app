@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Check, Loader2, ShieldCheck, Star, Zap } from "lucide-react";
+import { Check, CircleDot, Loader2, ShieldCheck, Star, Zap } from "lucide-react";
 import { Logo } from "@/components/Logo";
 import { NeedsAnalysis } from "@/components/NeedsAnalysis";
 import { Overlay } from "@/components/Overlay";
@@ -200,7 +200,8 @@ export function CompareFlow({ itemId }: { itemId: string }) {
     item && hasNeedsStep
       ? (itemNeeds[item.id] ?? []).filter((id) => getAvailableNeedIds(item.kind as NeedsKind, item).includes(id))
       : [];
-  const [phase, setPhase] = useState<"needs" | "loading" | "results">(hasNeedsStep ? "needs" : "loading");
+  const [phase, setPhase] = useState<"needs" | "loading" | "results" | "signed">(hasNeedsStep ? "needs" : "loading");
+  const [signedQuote, setSignedQuote] = useState<Quote | null>(null);
   const [needs, setNeeds] = useState<string[]>(initialNeeds);
   const [showAutoFetch, setShowAutoFetch] = useState(false);
   const [detailLevel, setDetailLevel] = useState<"enkel" | "avancerat">("enkel");
@@ -226,7 +227,8 @@ export function CompareFlow({ itemId }: { itemId: string }) {
 
   const handleSign = (quote: Quote) => {
     setPolicy(item.id, { ...quote, source: "compared" });
-    router.push("/dashboard");
+    setSignedQuote(quote);
+    setPhase("signed");
   };
 
   return (
@@ -547,6 +549,89 @@ export function CompareFlow({ itemId }: { itemId: string }) {
             </div>
           )}
         </>
+      )}
+
+      {phase === "signed" && signedQuote && (
+        <div className="min-h-screen w-full flex flex-col">
+          <div className="w-full flex items-center justify-between px-6 py-5">
+            <Logo />
+            <div className="w-6" />
+          </div>
+          <div className="flex-1 flex items-start justify-center px-5 pt-4 pb-16">
+            <div className="w-full max-w-lg bd-fade">
+              <div className="flex items-center gap-3 mb-6">
+                <div className="w-11 h-11 rounded-full flex items-center justify-center flex-none bg-forest">
+                  <Check size={20} color="white" />
+                </div>
+                <div>
+                  <div className="font-semibold text-[15px]">Klart — {signedQuote.name} är valt</div>
+                  <div className="text-xs text-slate">{label}</div>
+                </div>
+              </div>
+              <div className="bg-white rounded-2xl border border-line p-6 mb-6">
+                {(
+                  [
+                    {
+                      label: "Mottaget",
+                      desc: `Ditt val av ${signedQuote.name} är sparat i din översikt.`,
+                      done: true,
+                      current: false,
+                    },
+                    {
+                      label: "Bolaget hör av sig",
+                      desc: `${signedQuote.name} kontaktar dig inom kort för att slutföra avtalet.`,
+                      done: false,
+                      current: true,
+                    },
+                    {
+                      label: "Klart",
+                      desc: `Du hittar avtalet under ${label} när som helst i din översikt.`,
+                      done: false,
+                      current: false,
+                    },
+                  ] satisfies { label: string; desc: string; done: boolean; current: boolean }[]
+                ).map((s, i, arr) => (
+                  <div key={s.label} className="flex gap-4">
+                    <div className="flex flex-col items-center">
+                      <div
+                        className={`w-6 h-6 rounded-full flex items-center justify-center flex-none ${s.current ? "bd-pulsedot" : ""}`}
+                        style={{
+                          background: s.done || s.current ? "var(--color-forest)" : "white",
+                          border: s.done || s.current ? "none" : "2px solid var(--color-line)",
+                        }}
+                      >
+                        {s.done ? (
+                          <Check size={13} color="white" />
+                        ) : s.current ? (
+                          <CircleDot size={13} color="white" />
+                        ) : null}
+                      </div>
+                      {i < arr.length - 1 && (
+                        <div className="w-0.5 flex-1 my-1" style={{ background: "var(--color-line)", minHeight: 34 }} />
+                      )}
+                    </div>
+                    <div className="pb-8">
+                      <div className="text-sm font-semibold mb-0.5">{s.label}</div>
+                      <div className="text-xs text-slate">{s.desc}</div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+              <button
+                onClick={() => router.push("/dashboard")}
+                className="bd-btn w-full py-3.5 rounded-full font-semibold text-white text-[15px] bg-forest mb-3"
+              >
+                Till översikten
+              </button>
+              <button
+                onClick={() => router.push("/book")}
+                className="w-full text-sm font-semibold text-forest text-center"
+              >
+                Boka ett uppföljningssamtal
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

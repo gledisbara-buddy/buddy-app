@@ -11,6 +11,7 @@ import {
   Gift,
   HeartPulse,
   LayoutGrid,
+  Loader2,
   MessageCircle,
   Plus,
   ShieldAlert,
@@ -27,6 +28,28 @@ import { useBuddy } from "@/lib/buddy-context";
 import { formatBookingDay } from "@/lib/booking";
 import { daysUntilSwedishDate } from "@/lib/dates";
 import { isComparableItem, ITEM_CATEGORIES, ITEM_GROUPS, itemSummary, itemTitle, type ItemGroupId } from "@/lib/items";
+
+type ItemStatus = "saved" | "added" | "uncompared" | "compared" | "fetched";
+
+const STATUS_CONFIG: Record<ItemStatus, { label: string; color: string }> = {
+  saved: { label: "Sparad — jämförelse kommer snart", color: "var(--color-slate)" },
+  added: { label: "Tillagd", color: "var(--color-slate)" },
+  uncompared: { label: "Ej jämförd ännu", color: "var(--color-amber-deep)" },
+  compared: { label: "Tecknad", color: "var(--color-forest)" },
+  fetched: { label: "Auto-hämtad", color: "var(--color-forest)" },
+};
+
+// Ersätter de tidigare utspridda "● text"-strängarna (en per fall, lite olika
+// skrivna) med en konsekvent pill — ren presentation, ingen egen state.
+function ItemStatusBadge({ status }: { status: ItemStatus }) {
+  const c = STATUS_CONFIG[status];
+  return (
+    <span className="inline-flex items-center gap-1.5 text-xs font-medium" style={{ color: c.color }}>
+      <span className="w-1.5 h-1.5 rounded-full flex-none" style={{ background: c.color }} />
+      {c.label}
+    </span>
+  );
+}
 
 const INTRO_POINTS = [
   {
@@ -49,6 +72,7 @@ export function Dashboard({ showIntro: initialShowIntro }: { showIntro?: boolean
   const [activeGroup, setActiveGroup] = useState<ItemGroupId | null>(null);
   const [showIntro, setShowIntro] = useState(!!initialShowIntro);
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
+  const [switching, setSwitching] = useState(false);
 
   useEffect(() => {
     if (!loading && !userType) router.replace("/kom-igang");
@@ -60,6 +84,20 @@ export function Dashboard({ showIntro: initialShowIntro }: { showIntro?: boolean
   };
 
   if (loading || !userType) return null;
+
+  if (switching) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center gap-5">
+        <div className="w-14 h-14 rounded-2xl flex items-center justify-center bg-forest">
+          <Loader2 size={24} color="white" className="bd-spin" />
+        </div>
+        <div className="text-center">
+          <div className="bd-display text-xl mb-1">Ställer om till jämförelseläge…</div>
+          <div className="text-sm text-slate">Nu kan du jämföra allt du lagt in</div>
+        </div>
+      </div>
+    );
+  }
 
   const groups = ITEM_GROUPS.map((g) => {
     const groupItems = items.filter((i) => g.kinds.includes(i.kind));
@@ -166,7 +204,13 @@ export function Dashboard({ showIntro: initialShowIntro }: { showIntro?: boolean
               </div>
             </div>
             <button
-              onClick={() => setReadyToCompare(true)}
+              onClick={() => {
+                setSwitching(true);
+                setTimeout(() => {
+                  setReadyToCompare(true);
+                  setSwitching(false);
+                }, 900);
+              }}
               className="bd-btn flex items-center gap-1.5 text-sm font-semibold px-4 py-2.5 rounded-full text-white bg-forest flex-none"
             >
               Klar? Nu jämför vi allt <ArrowRight size={14} />
@@ -323,13 +367,13 @@ export function Dashboard({ showIntro: initialShowIntro }: { showIntro?: boolean
                       <div className="font-semibold text-[15px] mb-1">{itemTitle(item)}</div>
                       <div className="text-xs mb-4 text-slate">{itemSummary(item)}</div>
                       {!isComparableItem(item) ? (
-                        <div className="text-xs text-slate">● Sparad — jämförelse kommer snart</div>
+                        <ItemStatusBadge status="saved" />
                       ) : !readyToCompare ? (
-                        <div className="text-xs text-slate">● Tillagd</div>
+                        <ItemStatusBadge status="added" />
                       ) : signed?.source === "compared" ? (
                         <>
-                          <div className="text-xs mb-3 text-forest">
-                            ● Tecknad hos {signed.name} — {signed.price} kr/mån
+                          <div className="mb-3">
+                            <ItemStatusBadge status="compared" /> <span className="text-xs text-ink">hos {signed.name} — {signed.price} kr/mån</span>
                           </div>
                           <button
                             onClick={() => router.push(`/compare/${item.id}`)}
@@ -340,6 +384,9 @@ export function Dashboard({ showIntro: initialShowIntro }: { showIntro?: boolean
                         </>
                       ) : signed?.source === "fetched" ? (
                         <>
+                          <div className="mb-2">
+                            <ItemStatusBadge status="fetched" />
+                          </div>
                           <div className="text-xs text-ink">
                             <b>{signed.name}</b> · {signed.price} kr/mån
                           </div>
@@ -356,7 +403,9 @@ export function Dashboard({ showIntro: initialShowIntro }: { showIntro?: boolean
                         </>
                       ) : (
                         <>
-                          <div className="text-xs mb-3 text-amber-deep">● Ej jämförd ännu</div>
+                          <div className="mb-3">
+                            <ItemStatusBadge status="uncompared" />
+                          </div>
                           <button
                             onClick={() => router.push(`/compare/${item.id}`)}
                             className="text-sm font-semibold flex items-center gap-1 text-forest"
