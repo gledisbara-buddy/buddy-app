@@ -13,6 +13,8 @@ export type Profile = {
   email?: string;
   phone?: string;
   referralCode?: string;
+  fullmaktSignedAt?: string;
+  fullmaktPdfPath?: string;
 };
 
 // Räknat via två SECURITY DEFINER-funktioner i Supabase (count_referral_signups
@@ -66,11 +68,18 @@ type BuddyState = {
   // guardade sidor ska vänta med att redirecta till /kom-igang tills dess.
   loading: boolean;
   userType: UserType | null;
+  // Den råa Supabase auth-id:t — behövs för Storage-sökvägar (t.ex.
+  // fullmakter/{userId}/fullmakt.pdf) där RLS-policyn matchar mot mappnamnet.
+  userId: string | null;
   profile: Profile | null;
   // `email` kommer alltid från Supabase Auth (den riktiga inloggningsmejlen)
   // och kan inte skrivas via profiles-tabellen — se ProfilePage för hur en
   // riktig mejländring görs (supabase.auth.updateUser).
   updateProfile: (patch: Partial<Omit<Profile, "email">>) => void;
+  // Sätts av FullmaktSigning.tsx efter en lyckad signering — skiljs från
+  // updateProfile eftersom den även behöver skriva ett server-satt
+  // tidsstämpel, inte bara ett client-valt fält.
+  recordFullmaktSigned: (pdfPath: string) => void;
   items: InsuranceItem[];
   addItem: (item: InsuranceItem) => void;
   removeItem: (id: string) => void;
@@ -108,6 +117,8 @@ type ProfileRow = {
   phone: string | null;
   ready_to_compare: boolean;
   referral_code: string | null;
+  fullmakt_signed_at: string | null;
+  fullmakt_pdf_path: string | null;
 };
 
 type ItemRow = { kind: string; data: InsuranceItem; needs: string[] | null };
@@ -208,7 +219,7 @@ export function BuddyProvider({ children }: { children: ReactNode }) {
       ] = await Promise.all([
         supabase
           .from("profiles")
-          .select("user_type, name, personnummer, phone, ready_to_compare, referral_code")
+          .select("user_type, name, personnummer, phone, ready_to_compare, referral_code, fullmakt_signed_at, fullmakt_pdf_path")
           .eq("id", uid)
           .single(),
         supabase.from("items").select("kind, data, needs").eq("user_id", uid),
@@ -237,6 +248,8 @@ export function BuddyProvider({ children }: { children: ReactNode }) {
           phone: row.phone ?? undefined,
           email,
           referralCode: row.referral_code ?? undefined,
+          fullmaktSignedAt: row.fullmakt_signed_at ?? undefined,
+          fullmaktPdfPath: row.fullmakt_pdf_path ?? undefined,
         });
         setReadyToCompareState(row.ready_to_compare);
       }
@@ -303,6 +316,20 @@ export function BuddyProvider({ children }: { children: ReactNode }) {
       if (Object.keys(dbPatch).length > 0) {
         supabase.from("profiles").update(dbPatch).eq("id", userId).then(logWriteError("profil"));
       }
+    },
+    [supabase, userId]
+  );
+
+  const recordFullmaktSigned = useCallback(
+    (pdfPath: string) => {
+      const signedAt = new Date().toISOString();
+      setProfile((prev) => (prev ? { ...prev, fullmaktSignedAt: signedAt, fullmaktPdfPath: pdfPath } : prev));
+      if (!userId) return;
+      supabase
+        .from("profiles")
+        .update({ fullmakt_signed_at: signedAt, fullmakt_pdf_path: pdfPath })
+        .eq("id", userId)
+        .then(logWriteError("fullmakt"));
     },
     [supabase, userId]
   );
@@ -423,8 +450,10 @@ export function BuddyProvider({ children }: { children: ReactNode }) {
     () => ({
       loading,
       userType,
+      userId,
       profile,
       updateProfile,
+      recordFullmaktSigned,
       items,
       addItem,
       removeItem,
@@ -446,8 +475,10 @@ export function BuddyProvider({ children }: { children: ReactNode }) {
     [
       loading,
       userType,
+      userId,
       profile,
       updateProfile,
+      recordFullmaktSigned,
       items,
       addItem,
       removeItem,

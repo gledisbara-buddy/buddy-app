@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { ArrowLeft, ArrowRight, Check, Loader2, PhoneCall, Trash2 } from "lucide-react";
 import { Logo } from "@/components/Logo";
+import { FullmaktSigning } from "@/components/FullmaktSigning";
 import { ConfirmDialog, Overlay } from "@/components/Overlay";
 import { AutoFetchStep } from "@/components/onboarding/AutoFetchStep";
 import { BoendeForm } from "@/components/onboarding/BoendeForm";
@@ -518,7 +519,7 @@ const CATEGORY_FORMS: Record<ItemKind, React.ComponentType<{ onSave: (item: Insu
 export function Onboarding({ mode = "full", initialKind }: { mode?: "full" | "add"; initialKind?: ItemKind }) {
   const router = useRouter();
   const { userType, loading, items, addItem, removeItem, updateProfile, setPolicy } = useBuddy();
-  const phase = mode === "add" ? "hub" : "name";
+  const [phase, setPhase] = useState<"name" | "poa" | "hub">(mode === "add" ? "hub" : "name");
   const [name, setName] = useState("");
   const [activeCategory, setActiveCategory] = useState<ItemKind | null>(mode === "add" ? initialKind ?? null : null);
   const [addMode, setAddMode] = useState<"choice" | "auto" | "manual" | null>(
@@ -651,7 +652,7 @@ export function Onboarding({ mode = "full", initialKind }: { mode?: "full" | "ad
               className={`${inputClass} mb-4`}
             />
             <button
-              onClick={finishFull}
+              onClick={() => setPhase("poa")}
               disabled={name.trim().length < 2}
               className="bd-btn w-full flex items-center justify-center gap-2 py-3.5 rounded-full font-semibold text-white text-[15px] bg-forest disabled:opacity-40"
             >
@@ -663,6 +664,22 @@ export function Onboarding({ mode = "full", initialKind }: { mode?: "full" | "ad
             >
               Hoppa över, jag gör det sen
             </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (phase === "poa") {
+    return (
+      <div className="min-h-screen w-full flex flex-col">
+        <div className="w-full flex items-center justify-between px-6 py-5">
+          <Logo />
+          <div className="w-6" />
+        </div>
+        <div className="flex-1 flex items-start justify-center px-5 pb-16">
+          <div className="w-full max-w-md">
+            <FullmaktSigning name={name.trim()} onDone={finishFull} onSkip={finishFull} />
           </div>
         </div>
       </div>
