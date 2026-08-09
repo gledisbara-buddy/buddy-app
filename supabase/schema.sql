@@ -446,3 +446,121 @@ create policy "items_delete_employee" on public.items
 drop policy if exists "policies_delete_employee" on public.policies;
 create policy "policies_delete_employee" on public.policies
   for delete using (exists (select 1 from public.employees where email = auth.jwt() ->> 'email'));
+
+-- Kontoradering: profiles.referred_by och households.created_by pekade
+-- på en annan profil utan ON DELETE-hantering, så Postgres vägrade
+-- radera en användare som värvat någon eller skapat ett hushåll ("update
+-- or delete ... violates foreign key constraint"). Sätts till null
+-- istället — historiken i referred_by/created_by behövs inte efter en
+-- radering, bara att den kvarvarande raden inte pekar på ingenting.
+alter table public.profiles drop constraint if exists profiles_referred_by_fkey;
+alter table public.profiles add constraint profiles_referred_by_fkey
+  foreign key (referred_by) references public.profiles(id) on delete set null;
+
+alter table public.households alter column created_by drop not null;
+alter table public.households drop constraint if exists households_created_by_fkey;
+alter table public.households add constraint households_created_by_fkey
+  foreign key (created_by) references public.profiles(id) on delete set null;
+
+-- Värvningsräkning fick samma problem i andra riktningen: den byggde på
+-- en live-fråga mot profiles (where referred_by = referrer), så en
+-- raderad VÄRVAD kund drog automatiskt ner värvarens räknare — även om
+-- värvningen redan var kvalificerad. referral_events är en permanent
+-- logg, skriven en gång vid signup och uppdaterad till "qualified" när
+-- det händer, som lever kvar oavsett vad som senare händer med den
+-- värvade profilen. Ingen RLS-policy behövs (default: ingen klientåtkomst
+-- alls) — allt går via SECURITY DEFINER-funktionerna nedan, samma
+-- försiktighetsprincip som övriga räknefunktioner i filen.
+create table if not exists public.referral_events (
+  id uuid primary key default gen_random_uuid(),
+  referrer_id uuid not null references public.profiles(id) on delete cascade,
+  referred_id uuid references public.profiles(id) on delete set null,
+  qualified boolean not null default false,
+  created_at timestamptz not null default now(),
+  qualified_at timestamptz
+);
+alter table public.referral_events enable row level security;
+
+-- Engångsbackfill av redan existerande värvningar in i loggen, så att
+-- ingen tappar tidigare intjänad status när det här byter till att läsa
+-- från referral_events istället för profiles.
+insert into public.referral_events (referrer_id, referred_id, qualified, created_at, qualified_at)
+select
+  p.referred_by,
+  p.id,
+  (p.ready_to_compare and exists (select 1 from public.items i where i.user_id = p.id)),
+  p.created_at,
+  case when p.ready_to_compare and exists (select 1 from public.items i where i.user_id = p.id) then now() end
+from public.profiles p
+where p.referred_by is not null
+  and not exists (
+    select 1 from public.referral_events e where e.referrer_id = p.referred_by and e.referred_id = p.id
+  );
+
+create or replace function public.count_referral_signups(referrer uuid)
+returns int language sql security definer set search_path = public stable as $$
+  select count(*)::int from public.referral_events where referrer_id = referrer;
+$$;
+
+create or replace function public.count_qualified_referrals(referrer uuid)
+returns int language sql security definer set search_path = public stable as $$
+  select count(*)::int from public.referral_events where referrer_id = referrer and qualified = true;
+$$;
+
+-- handle_new_user() satte tidigare bara profiles.referred_by. Nu skriver
+-- den även startraden i referral_events (qualified = false) om en giltig
+-- värvningskod angavs vid signup.
+create or replace function public.handle_new_user()
+returns trigger as $$
+declare
+  v_referrer_id uuid;
+begin
+  if new.raw_user_meta_data->>'referral_code_used' is not null then
+    select id into v_referrer_id from public.profiles
+    where referral_code = upper(new.raw_user_meta_data->>'referral_code_used')
+    limit 1;
+  end if;
+
+  insert into public.profiles (id, user_type, name, email, referred_by)
+  values (
+    new.id,
+    coalesce(new.raw_user_meta_data->>'user_type', 'privat'),
+    coalesce(new.raw_user_meta_data->>'name', ''),
+    new.email,
+    v_referrer_id
+  );
+
+  if v_referrer_id is not null then
+    insert into public.referral_events (referrer_id, referred_id) values (v_referrer_id, new.id);
+  end if;
+
+  return new;
+end;
+$$ language plpgsql security definer set search_path = public;
+
+-- Flippar referral_events.qualified till true första gången en värvad
+-- kund blir redo att jämföra OCH har minst en sak — samma villkor som
+-- count_qualified_referrals använde tidigare, fast nu skrivet permanent
+-- istället för omräknat live. En redan kvalificerad rad rörs inte, så
+-- att t.ex. en anställd som senare tar bort kundens saker inte kan dra
+-- tillbaka en redan intjänad värvning.
+create or replace function public.mark_referral_qualified()
+returns trigger language plpgsql security definer set search_path = public as $$
+begin
+  if new.ready_to_compare = true
+    and coalesce(old.ready_to_compare, false) = false
+    and new.referred_by is not null
+    and exists (select 1 from public.items where user_id = new.id)
+  then
+    update public.referral_events
+    set qualified = true, qualified_at = now()
+    where referrer_id = new.referred_by and referred_id = new.id and qualified = false;
+  end if;
+  return new;
+end;
+$$;
+
+drop trigger if exists on_profile_ready_to_compare on public.profiles;
+create trigger on_profile_ready_to_compare
+  after update on public.profiles
+  for each row execute function public.mark_referral_qualified();
