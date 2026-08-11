@@ -67,7 +67,7 @@ test.describe("Marknadssida", () => {
 });
 
 test.describe("Konto och inloggning", () => {
-  test("signup-knappen kräver ett giltigt telefonnummer", async ({ page }) => {
+  test("signup-knappen kräver förnamn och ett giltigt telefonnummer", async ({ page }) => {
     // Verifierar bara gate-logiken (A1-A3), inte hela signup-till-kod-resan
     // — att faktiskt skicka formuläret skulle skapa ett nytt konto och
     // trigga ett e-postutskick vid varje testkörning, och @example.com-
@@ -81,11 +81,14 @@ test.describe("Konto och inloggning", () => {
     const submit = page.getByRole("button", { name: "Skapa konto" });
     await expect(submit).toBeDisabled();
 
-    await page.locator('input[type="tel"]').fill("123");
+    await page.locator('input[type="tel"]').fill("0701234567");
     await expect(submit).toBeDisabled();
 
-    await page.locator('input[type="tel"]').fill("0701234567");
+    await page.locator('input[placeholder="T.ex. Sam"]').fill("Sam");
     await expect(submit).toBeEnabled();
+
+    await page.locator('input[type="tel"]').fill("123");
+    await expect(submit).toBeDisabled();
   });
 
   test("felaktigt lösenord vid inloggning visar tydligt fel", async ({ page }) => {

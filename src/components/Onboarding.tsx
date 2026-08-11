@@ -4,7 +4,6 @@ import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { ArrowLeft, ArrowRight, Check, Loader2, PhoneCall, Trash2 } from "lucide-react";
 import { Logo } from "@/components/Logo";
-import { FullmaktSigning } from "@/components/FullmaktSigning";
 import { ConfirmDialog, Overlay } from "@/components/Overlay";
 import { AutoFetchStep } from "@/components/onboarding/AutoFetchStep";
 import { BoendeForm } from "@/components/onboarding/BoendeForm";
@@ -12,7 +11,6 @@ import { TelekomForm } from "@/components/onboarding/TelekomForm";
 import { KreditkortForm } from "@/components/onboarding/KreditkortForm";
 import { BoolPill, Field, FormActions, MultiPillGroup, PillGroup, PillGroupWithOther, inputClass } from "@/components/onboarding/shared";
 import { useBuddy } from "@/lib/buddy-context";
-import { generateCode } from "@/lib/referral";
 import type { Quote } from "@/lib/quote";
 import type { FetchableKind } from "@/lib/policy-fetch";
 import { lookupVehicle } from "@/lib/vehicle-lookup";
@@ -518,19 +516,15 @@ const CATEGORY_FORMS: Record<ItemKind, React.ComponentType<{ onSave: (item: Insu
 };
 
 export function Onboarding({
-  mode = "full",
   initialKind,
   initialTyp,
 }: {
-  mode?: "full" | "add";
   initialKind?: ItemKind;
   initialTyp?: TelekomTyp;
 }) {
   const router = useRouter();
-  const { userType, loading, items, addItem, removeItem, updateProfile, setPolicy } = useBuddy();
-  const [phase, setPhase] = useState<"name" | "poa" | "hub">(mode === "add" ? "hub" : "name");
-  const [name, setName] = useState("");
-  const [activeCategory, setActiveCategory] = useState<ItemKind | null>(mode === "add" ? initialKind ?? null : null);
+  const { userType, loading, items, addItem, removeItem, setPolicy } = useBuddy();
+  const [activeCategory, setActiveCategory] = useState<ItemKind | null>(initialKind ?? null);
   const [addMode, setAddMode] = useState<"choice" | "auto" | "manual" | null>(
     activeCategory ? (groupForKind(activeCategory) === "forsakring" ? "choice" : "manual") : null
   );
@@ -560,14 +554,6 @@ export function Onboarding({
   if (loading || !userType) return null;
 
   const goToDashboard = () => router.push("/dashboard");
-
-  const finishFull = () => {
-    // Värvningskoden genereras och sparas en gång, exakt när namnet sätts
-    // — det är den första punkten i flödet där vi har ett namn att bygga
-    // koden från.
-    updateProfile({ name: name.trim(), referralCode: generateCode(name.trim()) });
-    router.push("/dashboard?intro=1");
-  };
 
   const handleItemAdded = (item: InsuranceItem, quote?: Quote) => {
     addItem(item);
@@ -645,60 +631,6 @@ export function Onboarding({
     );
   }
 
-  if (phase === "name") {
-    return (
-      <div className="min-h-screen w-full flex flex-col">
-        <div className="w-full flex items-center justify-between px-6 py-5">
-          <Logo />
-          <div className="w-6" />
-        </div>
-        <div className="flex-1 flex items-center justify-center px-5 pb-16">
-          <div className="w-full max-w-md bd-fade">
-            <span className="bd-eyebrow">Kom igång</span>
-            <h1 className="bd-display text-2xl mt-3 mb-2">Vad ska vi kalla dig?</h1>
-            <p className="text-sm mb-6 text-slate">Bara förnamnet räcker.</p>
-            <input
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              placeholder="T.ex. Sam"
-              className={`${inputClass} mb-4`}
-            />
-            <button
-              onClick={() => setPhase("poa")}
-              disabled={name.trim().length < 2}
-              className="bd-btn w-full flex items-center justify-center gap-2 py-3.5 rounded-full font-semibold text-white text-[15px] bg-forest disabled:opacity-40"
-            >
-              Fortsätt <ArrowRight size={16} />
-            </button>
-            <button
-              onClick={() => router.push("/dashboard?intro=1")}
-              className="w-full text-sm font-semibold py-3 text-slate"
-            >
-              Hoppa över, jag gör det sen
-            </button>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  if (phase === "poa") {
-    return (
-      <div className="min-h-screen w-full flex flex-col">
-        <div className="w-full flex items-center justify-between px-6 py-5">
-          <Logo />
-          <div className="w-6" />
-        </div>
-        <div className="flex-1 flex items-start justify-center px-5 pb-16">
-          <div className="w-full max-w-md">
-            <FullmaktSigning name={name.trim()} onDone={finishFull} onSkip={finishFull} />
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  // phase === "hub"
   return (
     <div className="min-h-screen w-full flex flex-col">
       {showBundlePopup && (

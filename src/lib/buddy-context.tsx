@@ -8,6 +8,7 @@ import type { InsuranceItem } from "@/lib/items";
 import type { ChatMessage } from "@/lib/claim";
 import { generateHouseholdCode, type HouseholdRelation } from "@/lib/household";
 import { sendTransactionalEmail } from "@/lib/email";
+import { generateCode } from "@/lib/referral";
 
 export type Profile = {
   name: string;
@@ -295,17 +296,25 @@ export function BuddyProvider({ children }: { children: ReactNode }) {
 
       if (profileRow) {
         const row = profileRow as ProfileRow;
+        // Värvningskoden genererades tidigare i onboardingens namn-steg
+        // (som inte längre körs — namnet sätts numera direkt vid
+        // registrering). Fångar upp profiler som har ett namn men
+        // fortfarande saknar en kod, en gång per inloggning.
+        const referralCode = row.referral_code ?? (row.name ? generateCode(row.name) : undefined);
         setUserType(row.user_type);
         setProfile({
           name: row.name,
           personnummer: row.personnummer ?? undefined,
           phone: row.phone ?? undefined,
           email,
-          referralCode: row.referral_code ?? undefined,
+          referralCode,
           fullmaktSignedAt: row.fullmakt_signed_at ?? undefined,
           fullmaktPdfPath: row.fullmakt_pdf_path ?? undefined,
         });
         setReadyToCompareState(row.ready_to_compare);
+        if (!row.referral_code && referralCode) {
+          supabase.from("profiles").update({ referral_code: referralCode }).eq("id", uid).then(logWriteError("värvningskod"));
+        }
       }
       const itemRowsTyped = (itemRows ?? []) as ItemRow[];
       setItems(itemRowsTyped.map((r) => r.data));

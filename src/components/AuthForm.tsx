@@ -15,6 +15,7 @@ type Mode = "login" | "signup";
 export function AuthForm({ userType }: { userType: UserType }) {
   const router = useRouter();
   const [mode, setMode] = useState<Mode>("signup");
+  const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [phone, setPhone] = useState("");
@@ -27,7 +28,9 @@ export function AuthForm({ userType }: { userType: UserType }) {
   const [resendMessage, setResendMessage] = useState<string | null>(null);
 
   const valid =
-    email.trim().length > 3 && password.length >= 6 && (mode === "login" || isValidSwedishMobile(phone));
+    email.trim().length > 3 &&
+    password.length >= 6 &&
+    (mode === "login" || (isValidSwedishMobile(phone) && name.trim().length >= 2));
 
   const handleSubmit = async () => {
     if (!valid || loading) return;
@@ -40,7 +43,12 @@ export function AuthForm({ userType }: { userType: UserType }) {
         email: email.trim(),
         password,
         options: {
-          data: { user_type: userType, referral_code_used: referralCode.trim() || null, phone: phone.trim() },
+          data: {
+            user_type: userType,
+            referral_code_used: referralCode.trim() || null,
+            phone: phone.trim(),
+            name: name.trim(),
+          },
         },
       });
       setLoading(false);
@@ -54,7 +62,7 @@ export function AuthForm({ userType }: { userType: UserType }) {
         setCheckInbox(true);
         return;
       }
-      router.push("/onboarding");
+      router.push("/dashboard?intro=1");
     } else {
       const { error: signInError } = await supabase.auth.signInWithPassword({
         email: email.trim(),
@@ -84,7 +92,7 @@ export function AuthForm({ userType }: { userType: UserType }) {
       setError("Fel kod, eller så har den gått ut. Kontrollera koden eller skicka en ny.");
       return;
     }
-    router.push("/onboarding");
+    router.push("/dashboard?intro=1");
   };
 
   const handleResendCode = async () => {
@@ -162,6 +170,16 @@ export function AuthForm({ userType }: { userType: UserType }) {
             </p>
           </div>
           <div className="bg-white rounded-2xl border border-line p-6">
+            {mode === "signup" && (
+              <Field label="Förnamn">
+                <input
+                  className={inputClass}
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  placeholder="T.ex. Sam"
+                />
+              </Field>
+            )}
             <Field label="E-post">
               <input
                 type="email"
