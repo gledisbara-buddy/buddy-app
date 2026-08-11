@@ -561,8 +561,8 @@ export function Onboarding({
 
   const goToDashboard = () => router.push("/dashboard");
 
-  const handleItemAdded = (item: InsuranceItem, quote?: Quote) => {
-    addItem(item);
+  const handleItemAdded = async (item: InsuranceItem, quote?: Quote) => {
+    await addItem(item);
     if (quote) setPolicy(item.id, quote);
     setToastMessage(`${itemTitle(item)} inlagd`);
     if (!bundlePopupShownRef.current && groupForKind(item.kind) === "forsakring") {

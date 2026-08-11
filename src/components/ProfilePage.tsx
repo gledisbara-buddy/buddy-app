@@ -55,8 +55,8 @@ export function ProfilePage() {
   const handleSave = () => {
     updateProfile({
       name: name.trim(),
-      personnummer: personnummer.trim() || undefined,
-      phone: phone.trim() || undefined,
+      personnummer: personnummer.trim() || null,
+      phone: phone.trim() || null,
     });
     setSaved(true);
     setTimeout(() => setSaved(false), 2500);

@@ -20,6 +20,15 @@ export type Profile = {
   fullmaktPdfPath?: string;
 };
 
+// null skiljer sig från undefined här: null = rensa fältet i databasen,
+// undefined = rör inte fältet alls. Krävs för att updateProfile ska kunna
+// skriva NULL till en kolumn istället för att bara hoppa över den, se
+// ProfilePage.tsx:s handleSave.
+export type ProfilePatch = Partial<Omit<Profile, "email" | "personnummer" | "phone">> & {
+  personnummer?: string | null;
+  phone?: string | null;
+};
+
 // Räknat via två SECURITY DEFINER-funktioner i Supabase (count_referral_signups
 // / count_qualified_referrals) — exponerar aldrig rådata om andra
 // användares profiler, bara summerade tal.
@@ -115,7 +124,7 @@ type BuddyState = {
   // `email` kommer alltid från Supabase Auth (den riktiga inloggningsmejlen)
   // och kan inte skrivas via profiles-tabellen — se ProfilePage för hur en
   // riktig mejländring görs (supabase.auth.updateUser).
-  updateProfile: (patch: Partial<Omit<Profile, "email">>) => void;
+  updateProfile: (patch: ProfilePatch) => void;
   // Sätts av FullmaktSigning.tsx efter en lyckad signering — skiljs från
   // updateProfile eftersom den även behöver skriva ett server-satt
   // tidsstämpel, inte bara ett client-valt fält.
@@ -126,7 +135,7 @@ type BuddyState = {
   joinHousehold: (code: string, relation: HouseholdRelation) => Promise<boolean>;
   leaveHousehold: () => void;
   items: InsuranceItem[];
-  addItem: (item: InsuranceItem) => void;
+  addItem: (item: InsuranceItem) => Promise<void>;
   addItems: (items: InsuranceItem[]) => Promise<void>;
   removeItem: (id: string) => void;
   policies: Record<string, Quote>;
@@ -411,8 +420,11 @@ export function BuddyProvider({ children }: { children: ReactNode }) {
   }, [supabase, loadForUser]);
 
   const updateProfile = useCallback(
-    (patch: Partial<Omit<Profile, "email">>) => {
-      setProfile((prev) => ({ name: "", ...prev, ...patch }));
+    (patch: ProfilePatch) => {
+      setProfile((prev) => {
+        const base = { name: "", ...prev, ...patch };
+        return { ...base, personnummer: base.personnummer ?? undefined, phone: base.phone ?? undefined };
+      });
       if (!userId) return;
       const dbPatch: Record<string, unknown> = {};
       if (patch.name !== undefined) dbPatch.name = patch.name;
@@ -487,26 +499,25 @@ export function BuddyProvider({ children }: { children: ReactNode }) {
       .then(logWriteError("hushåll"));
   }, [supabase, userId]);
 
+  // Returnerar ett Promise så anroparen kan vänta in att items-raden faktiskt
+  // finns i databasen innan den sätter policy för den — policies.item_id har
+  // en foreign key mot items.id, så en efterföljande setPolicy() som körs
+  // innan den här inserten hunnit committa kan annars krascha mot det
+  // constraintet (sett live vid BankID-importen och auto-hämtningsflödet).
   const addItem = useCallback(
-    (item: InsuranceItem) => {
+    async (item: InsuranceItem) => {
       setItems((prev) => [...prev, item]);
       if (!userId) return;
-      supabase
+      const result = await supabase
         .from("items")
-        .insert({ id: item.id, user_id: userId, kind: item.kind, data: item })
-        .then(logWriteError("sak"));
+        .insert({ id: item.id, user_id: userId, kind: item.kind, data: item });
+      logWriteError("sak")(result);
     },
     [supabase, userId]
   );
 
   // Bulk-variant för BankID-importen (BankIdImport.tsx) — en state-uppdatering
   // och ETT batchat insert istället för att loopa addItem N gånger.
-  // Returnerar ett Promise (till skillnad från addItem) så anroparen kan
-  // vänta in att items-raderna faktiskt finns i databasen innan den sätter
-  // policies för dem — policies.item_id har en foreign key mot items.id,
-  // så en efterföljande setPolicy() som körs innan den här inserten hunnit
-  // committa kan annars krascha mot det constraintet (sett live vid
-  // BankID-importen).
   const addItems = useCallback(
     async (newItems: InsuranceItem[]) => {
       if (newItems.length === 0) return;
