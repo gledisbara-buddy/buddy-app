@@ -1,7 +1,7 @@
-import { CalendarDays, CircleSlash, FileSignature, HelpCircle, Smartphone, type LucideIcon } from "lucide-react";
+import { CalendarDays, CircleSlash, FileSignature, HelpCircle, Smartphone, Users, type LucideIcon } from "lucide-react";
 import { groupForKind, isComparableItem, itemTitle, type InsuranceItem } from "@/lib/items";
 import type { Quote } from "@/lib/quote";
-import type { Profile, MissingInsuranceRequestRecord } from "@/lib/buddy-context";
+import type { HouseholdRequest, Profile, MissingInsuranceRequestRecord } from "@/lib/buddy-context";
 import { daysUntilSwedishDate } from "@/lib/dates";
 
 // Hur många dagar innan förfallodag en förnyelse dyker upp i listan.
@@ -28,6 +28,7 @@ export function buildTodoList({
   profile,
   missingInsuranceRequests,
   pendingMobilNumber,
+  householdRequests,
 }: {
   items: InsuranceItem[];
   policies: Record<string, Quote>;
@@ -36,6 +37,8 @@ export function buildTodoList({
   // Satt när kundens registrerade telefonnummer väntar på att bli ett
   // komplett mobilabonnemang — se pendingMobilNumber i Dashboard.tsx.
   pendingMobilNumber?: string | null;
+  // Obesvarade hushålls-förfrågningar (Del I) — kunden kan godkänna/neka.
+  householdRequests?: HouseholdRequest[];
 }): TodoItem[] {
   // 1. Förnyelser inom RENEWAL_WINDOW_DAYS — antingen från Quote.forfallodatum
   // (auto-hämtade, jämförbara poster) eller direkt från item.forfallodatum
@@ -124,5 +127,15 @@ export function buildTodoList({
       ]
     : [];
 
-  return [...renewals, ...fullmaktRow, ...missingRows, ...cancellationRows, ...pendingMobilRow];
+  // 6. Obesvarade hushålls-förfrågningar — en rad per inkommande
+  // förfrågan, länkar till hushålls-sidan för att godkänna/neka.
+  const householdRequestRows: TodoItem[] = (householdRequests ?? []).map((r) => ({
+    id: `household-request-${r.id}`,
+    icon: Users,
+    label: `${r.requestedByName} vill lägga till dig i sitt hushåll`,
+    sublabel: "Obesvarad",
+    href: "/hushall",
+  }));
+
+  return [...renewals, ...fullmaktRow, ...missingRows, ...cancellationRows, ...pendingMobilRow, ...householdRequestRows];
 }

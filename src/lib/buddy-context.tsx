@@ -59,6 +59,28 @@ export type Household = {
   members: HouseholdMember[]; // ko-medlemmar, inte en själv
 };
 
+// Hushåll v2 (Del I i docs/kundresa-v2-steg2-plan.md): personnummer +
+// dubbelt godkännande, ersätter den kod-baserade gå-med-flödet. En
+// HouseholdRequest är en INKOMMANDE förfrågan kunden själv kan
+// godkänna/neka; en SentHouseholdRequest är en den själv har SKICKAT.
+// Avslöjar aldrig om det angivna personnumret matchade en befintlig kund
+// — se request_household_join() i schema.sql.
+export type HouseholdRequest = {
+  id: string;
+  householdId: string;
+  householdName: string;
+  requestedByName: string;
+  relation: HouseholdRelation | null;
+  createdAt: string;
+};
+export type SentHouseholdRequest = {
+  id: string;
+  personnummer: string;
+  relation: HouseholdRelation | null;
+  status: "pending" | "approved" | "declined";
+  createdAt: string;
+};
+
 export type BookingInput = {
   topics: string[];
   extraNote: string;
@@ -132,8 +154,12 @@ type BuddyState = {
   // Null om kunden inte har gått med i eller skapat ett hushåll än.
   household: Household | null;
   createHousehold: (name: string) => Promise<boolean>;
-  joinHousehold: (code: string, relation: HouseholdRelation) => Promise<boolean>;
   leaveHousehold: () => void;
+  // Hushåll v2 — se HouseholdRequest/SentHouseholdRequest ovan.
+  householdRequests: HouseholdRequest[];
+  sentHouseholdRequests: SentHouseholdRequest[];
+  requestHouseholdJoin: (personnummer: string, relation: HouseholdRelation) => Promise<boolean>;
+  respondToHouseholdRequest: (requestId: string, approve: boolean) => Promise<boolean>;
   items: InsuranceItem[];
   addItem: (item: InsuranceItem) => Promise<void>;
   addItems: (items: InsuranceItem[]) => Promise<void>;
@@ -228,6 +254,44 @@ function mapHouseholdRow(row: HouseholdRpcRow): Household {
   };
 }
 
+type HouseholdRequestRow = {
+  id: string;
+  household_id: string;
+  household_name: string;
+  requested_by_name: string;
+  relation: HouseholdRelation | null;
+  created_at: string;
+};
+
+function mapHouseholdRequestRow(r: HouseholdRequestRow): HouseholdRequest {
+  return {
+    id: r.id,
+    householdId: r.household_id,
+    householdName: r.household_name,
+    requestedByName: r.requested_by_name,
+    relation: r.relation,
+    createdAt: r.created_at,
+  };
+}
+
+type SentHouseholdRequestRow = {
+  id: string;
+  requested_personnummer: string;
+  relation: HouseholdRelation | null;
+  status: "pending" | "approved" | "declined";
+  created_at: string;
+};
+
+function mapSentHouseholdRequestRow(r: SentHouseholdRequestRow): SentHouseholdRequest {
+  return {
+    id: r.id,
+    personnummer: r.requested_personnummer,
+    relation: r.relation,
+    status: r.status,
+    createdAt: r.created_at,
+  };
+}
+
 function mapBookingRow(r: BookingRow): BookingRecord {
   return {
     id: r.id,
@@ -282,6 +346,8 @@ export function BuddyProvider({ children }: { children: ReactNode }) {
   const [isEmployee, setIsEmployee] = useState(false);
   const [referralStats, setReferralStats] = useState<ReferralStats | null>(null);
   const [household, setHousehold] = useState<Household | null>(null);
+  const [householdRequests, setHouseholdRequests] = useState<HouseholdRequest[]>([]);
+  const [sentHouseholdRequests, setSentHouseholdRequests] = useState<SentHouseholdRequest[]>([]);
   const [bookings, setBookings] = useState<BookingRecord[]>([]);
   const [claims, setClaims] = useState<ClaimRecord[]>([]);
   const [missingInsuranceRequests, setMissingInsuranceRequests] = useState<MissingInsuranceRequestRecord[]>([]);
@@ -297,6 +363,8 @@ export function BuddyProvider({ children }: { children: ReactNode }) {
     setIsEmployee(false);
     setReferralStats(null);
     setHousehold(null);
+    setHouseholdRequests([]);
+    setSentHouseholdRequests([]);
     setBookings([]);
     setClaims([]);
     setMissingInsuranceRequests([]);
@@ -315,6 +383,8 @@ export function BuddyProvider({ children }: { children: ReactNode }) {
         { data: referralQualified },
         { data: householdRow },
         { data: missingInsuranceRows },
+        { data: householdRequestRows },
+        { data: sentHouseholdRequestRows },
       ] = await Promise.all([
         supabase
           .from("profiles")
@@ -342,6 +412,8 @@ export function BuddyProvider({ children }: { children: ReactNode }) {
           .select("id, kind, note, status, created_at")
           .eq("user_id", uid)
           .order("created_at", { ascending: false }),
+        supabase.rpc("get_my_household_requests"),
+        supabase.rpc("get_my_sent_household_requests"),
       ]);
 
       if (profileRow) {
@@ -375,6 +447,8 @@ export function BuddyProvider({ children }: { children: ReactNode }) {
       setIsEmployee(!!employeeRow);
       setReferralStats({ total: (referralTotal as number | null) ?? 0, qualified: (referralQualified as number | null) ?? 0 });
       setHousehold(householdRow ? mapHouseholdRow(householdRow as HouseholdRpcRow) : null);
+      setHouseholdRequests(((householdRequestRows ?? []) as HouseholdRequestRow[]).map(mapHouseholdRequestRow));
+      setSentHouseholdRequests(((sentHouseholdRequestRows ?? []) as SentHouseholdRequestRow[]).map(mapSentHouseholdRequestRow));
       setBookings(((bookingRows ?? []) as BookingRow[]).map(mapBookingRow));
       setClaims(((claimRows ?? []) as ClaimRow[]).map(mapClaimRow));
       setMissingInsuranceRequests(((missingInsuranceRows ?? []) as MissingInsuranceRequestRow[]).map(mapMissingInsuranceRequestRow));
@@ -476,14 +550,37 @@ export function BuddyProvider({ children }: { children: ReactNode }) {
     [supabase, userId, profile?.name]
   );
 
-  const joinHousehold = useCallback(
-    async (code: string, relation: HouseholdRelation): Promise<boolean> => {
-      if (!userId) return false;
-      const { data, error } = await supabase.rpc("join_household", { code: code.trim(), relation });
-      if (error || !data) return false;
+  // Hushåll v2 — skickar en förfrågan istället för att gå med direkt.
+  // Avslöjar aldrig (varken i UI:t eller här) om personnumret matchade en
+  // befintlig kund — se request_household_join() i schema.sql.
+  const requestHouseholdJoin = useCallback(
+    async (personnummer: string, relation: HouseholdRelation): Promise<boolean> => {
+      if (!userId || !household) return false;
+      const { error } = await supabase.rpc("request_household_join", {
+        p_household_id: household.id,
+        p_personnummer: personnummer.trim(),
+        p_relation: relation,
+      });
+      if (error) return false;
 
-      const { data: hh } = await supabase.rpc("get_my_household").maybeSingle();
-      if (hh) setHousehold(mapHouseholdRow(hh as HouseholdRpcRow));
+      const { data } = await supabase.rpc("get_my_sent_household_requests");
+      setSentHouseholdRequests(((data ?? []) as SentHouseholdRequestRow[]).map(mapSentHouseholdRequestRow));
+      return true;
+    },
+    [supabase, userId, household]
+  );
+
+  const respondToHouseholdRequest = useCallback(
+    async (requestId: string, approve: boolean): Promise<boolean> => {
+      if (!userId) return false;
+      const { error } = await supabase.rpc("respond_household_request", { p_request_id: requestId, p_approve: approve });
+      if (error) return false;
+
+      setHouseholdRequests((prev) => prev.filter((r) => r.id !== requestId));
+      if (approve) {
+        const { data: hh } = await supabase.rpc("get_my_household").maybeSingle();
+        if (hh) setHousehold(mapHouseholdRow(hh as HouseholdRpcRow));
+      }
       return true;
     },
     [supabase, userId]
@@ -674,8 +771,11 @@ export function BuddyProvider({ children }: { children: ReactNode }) {
       recordFullmaktSigned,
       household,
       createHousehold,
-      joinHousehold,
       leaveHousehold,
+      householdRequests,
+      sentHouseholdRequests,
+      requestHouseholdJoin,
+      respondToHouseholdRequest,
       items,
       addItem,
       addItems,
@@ -706,8 +806,11 @@ export function BuddyProvider({ children }: { children: ReactNode }) {
       recordFullmaktSigned,
       household,
       createHousehold,
-      joinHousehold,
       leaveHousehold,
+      householdRequests,
+      sentHouseholdRequests,
+      requestHouseholdJoin,
+      respondToHouseholdRequest,
       items,
       addItem,
       addItems,

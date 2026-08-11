@@ -353,6 +353,150 @@ drop policy if exists "households_insert_employee" on public.households;
 create policy "households_insert_employee" on public.households
   for insert with check (exists (select 1 from public.employees where email = auth.jwt() ->> 'email'));
 
+-- Hushåll v2 (kundresa v2, Del I): personnummer + dubbelt godkännande,
+-- ersätter det kod-baserade gå-med-flödet helt på klientsidan. Rör
+-- medvetet INTE households/invite_code/join_household() — den kolumnen
+-- krävs fortfarande av households (NOT NULL UNIQUE) och invite_code
+-- genereras alltjämt av createHousehold()/CustomerSearchRail.tsx, bara
+-- inte längre exponerad som ett sätt att gå med.
+--
+-- Ingen bred SELECT/INSERT-policy för kunder här, av samma skäl som
+-- join_household()/get_my_household(): en policy som läter en kund fritt
+-- läsa household_requests skulle kunna avslöja andra kunders personnummer
+-- eller existens. Allt går via SECURITY DEFINER-funktionerna nedan.
+create table if not exists public.household_requests (
+  id uuid primary key default gen_random_uuid(),
+  household_id uuid not null references public.households(id) on delete cascade,
+  requested_by uuid not null references public.profiles(id),
+  requested_personnummer text not null,
+  requested_relation text check (requested_relation in ('partner', 'barn', 'annan')),
+  -- Satt direkt om personnumret matchade en befintlig profil vid
+  -- skicka-tillfället, annars null tills matchningen sker "live" (se
+  -- get_my_household_requests()) eller kunden själv svarar.
+  target_user_id uuid references public.profiles(id),
+  status text not null default 'pending' check (status in ('pending', 'approved', 'declined')),
+  created_at timestamptz not null default now()
+);
+
+alter table public.household_requests enable row level security;
+
+drop policy if exists "household_requests_select_employee" on public.household_requests;
+create policy "household_requests_select_employee" on public.household_requests
+  for select using (exists (select 1 from public.employees where email = auth.jwt() ->> 'email'));
+
+create index if not exists idx_household_requests_household_id on public.household_requests(household_id);
+create index if not exists idx_household_requests_target_user_id on public.household_requests(target_user_id);
+
+-- Skickar en hushålls-förfrågan för ett angivet personnummer. Matchar
+-- tyst mot en befintlig profil om en sådan finns (target_user_id sätts
+-- direkt) — avslöjar aldrig för anroparen om numret matchade eller inte,
+-- samma retursignatur (void) oavsett utfall. Kräver att anroparen faktiskt
+-- är kopplad till hushållet (skapare eller medlem), annars kunde vem som
+-- helst spamma godtyckliga personnummer med förfrågningar.
+create or replace function public.request_household_join(p_household_id uuid, p_personnummer text, p_relation text)
+returns void
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  v_target uuid;
+begin
+  if not exists (
+    select 1 from public.households where id = p_household_id and created_by = auth.uid()
+  ) and not exists (
+    select 1 from public.profiles where id = auth.uid() and household_id = p_household_id
+  ) then
+    raise exception 'not a member of this household';
+  end if;
+
+  if exists (
+    select 1 from public.household_requests
+    where household_id = p_household_id and requested_personnummer = p_personnummer and status = 'pending'
+  ) then
+    raise exception 'request already pending';
+  end if;
+
+  select id into v_target from public.profiles where personnummer = p_personnummer limit 1;
+
+  insert into public.household_requests (household_id, requested_by, requested_personnummer, requested_relation, target_user_id)
+  values (p_household_id, auth.uid(), p_personnummer, p_relation, v_target);
+end;
+$$;
+
+-- Den inloggade kundens INKOMMANDE förfrågningar — matchar antingen en
+-- redan satt target_user_id (matchade en profil direkt vid
+-- skicka-tillfället) eller kundens EGET personnummer mot en öppen
+-- förfrågan utan target_user_id ("live"-matchning, oavsett när
+-- personnumret blev känt för Buddy — se docs/kundresa-v2-steg2-plan.md,
+-- Del I). Visar bara namn, aldrig andra kunders personnummer.
+create or replace function public.get_my_household_requests()
+returns table(id uuid, household_id uuid, household_name text, requested_by_name text, relation text, created_at timestamptz)
+language sql
+security definer
+set search_path = public
+stable
+as $$
+  select r.id, r.household_id, h.name, p.name, r.requested_relation, r.created_at
+  from public.household_requests r
+  join public.households h on h.id = r.household_id
+  join public.profiles p on p.id = r.requested_by
+  join public.profiles me on me.id = auth.uid()
+  where r.status = 'pending'
+    and (r.target_user_id = auth.uid() or (r.target_user_id is null and me.personnummer = r.requested_personnummer));
+$$;
+
+-- Förfrågningar den inloggade kunden själv har SKICKAT, för att visa
+-- status i hushålls-vyn — avslöjar bara status (pending/approved/
+-- declined), aldrig om numret matchade en befintlig kund eller inte.
+create or replace function public.get_my_sent_household_requests()
+returns table(id uuid, requested_personnummer text, relation text, status text, created_at timestamptz)
+language sql
+security definer
+set search_path = public
+stable
+as $$
+  select id, requested_personnummer, requested_relation, status, created_at
+  from public.household_requests
+  where requested_by = auth.uid()
+  order by created_at desc;
+$$;
+
+-- Godkänner eller nekar en inkommande förfrågan. Kör om samma
+-- matchningslogik som get_my_household_requests() för att verifiera att
+-- raden verkligen gäller den inloggade kunden innan den skriver något.
+create or replace function public.respond_household_request(p_request_id uuid, p_approve boolean)
+returns void
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  v_household_id uuid;
+  v_relation text;
+  v_matches boolean;
+begin
+  select r.household_id, r.requested_relation,
+    (r.target_user_id = auth.uid() or (r.target_user_id is null and r.requested_personnummer = (select personnummer from public.profiles where id = auth.uid())))
+  into v_household_id, v_relation, v_matches
+  from public.household_requests r
+  where r.id = p_request_id and r.status = 'pending';
+
+  if v_household_id is null or v_matches is not true then
+    raise exception 'request not found';
+  end if;
+
+  update public.household_requests
+  set status = case when p_approve then 'approved' else 'declined' end,
+      target_user_id = auth.uid()
+  where id = p_request_id;
+
+  if p_approve then
+    update public.profiles set household_id = v_household_id, household_relation = v_relation where id = auth.uid();
+  end if;
+end;
+$$;
+
 -- Attribution för anteckningar/logg — valfritt att fylla i per anställd.
 alter table public.employees add column if not exists name text;
 

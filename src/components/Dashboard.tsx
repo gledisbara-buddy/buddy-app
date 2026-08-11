@@ -73,8 +73,19 @@ const INTRO_POINTS = [
 
 export function Dashboard({ showIntro: initialShowIntro }: { showIntro?: boolean }) {
   const router = useRouter();
-  const { userType, loading, profile, items, removeItem, policies, readyToCompare, setReadyToCompare, bookings, missingInsuranceRequests } =
-    useBuddy();
+  const {
+    userType,
+    loading,
+    profile,
+    items,
+    removeItem,
+    policies,
+    readyToCompare,
+    setReadyToCompare,
+    bookings,
+    missingInsuranceRequests,
+    householdRequests,
+  } = useBuddy();
   const [activeGroup, setActiveGroup] = useState<ItemGroupId | null>(null);
   const [showIntro, setShowIntro] = useState(!!initialShowIntro);
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
@@ -124,7 +135,7 @@ export function Dashboard({ showIntro: initialShowIntro }: { showIntro?: boolean
   const pendingMobilNumber =
     profile?.phone && !items.some((i) => i.kind === "telekom" && i.typ === "mobil") ? profile.phone : null;
 
-  const todoList = buildTodoList({ items, policies, profile, missingInsuranceRequests, pendingMobilNumber });
+  const todoList = buildTodoList({ items, policies, profile, missingInsuranceRequests, pendingMobilNumber, householdRequests });
 
   // Bara nästa kommande bokning visas som banner — ISO-datum (YYYY-MM-DD)
   // går att jämföra direkt som strängar, ingen datumparsning behövs här.
