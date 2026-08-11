@@ -33,7 +33,7 @@ import { formatBookingDay } from "@/lib/booking";
 import { buildTodoList } from "@/lib/todo";
 import { isComparableItem, ITEM_CATEGORIES, ITEM_GROUPS, itemSummary, itemTitle, type ItemGroupId } from "@/lib/items";
 
-type ItemStatus = "saved" | "added" | "uncompared" | "compared" | "fetched";
+type ItemStatus = "saved" | "added" | "uncompared" | "compared" | "fetched" | "pending";
 
 const STATUS_CONFIG: Record<ItemStatus, { label: string; color: string }> = {
   saved: { label: "Sparad — jämförelse kommer snart", color: "var(--color-slate)" },
@@ -41,6 +41,7 @@ const STATUS_CONFIG: Record<ItemStatus, { label: string; color: string }> = {
   uncompared: { label: "Ej jämförd ännu", color: "var(--color-amber-deep)" },
   compared: { label: "Tecknad", color: "var(--color-forest)" },
   fetched: { label: "Auto-hämtad", color: "var(--color-forest)" },
+  pending: { label: "Väntar på uppgifter", color: "var(--color-amber-deep)" },
 };
 
 // Ersätter de tidigare utspridda "● text"-strängarna (en per fall, lite olika
@@ -113,7 +114,17 @@ export function Dashboard({ showIntro: initialShowIntro }: { showIntro?: boolean
 
   const active = activeGroup ? groups.find((g) => g.id === activeGroup) : undefined;
 
-  const todoList = buildTodoList({ items, policies, profile, missingInsuranceRequests });
+  // Kundens registrerade nummer (obligatoriskt vid registrering, se
+  // src/lib/phone.ts) blir automatiskt en ofullständig post i
+  // Mobilabonnemang-sektionen tills kunden kompletterar operatör/pris —
+  // se Del D i docs/kundresa-v2-steg2-plan.md. Ingen egen InsuranceItem
+  // (skulle kräva tomma required-fält); helt härledd från profile.phone +
+  // frånvaron av en riktig mobilpost, så den försvinner av sig själv när
+  // kunden sparar en.
+  const pendingMobilNumber =
+    profile?.phone && !items.some((i) => i.kind === "telekom" && i.typ === "mobil") ? profile.phone : null;
+
+  const todoList = buildTodoList({ items, policies, profile, missingInsuranceRequests, pendingMobilNumber });
 
   // Bara nästa kommande bokning visas som banner — ISO-datum (YYYY-MM-DD)
   // går att jämföra direkt som strängar, ingen datumparsning behövs här.
@@ -377,9 +388,11 @@ export function Dashboard({ showIntro: initialShowIntro }: { showIntro?: boolean
                     <ChevronRight size={16} className="mt-2.5 text-slate" />
                   </div>
                   <div className="font-semibold text-[15px] mb-1">{g.label}</div>
-                  <div className="text-xs mb-3 text-slate">
+                  <div className="text-xs mb-3" style={{ color: g.id === "mobil" && g.items.length === 0 && pendingMobilNumber ? "var(--color-amber-deep)" : "var(--color-slate)" }}>
                     {g.items.length === 0
-                      ? "Inget tillagt än"
+                      ? g.id === "mobil" && pendingMobilNumber
+                        ? "1 väntar på uppgifter"
+                        : "Inget tillagt än"
                       : `${g.items.length} ${g.items.length === 1 ? "sak" : "saker"} tillagda`}
                   </div>
                   {g.items.length > 0 && readyToCompare && (
@@ -419,8 +432,28 @@ export function Dashboard({ showIntro: initialShowIntro }: { showIntro?: boolean
               </button>
             )}
 
-            {active.items.length > 0 && (
+            {(active.items.length > 0 || (active.id === "mobil" && pendingMobilNumber)) && (
               <div className="grid md:grid-cols-3 gap-4 mb-4">
+                {active.id === "mobil" && pendingMobilNumber && (
+                  <div className="bg-white rounded-2xl border border-dashed p-5" style={{ borderColor: "var(--color-amber-deep)" }}>
+                    <div className="flex items-start justify-between mb-4">
+                      <div className="w-10 h-10 rounded-xl flex items-center justify-center bg-frost-2">
+                        <Smartphone size={18} className="text-forest" />
+                      </div>
+                    </div>
+                    <div className="font-semibold text-[15px] mb-1">Mobilabonnemang</div>
+                    <div className="text-xs mb-4 text-slate">{pendingMobilNumber} · operatör & pris saknas</div>
+                    <div className="mb-3">
+                      <ItemStatusBadge status="pending" />
+                    </div>
+                    <button
+                      onClick={() => router.push("/onboarding?mode=add&kind=telekom&typ=mobil")}
+                      className="text-sm font-semibold flex items-center gap-1 text-forest"
+                    >
+                      Komplettera <ArrowRight size={14} />
+                    </button>
+                  </div>
+                )}
                 {active.items.map((item) => {
                   const signed = policies[item.id];
                   return (

@@ -1,4 +1,4 @@
-import { CalendarDays, CircleSlash, FileSignature, HelpCircle, type LucideIcon } from "lucide-react";
+import { CalendarDays, CircleSlash, FileSignature, HelpCircle, Smartphone, type LucideIcon } from "lucide-react";
 import { groupForKind, isComparableItem, itemTitle, type InsuranceItem } from "@/lib/items";
 import type { Quote } from "@/lib/quote";
 import type { Profile, MissingInsuranceRequestRecord } from "@/lib/buddy-context";
@@ -27,11 +27,15 @@ export function buildTodoList({
   policies,
   profile,
   missingInsuranceRequests,
+  pendingMobilNumber,
 }: {
   items: InsuranceItem[];
   policies: Record<string, Quote>;
   profile: Profile | null;
   missingInsuranceRequests: MissingInsuranceRequestRecord[];
+  // Satt när kundens registrerade telefonnummer väntar på att bli ett
+  // komplett mobilabonnemang — se pendingMobilNumber i Dashboard.tsx.
+  pendingMobilNumber?: string | null;
 }): TodoItem[] {
   // 1. Förnyelser inom RENEWAL_WINDOW_DAYS — antingen från Quote.forfallodatum
   // (auto-hämtade, jämförbara poster) eller direkt från item.forfallodatum
@@ -107,5 +111,18 @@ export function buildTodoList({
     ];
   });
 
-  return [...renewals, ...fullmaktRow, ...missingRows, ...cancellationRows];
+  // 5. Registrerat telefonnummer utan komplett mobilabonnemang.
+  const pendingMobilRow: TodoItem[] = pendingMobilNumber
+    ? [
+        {
+          id: "pending-mobil",
+          icon: Smartphone,
+          label: `Komplettera ditt mobilabonnemang (${pendingMobilNumber})`,
+          sublabel: "Operatör & pris saknas",
+          href: "/onboarding?mode=add&kind=telekom&typ=mobil",
+        },
+      ]
+    : [];
+
+  return [...renewals, ...fullmaktRow, ...missingRows, ...cancellationRows, ...pendingMobilRow];
 }
