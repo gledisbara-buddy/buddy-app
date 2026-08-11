@@ -7,8 +7,8 @@ import {
   ArrowRight,
   Baby,
   CalendarDays,
+  ChevronDown,
   ChevronRight,
-  CircleSlash,
   Gift,
   HeartPulse,
   Home,
@@ -18,6 +18,7 @@ import {
   Plus,
   ShieldAlert,
   ShieldCheck,
+  Smartphone,
   Sparkles,
   Star,
   Trash2,
@@ -28,7 +29,7 @@ import { TopBar } from "@/components/TopBar";
 import { ProfileMenu } from "@/components/ProfileMenu";
 import { useBuddy } from "@/lib/buddy-context";
 import { formatBookingDay } from "@/lib/booking";
-import { daysUntilSwedishDate } from "@/lib/dates";
+import { buildTodoList } from "@/lib/todo";
 import { isComparableItem, ITEM_CATEGORIES, ITEM_GROUPS, itemSummary, itemTitle, type ItemGroupId } from "@/lib/items";
 
 type ItemStatus = "saved" | "added" | "uncompared" | "compared" | "fetched";
@@ -70,7 +71,8 @@ const INTRO_POINTS = [
 
 export function Dashboard({ showIntro: initialShowIntro }: { showIntro?: boolean }) {
   const router = useRouter();
-  const { userType, loading, profile, items, removeItem, policies, readyToCompare, setReadyToCompare, bookings } = useBuddy();
+  const { userType, loading, profile, items, removeItem, policies, readyToCompare, setReadyToCompare, bookings, missingInsuranceRequests } =
+    useBuddy();
   const [activeGroup, setActiveGroup] = useState<ItemGroupId | null>(null);
   const [showIntro, setShowIntro] = useState(!!initialShowIntro);
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
@@ -110,27 +112,7 @@ export function Dashboard({ showIntro: initialShowIntro }: { showIntro?: boolean
 
   const active = activeGroup ? groups.find((g) => g.id === activeGroup) : undefined;
 
-  // Bevakning: förfallodatum finns bara på auto-hämtade ("fetched") offerter —
-  // så fort något är jämfört och tecknat behövs ingen påminnelse längre.
-  const upcomingRenewals = items
-    .filter(isComparableItem)
-    .flatMap((item) => {
-      const quote = policies[item.id];
-      if (quote?.source !== "fetched" || !quote.forfallodatum) return [];
-      const days = daysUntilSwedishDate(quote.forfallodatum);
-      if (days == null) return [];
-      return [{ item, quote, days }];
-    })
-    .sort((a, b) => a.days - b.days);
-
-  // Satt av en anställd internt (CustomerItemsTab.tsx) när kunden bett om
-  // hjälp att säga upp ett redan tecknat avtal — visas här så det aldrig
-  // är tyst för kunden att Buddy faktiskt sköter uppsägningen.
-  const pendingCancellations = items.flatMap((item) => {
-    const quote = policies[item.id];
-    if (!quote?.cancellationPending) return [];
-    return [{ item, quote }];
-  });
+  const todoList = buildTodoList({ items, policies, profile, missingInsuranceRequests });
 
   // Bara nästa kommande bokning visas som banner — ISO-datum (YYYY-MM-DD)
   // går att jämföra direkt som strängar, ingen datumparsning behövs här.
@@ -253,96 +235,129 @@ export function Dashboard({ showIntro: initialShowIntro }: { showIntro?: boolean
           </div>
         )}
 
-        {pendingCancellations.length > 0 && (
-          <div className="rounded-2xl border border-line p-5 mb-6 flex flex-col gap-3 bg-frost-2">
-            {pendingCancellations.map(({ item, quote }) => (
-              <div key={item.id} className="flex items-center gap-3">
-                <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-none bg-white">
-                  <CircleSlash size={16} className="text-forest" />
-                </div>
-                <div className="text-sm">
-                  <span className="font-semibold">Buddy hör av sig till {quote.name}</span> för att säga upp din{" "}
-                  {itemTitle(item).toLowerCase()}
-                  {quote.forfallodatum ? ` till förfallodagen ${quote.forfallodatum}` : ""}.
-                </div>
-              </div>
-            ))}
+        {items.length === 0 && (
+          <div className="rounded-2xl p-6 mb-6 text-center bg-ink">
+            <div className="w-12 h-12 rounded-2xl flex items-center justify-center bg-white/10 mx-auto mb-4">
+              <Smartphone size={22} className="text-white" />
+            </div>
+            <h2 className="bd-display text-xl text-white mb-2">Kom igång med Buddy</h2>
+            <p className="text-sm mb-5 text-white/70 max-w-sm mx-auto">
+              Importera dina befintliga försäkringar med BankID, så gör vi det mesta av jobbet åt dig.
+            </p>
+            <button
+              onClick={() => router.push("/importera")}
+              className="bd-btn px-5 py-3 rounded-full font-semibold text-sm text-ink bg-white"
+            >
+              Importera med BankID
+            </button>
+            <div className="mt-3">
+              <button
+                onClick={() => router.push("/onboarding?mode=add")}
+                className="text-sm font-medium text-white/70 hover:text-white"
+              >
+                Eller lägg in det du har manuellt
+              </button>
+            </div>
           </div>
         )}
 
-        <div className="rounded-2xl border border-line bg-white mb-6 overflow-hidden">
-          <div className="px-5 pt-4 pb-2 text-sm font-semibold">Mer att göra</div>
-          <div className="divide-y divide-line">
-            {upcomingRenewals.map(({ item, quote, days }) => (
+        {todoList.length > 0 && (
+          <div className="rounded-2xl border border-line bg-white mb-6 overflow-hidden">
+            <div className="px-5 pt-4 pb-2 text-sm font-semibold">Att göra</div>
+            <div className="divide-y divide-line">
+              {todoList.map((row) => {
+                const Icon = row.icon;
+                const content = (
+                  <>
+                    <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-none bg-frost-2">
+                      <Icon size={15} className="text-forest" />
+                    </div>
+                    <div className="flex-1 min-w-0 text-sm font-medium truncate">{row.label}</div>
+                    {row.sublabel && (
+                      <span className={`text-xs font-semibold flex-none ${row.urgent ? "text-amber-deep" : "text-slate"}`}>
+                        {row.sublabel}
+                      </span>
+                    )}
+                    {row.href && <ArrowRight size={14} className="text-slate flex-none" />}
+                  </>
+                );
+                return row.href ? (
+                  <button
+                    key={row.id}
+                    onClick={() => router.push(row.href!)}
+                    className="w-full flex items-center gap-3 px-5 py-3 text-left hover:bg-frost"
+                  >
+                    {content}
+                  </button>
+                ) : (
+                  <div key={row.id} className="flex items-center gap-3 px-5 py-3">
+                    {content}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
+        <details className="mb-6 group">
+          <summary className="flex items-center gap-1.5 text-sm font-semibold text-slate hover:text-ink cursor-pointer list-none w-fit">
+            Fler genvägar <ChevronDown size={15} className="transition-transform group-open:rotate-180" />
+          </summary>
+          <div className="rounded-2xl border border-line bg-white mt-3 overflow-hidden">
+            <div className="divide-y divide-line">
               <button
-                key={item.id}
-                onClick={() => router.push(`/compare/${item.id}`)}
+                onClick={() => router.push("/halsokoll")}
                 className="w-full flex items-center gap-3 px-5 py-3 text-left hover:bg-frost"
               >
                 <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-none bg-frost-2">
-                  <CalendarDays size={15} className="text-forest" />
+                  <HeartPulse size={15} className="text-forest" />
                 </div>
-                <div className="flex-1 min-w-0 text-sm font-medium truncate">
-                  {itemTitle(item)} hos {quote.name} förnyas {quote.forfallodatum}
-                </div>
-                <span className={`text-xs font-semibold flex-none ${days <= 30 ? "text-amber-deep" : "text-slate"}`}>
-                  Om {days} {days === 1 ? "dag" : "dagar"}
-                </span>
+                <span className="flex-1 text-sm font-medium">Årlig hälsokoll</span>
                 <ArrowRight size={14} className="text-slate flex-none" />
               </button>
-            ))}
-            <button
-              onClick={() => router.push("/halsokoll")}
-              className="w-full flex items-center gap-3 px-5 py-3 text-left hover:bg-frost"
-            >
-              <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-none bg-frost-2">
-                <HeartPulse size={15} className="text-forest" />
-              </div>
-              <span className="flex-1 text-sm font-medium">Årlig hälsokoll</span>
-              <ArrowRight size={14} className="text-slate flex-none" />
-            </button>
-            <button
-              onClick={() => router.push("/livshandelser?event=flytt")}
-              className="w-full flex items-center gap-3 px-5 py-3 text-left hover:bg-frost"
-            >
-              <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-none bg-frost-2">
-                <Truck size={15} className="text-forest" />
-              </div>
-              <span className="flex-1 text-sm font-medium">Jag ska flytta</span>
-              <ArrowRight size={14} className="text-slate flex-none" />
-            </button>
-            <button
-              onClick={() => router.push("/livshandelser?event=barn")}
-              className="w-full flex items-center gap-3 px-5 py-3 text-left hover:bg-frost"
-            >
-              <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-none bg-frost-2">
-                <Baby size={15} className="text-forest" />
-              </div>
-              <span className="flex-1 text-sm font-medium">Vi väntar barn</span>
-              <ArrowRight size={14} className="text-slate flex-none" />
-            </button>
-            <button
-              onClick={() => router.push("/varva-en-van")}
-              className="w-full flex items-center gap-3 px-5 py-3 text-left hover:bg-frost"
-            >
-              <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-none bg-frost-2">
-                <Gift size={15} className="text-forest" />
-              </div>
-              <span className="flex-1 text-sm font-medium">Värva en vän</span>
-              <ArrowRight size={14} className="text-slate flex-none" />
-            </button>
-            <button
-              onClick={() => router.push("/hushall")}
-              className="w-full flex items-center gap-3 px-5 py-3 text-left hover:bg-frost"
-            >
-              <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-none bg-frost-2">
-                <Home size={15} className="text-forest" />
-              </div>
-              <span className="flex-1 text-sm font-medium">Hushåll</span>
-              <ArrowRight size={14} className="text-slate flex-none" />
-            </button>
+              <button
+                onClick={() => router.push("/livshandelser?event=flytt")}
+                className="w-full flex items-center gap-3 px-5 py-3 text-left hover:bg-frost"
+              >
+                <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-none bg-frost-2">
+                  <Truck size={15} className="text-forest" />
+                </div>
+                <span className="flex-1 text-sm font-medium">Jag ska flytta</span>
+                <ArrowRight size={14} className="text-slate flex-none" />
+              </button>
+              <button
+                onClick={() => router.push("/livshandelser?event=barn")}
+                className="w-full flex items-center gap-3 px-5 py-3 text-left hover:bg-frost"
+              >
+                <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-none bg-frost-2">
+                  <Baby size={15} className="text-forest" />
+                </div>
+                <span className="flex-1 text-sm font-medium">Vi väntar barn</span>
+                <ArrowRight size={14} className="text-slate flex-none" />
+              </button>
+              <button
+                onClick={() => router.push("/varva-en-van")}
+                className="w-full flex items-center gap-3 px-5 py-3 text-left hover:bg-frost"
+              >
+                <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-none bg-frost-2">
+                  <Gift size={15} className="text-forest" />
+                </div>
+                <span className="flex-1 text-sm font-medium">Värva en vän</span>
+                <ArrowRight size={14} className="text-slate flex-none" />
+              </button>
+              <button
+                onClick={() => router.push("/hushall")}
+                className="w-full flex items-center gap-3 px-5 py-3 text-left hover:bg-frost"
+              >
+                <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-none bg-frost-2">
+                  <Home size={15} className="text-forest" />
+                </div>
+                <span className="flex-1 text-sm font-medium">Hushåll</span>
+                <ArrowRight size={14} className="text-slate flex-none" />
+              </button>
+            </div>
           </div>
-        </div>
+        </details>
 
         {!active ? (
           <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">

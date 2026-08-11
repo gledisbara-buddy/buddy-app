@@ -20,3 +20,18 @@ export function daysUntilSwedishDate(dateStr: string): number | undefined {
   const msPerDay = 1000 * 60 * 60 * 24;
   return Math.round((target.getTime() - todayMidnight.getTime()) / msPerDay);
 }
+
+// Konverterar ett <input type="date">-värde ("YYYY-MM-DD") till samma
+// "D MMM YYYY"-format som daysUntilSwedishDate ovan förväntar sig — annars
+// matchar inte ett användarinmatat förfallodatum (TelekomForm.tsx m.fl.)
+// parsern. Returnerar undefined om strängen inte går att tolka.
+export function isoToSwedishDate(iso: string): string | undefined {
+  const [yearStr, monthStr, dayStr] = iso.split("-");
+  const year = Number(yearStr);
+  const month = Number(monthStr);
+  const day = Number(dayStr);
+  if (!Number.isFinite(year) || !Number.isFinite(month) || !Number.isFinite(day) || month < 1 || month > 12) {
+    return undefined;
+  }
+  return `${day} ${MONTHS[month - 1]} ${year}`;
+}

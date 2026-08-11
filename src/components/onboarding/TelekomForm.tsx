@@ -12,6 +12,7 @@ import {
   TV_STREAMING_TJANSTER,
 } from "@/lib/items";
 import type { AnslutningTyp, InsuranceItem, TelekomTyp } from "@/lib/items";
+import { isoToSwedishDate } from "@/lib/dates";
 
 // Uppskattad nätverkstäckning (andel av Sveriges befolkning) per operatör —
 // Halebop och Comviq körs på samma nät som Telia respektive Tele2.
@@ -41,6 +42,7 @@ export function TelekomForm({
   const [obegransatData, setObegransatData] = useState<boolean | null>(null);
   const [prisMobil, setPrisMobil] = useState("");
   const [bindningMobil, setBindningMobil] = useState("");
+  const [forfallodagMobil, setForfallodagMobil] = useState("");
 
   // bredband
   const [operatorBredband, setOperatorBredband] = useState("");
@@ -103,6 +105,9 @@ export function TelekomForm({
             <input type="number" className={inputClass} value={bindningMobil} onChange={(e) => setBindningMobil(e.target.value)} placeholder="24" />
           </Field>
         </div>
+        <Field label="Förfallodag (valfritt)">
+          <input type="date" className={inputClass} value={forfallodagMobil} onChange={(e) => setForfallodagMobil(e.target.value)} />
+        </Field>
         <FormActions
           valid={valid}
           onCancel={onCancel}
@@ -116,6 +121,7 @@ export function TelekomForm({
               obegransatData: !!obegransatData,
               prisPerManad: Number(prisMobil),
               bindningstidManader: bindningMobil ? Number(bindningMobil) : undefined,
+              forfallodatum: forfallodagMobil ? isoToSwedishDate(forfallodagMobil) : undefined,
             })
           }
         />

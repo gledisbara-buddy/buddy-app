@@ -153,6 +153,10 @@ export type MobilAbonnemangItem = {
   obegransatData: boolean;
   prisPerManad: number;
   bindningstidManader?: number;
+  // "D MMM YYYY" (samma format som Quote.forfallodatum, se dates.ts) —
+  // låter Att göra-listan räkna ner till förnyelse även för poster som
+  // aldrig går igenom jämförelseflödet och därför inte får en Quote.
+  forfallodatum?: string;
 };
 
 export type BredbandItem = {
@@ -164,6 +168,7 @@ export type BredbandItem = {
   anslutning: AnslutningTyp;
   prisPerManad: number;
   bindningstidManader?: number;
+  forfallodatum?: string;
 };
 
 export type TvStreamingItem = {
@@ -173,6 +178,7 @@ export type TvStreamingItem = {
   tjanst: string;
   prisPerManad: number;
   delatKonto: boolean;
+  forfallodatum?: string;
 };
 
 export type TelekomItem = MobilAbonnemangItem | BredbandItem | TvStreamingItem;
@@ -215,6 +221,7 @@ export type PrenumerationItem = {
   leverantor?: string;
   prisPerManad: number;
   bindningstidManader?: number;
+  forfallodatum?: string;
 };
 
 export type InsuranceItem =

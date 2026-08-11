@@ -14,6 +14,7 @@ import { useBuddy } from "@/lib/buddy-context";
 import type { Quote } from "@/lib/quote";
 import type { FetchableKind } from "@/lib/policy-fetch";
 import { lookupVehicle } from "@/lib/vehicle-lookup";
+import { isoToSwedishDate } from "@/lib/dates";
 import {
   AVTALSTYP_LABELS,
   BAT_MOTOR_LABELS,
@@ -460,6 +461,7 @@ function PrenumerationForm({ onSave, onCancel }: { onSave: (item: InsuranceItem)
   const [leverantor, setLeverantor] = useState("");
   const [prisPerManad, setPrisPerManad] = useState("");
   const [bindningstidManader, setBindningstidManader] = useState("");
+  const [forfallodag, setForfallodag] = useState("");
 
   const valid = namn.trim().length > 0 && Number(prisPerManad) > 0;
 
@@ -485,6 +487,9 @@ function PrenumerationForm({ onSave, onCancel }: { onSave: (item: InsuranceItem)
           />
         </Field>
       </div>
+      <Field label="Förfallodag (valfritt)">
+        <input type="date" className={inputClass} value={forfallodag} onChange={(e) => setForfallodag(e.target.value)} />
+      </Field>
       <FormActions
         valid={valid}
         onCancel={onCancel}
@@ -496,6 +501,7 @@ function PrenumerationForm({ onSave, onCancel }: { onSave: (item: InsuranceItem)
             leverantor: leverantor.trim() || undefined,
             prisPerManad: Number(prisPerManad),
             bindningstidManader: bindningstidManader ? Number(bindningstidManader) : undefined,
+            forfallodatum: forfallodag ? isoToSwedishDate(forfallodag) : undefined,
           })
         }
       />
