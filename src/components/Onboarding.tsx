@@ -529,7 +529,7 @@ export function Onboarding({
   initialTyp?: TelekomTyp;
 }) {
   const router = useRouter();
-  const { userType, loading, items, addItem, removeItem, setPolicy } = useBuddy();
+  const { userType, loading, items, profile, addItem, removeItem, setPolicy } = useBuddy();
   const [activeCategory, setActiveCategory] = useState<ItemKind | null>(initialKind ?? null);
   const [addMode, setAddMode] = useState<"choice" | "auto" | "manual" | null>(
     activeCategory ? (groupForKind(activeCategory) === "forsakring" ? "choice" : "manual") : null
@@ -626,7 +626,14 @@ export function Onboarding({
             )}
 
             {addMode === "manual" && activeCategory === "telekom" && (
-              <TelekomForm onSave={(item) => handleItemAdded(item)} onCancel={close} initialTyp={initialTyp} />
+              <TelekomForm
+                onSave={(item) => handleItemAdded(item)}
+                onCancel={close}
+                initialTyp={initialTyp}
+                defaultTelefonnummer={
+                  items.some((i) => i.kind === "telekom" && i.typ === "mobil") ? undefined : profile?.phone
+                }
+              />
             )}
             {addMode === "manual" && activeCategory !== "telekom" && (
               <FormComponent onSave={(item) => handleItemAdded(item)} onCancel={close} />

@@ -149,6 +149,7 @@ export type MobilAbonnemangItem = {
   kind: "telekom";
   typ: "mobil";
   operator: string;
+  telefonnummer?: string;
   dataGb?: number;
   obegransatData: boolean;
   prisPerManad: number;
