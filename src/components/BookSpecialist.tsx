@@ -15,11 +15,14 @@ function toIsoDate(d: Date): string {
 
 type MeetingType = "video" | "phone";
 
-export function BookSpecialist() {
+export function BookSpecialist({ initialTopic }: { initialTopic?: string } = {}) {
   const router = useRouter();
   const { items, submitBooking } = useBuddy();
   const [step, setStep] = useState(0);
-  const [topics, setTopics] = useState<string[]>([]);
+  // Del H i docs/kundresa-v2-steg2-plan.md: jämförelse-forkens "Hela
+  // lösningen" leder hit med ett förifyllt ämne (samma FIXED_TOPICS-id som
+  // redan finns i booking.ts).
+  const [topics, setTopics] = useState<string[]>(initialTopic ? [initialTopic] : []);
   const [extraNote, setExtraNote] = useState("");
   const [meetingType, setMeetingType] = useState<MeetingType | null>(null);
   const [dayIdx, setDayIdx] = useState(0);

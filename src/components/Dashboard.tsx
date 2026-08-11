@@ -469,8 +469,10 @@ export function Dashboard({ showIntro: initialShowIntro }: { showIntro?: boolean
                           <Trash2 size={15} />
                         </button>
                       </div>
-                      <div className="font-semibold text-[15px] mb-1">{itemTitle(item)}</div>
-                      <div className="text-xs mb-4 text-slate">{itemSummary(item)}</div>
+                      <button onClick={() => router.push(`/objekt/${item.id}`)} className="text-left mb-4 block">
+                        <div className="font-semibold text-[15px] mb-1">{itemTitle(item)}</div>
+                        <div className="text-xs text-slate">{itemSummary(item)}</div>
+                      </button>
                       {!isComparableItem(item) ? (
                         <ItemStatusBadge status="saved" />
                       ) : !readyToCompare ? (

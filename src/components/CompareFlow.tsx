@@ -305,8 +305,11 @@ export function CompareFlow({ itemId }: { itemId: string }) {
     item && hasNeedsStep
       ? (itemNeeds[item.id] ?? []).filter((id) => getAvailableNeedIds(item.kind as NeedsKind, item).includes(id))
       : [];
-  const [phase, setPhase] = useState<"needs" | "loading" | "results" | "checkout" | "cancellation" | "signed">(
-    hasNeedsStep ? "needs" : "loading"
+  // Del H i docs/kundresa-v2-steg2-plan.md: varje jämförelse börjar med
+  // forken "bara den här" vs "hela lösningen" — "hela lösningen" leder
+  // direkt vidare till bokningsflödet istället för att fortsätta här.
+  const [phase, setPhase] = useState<"fork" | "needs" | "loading" | "results" | "checkout" | "cancellation" | "signed">(
+    "fork"
   );
   const [signedQuote, setSignedQuote] = useState<Quote | null>(null);
   const [needs, setNeeds] = useState<string[]>(initialNeeds);
@@ -371,6 +374,40 @@ export function CompareFlow({ itemId }: { itemId: string }) {
 
   return (
     <div className="min-h-screen w-full">
+      {phase === "fork" && (
+        <>
+          <div className="w-full flex items-center justify-between px-6 py-5">
+            <Logo />
+            <div className="w-6" />
+          </div>
+          <div className="flex items-start justify-center px-5">
+            <div className="w-full max-w-md bd-fade">
+              <button onClick={() => router.push("/dashboard")} className="flex items-center gap-1.5 text-sm mb-5 opacity-60 hover:opacity-100">
+                <ArrowLeft size={15} /> Tillbaka
+              </button>
+              <span className="bd-eyebrow">{label}</span>
+              <h1 className="bd-display text-2xl mt-3 mb-6">Vill du jämföra bara den här saken, eller hela din lösning?</h1>
+              <div className="flex flex-col gap-3">
+                <button
+                  onClick={() => setPhase(hasNeedsStep ? "needs" : "loading")}
+                  className="w-full text-left p-5 rounded-2xl border border-line bg-white"
+                >
+                  <div className="font-semibold text-[15px] mb-1">Bara {label.toLowerCase()}</div>
+                  <div className="text-sm text-slate">Buddy jämför just den här saken mot marknaden direkt.</div>
+                </button>
+                <button
+                  onClick={() => router.push("/book?topic=HELHET")}
+                  className="w-full text-left p-5 rounded-2xl border border-line bg-white"
+                >
+                  <div className="font-semibold text-[15px] mb-1">Hela min lösning</div>
+                  <div className="text-sm text-slate">Boka en specialist som går igenom allt du har samlat, i ett samtal.</div>
+                </button>
+              </div>
+            </div>
+          </div>
+        </>
+      )}
+
       {phase === "needs" && (
         <>
           <div className="w-full flex items-center justify-between px-6 py-5">
