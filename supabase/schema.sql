@@ -627,3 +627,15 @@ create policy "missing_insurance_requests_select_own_or_employee" on public.miss
 drop policy if exists "missing_insurance_requests_update_employee" on public.missing_insurance_requests;
 create policy "missing_insurance_requests_update_employee" on public.missing_insurance_requests
   for update using (exists (select 1 from public.employees where email = auth.jwt() ->> 'email'));
+
+-- En anställd fyller manuellt i en försäkring åt kunden när ett
+-- missing_insurance_requests-ärende hanteras (MissingInsuranceQueue.tsx) —
+-- det fanns tidigare bara select/update/delete-policyer för anställda på
+-- items/policies, ingen insert.
+drop policy if exists "items_insert_employee" on public.items;
+create policy "items_insert_employee" on public.items
+  for insert with check (exists (select 1 from public.employees where email = auth.jwt() ->> 'email'));
+
+drop policy if exists "policies_insert_employee" on public.policies;
+create policy "policies_insert_employee" on public.policies
+  for insert with check (exists (select 1 from public.employees where email = auth.jwt() ->> 'email'));
