@@ -1,4 +1,4 @@
-import { createItemId, type ComparableItem } from "@/lib/items";
+import { createItemId, FORSAKRINGSBOLAG, type ComparableItem } from "@/lib/items";
 import { MONTHS } from "@/lib/booking";
 import type { Quote } from "@/lib/quote";
 import { VEHICLE_BOOK } from "@/lib/vehicle-lookup";
@@ -22,7 +22,11 @@ function randomFutureDate(): string {
   return `${d.getDate()} ${MONTHS[d.getMonth()]} ${d.getFullYear()}`;
 }
 
-function synthesizeItem(kind: FetchableKind): ComparableItem {
+// Exporterad så internverktyget (MissingInsuranceQueue.tsx) kan generera en
+// plausibel post åt kunden när en anställd manuellt fyller i en försäkring
+// som saknades i BankID-importen — samma syntetiseringslogik, bara startad
+// av en anställd istället för kunden själv.
+export function synthesizeItem(kind: FetchableKind): ComparableItem {
   switch (kind) {
     case "boende": {
       const home = pick([
@@ -111,6 +115,24 @@ const UNDANTAG_POOL = [
   ["Grov vårdslöshet", "Skador vid uthyrning i andra hand"],
 ] as const;
 
+function buildQuote(kind: FetchableKind, bolagNamn: string): Quote {
+  return {
+    id: createItemId(),
+    name: bolagNamn,
+    price: randomInRange(PRICE_RANGES[kind]),
+    selfRisk: pick(SELF_RISK_POOL),
+    highlights: [],
+    source: "fetched",
+    omfattning: pick(OMFATTNING_POOL[kind]),
+    forfallodatum: randomFutureDate(),
+    karenstid: pick(KARENSTID_POOL),
+    ersattningstak: pick(ERSATTNINGSTAK_POOL),
+    bindningstid: pick(BINDNINGSTID_POOL),
+    uppsagningstid: pick(UPPSAGNINGSTID_POOL),
+    undantag: [...pick(UNDANTAG_POOL)],
+  };
+}
+
 /**
  * Simulerad hämtning av en befintlig försäkring hos ett valt bolag — swap-punkt för en
  * riktig öppen-försäkring-API senare (samma signatur, AutoFetchStep beror bara på den här
@@ -121,23 +143,22 @@ const UNDANTAG_POOL = [
 export function fetchExistingPolicy(kind: FetchableKind, bolagNamn: string): Promise<{ item: ComparableItem; quote: Quote }> {
   return new Promise((resolve) => {
     setTimeout(() => {
-      const item = synthesizeItem(kind);
-      const quote: Quote = {
-        id: createItemId(),
-        name: bolagNamn,
-        price: randomInRange(PRICE_RANGES[kind]),
-        selfRisk: pick(SELF_RISK_POOL),
-        highlights: [],
-        source: "fetched",
-        omfattning: pick(OMFATTNING_POOL[kind]),
-        forfallodatum: randomFutureDate(),
-        karenstid: pick(KARENSTID_POOL),
-        ersattningstak: pick(ERSATTNINGSTAK_POOL),
-        bindningstid: pick(BINDNINGSTID_POOL),
-        uppsagningstid: pick(UPPSAGNINGSTID_POOL),
-        undantag: [...pick(UNDANTAG_POOL)],
-      };
-      resolve({ item, quote });
+      resolve({ item: synthesizeItem(kind), quote: buildQuote(kind, bolagNamn) });
     }, 1400);
+  });
+}
+
+// Alltid boende + bil (vanligast), plus 0-2 slumpade av person/djur/
+// ovrigt_fordon — ger 2-4 poster per import. En enda fördröjning för hela
+// batchen (inte N × 1400ms som att loopa fetchExistingPolicy skulle ge).
+const IMPORT_ALWAYS: readonly FetchableKind[] = ["boende", "bil"];
+const IMPORT_MAYBE: readonly FetchableKind[] = ["person", "djur", "ovrigt_fordon"];
+
+export function fetchMultiplePolicies(): Promise<{ item: ComparableItem; quote: Quote }[]> {
+  return new Promise((resolve) => {
+    setTimeout(() => {
+      const kinds = [...IMPORT_ALWAYS, ...IMPORT_MAYBE.filter(() => Math.random() < 0.5)];
+      resolve(kinds.map((kind) => ({ item: synthesizeItem(kind), quote: buildQuote(kind, pick(FORSAKRINGSBOLAG)) })));
+    }, 2200);
   });
 }

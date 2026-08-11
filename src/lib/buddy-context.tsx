@@ -4,7 +4,7 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useState, t
 import { createClient } from "@/lib/supabase/client";
 import type { UserType } from "@/lib/types";
 import type { Quote } from "@/lib/quote";
-import type { InsuranceItem } from "@/lib/items";
+import type { InsuranceItem, ItemKind } from "@/lib/items";
 import type { ChatMessage } from "@/lib/claim";
 import { generateHouseholdCode, type HouseholdRelation } from "@/lib/household";
 import { sendTransactionalEmail } from "@/lib/email";
@@ -91,6 +91,18 @@ export type ClaimRecord = {
   createdAt: string;
 };
 
+// Kunden flaggar en försäkring som saknades i BankID-importen
+// (BankIdImport.tsx) — en anställd fyller i den manuellt i internverktyget
+// (MissingInsuranceQueue.tsx), samma "ny"→"hanterad" mönster som bookings/
+// claims.
+export type MissingInsuranceRequestRecord = {
+  id: string;
+  kind: ItemKind;
+  note: string | null;
+  status: "ny" | "hanterad" | "avbrutet";
+  createdAt: string;
+};
+
 type BuddyState = {
   // Sant fram tills den första sessions-kontrollen mot Supabase är klar —
   // guardade sidor ska vänta med att redirecta till /kom-igang tills dess.
@@ -115,6 +127,7 @@ type BuddyState = {
   leaveHousehold: () => void;
   items: InsuranceItem[];
   addItem: (item: InsuranceItem) => void;
+  addItems: (items: InsuranceItem[]) => Promise<void>;
   removeItem: (id: string) => void;
   policies: Record<string, Quote>;
   setPolicy: (insuranceId: string, quote: Quote, checkout?: CheckoutInfo) => void;
@@ -138,6 +151,8 @@ type BuddyState = {
   claims: ClaimRecord[];
   submitBooking: (input: BookingInput) => void;
   submitClaim: (input: ClaimInput) => void;
+  missingInsuranceRequests: MissingInsuranceRequestRecord[];
+  submitMissingInsuranceRequest: (kind: ItemKind, note: string) => void;
   logout: () => void;
 };
 
@@ -175,6 +190,14 @@ type ClaimRow = {
   skadetyp: string | null;
   allvarlighetsgrad: string | null;
   status: "ny" | "hanterad";
+  created_at: string;
+};
+
+type MissingInsuranceRequestRow = {
+  id: string;
+  kind: string;
+  note: string | null;
+  status: "ny" | "hanterad" | "avbrutet";
   created_at: string;
 };
 
@@ -221,6 +244,16 @@ function mapClaimRow(r: ClaimRow): ClaimRecord {
   };
 }
 
+function mapMissingInsuranceRequestRow(r: MissingInsuranceRequestRow): MissingInsuranceRequestRecord {
+  return {
+    id: r.id,
+    kind: r.kind as ItemKind,
+    note: r.note,
+    status: r.status,
+    createdAt: r.created_at,
+  };
+}
+
 function logWriteError(label: string) {
   return (result: { error: { message: string } | null }) => {
     if (result.error) console.error(`Buddy: kunde inte spara (${label})`, result.error.message);
@@ -242,6 +275,7 @@ export function BuddyProvider({ children }: { children: ReactNode }) {
   const [household, setHousehold] = useState<Household | null>(null);
   const [bookings, setBookings] = useState<BookingRecord[]>([]);
   const [claims, setClaims] = useState<ClaimRecord[]>([]);
+  const [missingInsuranceRequests, setMissingInsuranceRequests] = useState<MissingInsuranceRequestRecord[]>([]);
 
   const resetLocalState = () => {
     setUserId(null);
@@ -256,6 +290,7 @@ export function BuddyProvider({ children }: { children: ReactNode }) {
     setHousehold(null);
     setBookings([]);
     setClaims([]);
+    setMissingInsuranceRequests([]);
   };
 
   const loadForUser = useCallback(
@@ -270,6 +305,7 @@ export function BuddyProvider({ children }: { children: ReactNode }) {
         { data: referralTotal },
         { data: referralQualified },
         { data: householdRow },
+        { data: missingInsuranceRows },
       ] = await Promise.all([
         supabase
           .from("profiles")
@@ -292,6 +328,11 @@ export function BuddyProvider({ children }: { children: ReactNode }) {
         supabase.rpc("count_referral_signups", { referrer: uid }),
         supabase.rpc("count_qualified_referrals", { referrer: uid }),
         supabase.rpc("get_my_household").maybeSingle(),
+        supabase
+          .from("missing_insurance_requests")
+          .select("id, kind, note, status, created_at")
+          .eq("user_id", uid)
+          .order("created_at", { ascending: false }),
       ]);
 
       if (profileRow) {
@@ -327,6 +368,7 @@ export function BuddyProvider({ children }: { children: ReactNode }) {
       setHousehold(householdRow ? mapHouseholdRow(householdRow as HouseholdRpcRow) : null);
       setBookings(((bookingRows ?? []) as BookingRow[]).map(mapBookingRow));
       setClaims(((claimRows ?? []) as ClaimRow[]).map(mapClaimRow));
+      setMissingInsuranceRequests(((missingInsuranceRows ?? []) as MissingInsuranceRequestRow[]).map(mapMissingInsuranceRequestRow));
     },
     [supabase]
   );
@@ -457,6 +499,27 @@ export function BuddyProvider({ children }: { children: ReactNode }) {
     [supabase, userId]
   );
 
+  // Bulk-variant för BankID-importen (BankIdImport.tsx) — en state-uppdatering
+  // och ETT batchat insert istället för att loopa addItem N gånger.
+  // Returnerar ett Promise (till skillnad från addItem) så anroparen kan
+  // vänta in att items-raderna faktiskt finns i databasen innan den sätter
+  // policies för dem — policies.item_id har en foreign key mot items.id,
+  // så en efterföljande setPolicy() som körs innan den här inserten hunnit
+  // committa kan annars krascha mot det constraintet (sett live vid
+  // BankID-importen).
+  const addItems = useCallback(
+    async (newItems: InsuranceItem[]) => {
+      if (newItems.length === 0) return;
+      setItems((prev) => [...prev, ...newItems]);
+      if (!userId) return;
+      const result = await supabase
+        .from("items")
+        .insert(newItems.map((item) => ({ id: item.id, user_id: userId, kind: item.kind, data: item })));
+      logWriteError("saker")(result);
+    },
+    [supabase, userId]
+  );
+
   const removeItem = useCallback(
     (id: string) => {
       setItems((prev) => prev.filter((i) => i.id !== id));
@@ -565,6 +628,27 @@ export function BuddyProvider({ children }: { children: ReactNode }) {
     [supabase, userId]
   );
 
+  const submitMissingInsuranceRequest = useCallback(
+    (kind: ItemKind, note: string) => {
+      if (!userId) return;
+      supabase
+        .from("missing_insurance_requests")
+        .insert({ user_id: userId, kind, note: note.trim() || null })
+        .select("id, kind, note, status, created_at")
+        .single()
+        .then((result) => {
+          logWriteError("saknad försäkring")(result);
+          if (result.data) {
+            setMissingInsuranceRequests((prev) => [
+              mapMissingInsuranceRequestRow(result.data as MissingInsuranceRequestRow),
+              ...prev,
+            ]);
+          }
+        });
+    },
+    [supabase, userId]
+  );
+
   const logout = useCallback(() => {
     supabase.auth.signOut();
   }, [supabase]);
@@ -583,6 +667,7 @@ export function BuddyProvider({ children }: { children: ReactNode }) {
       leaveHousehold,
       items,
       addItem,
+      addItems,
       removeItem,
       policies,
       setPolicy,
@@ -597,6 +682,8 @@ export function BuddyProvider({ children }: { children: ReactNode }) {
       claims,
       submitBooking,
       submitClaim,
+      missingInsuranceRequests,
+      submitMissingInsuranceRequest,
       logout,
     }),
     [
@@ -612,6 +699,7 @@ export function BuddyProvider({ children }: { children: ReactNode }) {
       leaveHousehold,
       items,
       addItem,
+      addItems,
       removeItem,
       policies,
       setPolicy,
@@ -625,6 +713,8 @@ export function BuddyProvider({ children }: { children: ReactNode }) {
       claims,
       submitBooking,
       submitClaim,
+      missingInsuranceRequests,
+      submitMissingInsuranceRequest,
       logout,
     ]
   );

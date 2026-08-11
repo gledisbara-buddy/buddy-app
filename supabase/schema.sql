@@ -596,3 +596,34 @@ begin
   return new;
 end;
 $$ language plpgsql security definer set search_path = public;
+
+-- Kundresa v2 steg 2: kunden flaggar en försäkring som saknades i
+-- BankID-importen (BankIdImport.tsx) — en anställd hanterar den manuellt i
+-- internverktyget (MissingInsuranceQueue.tsx). Samma mönster som
+-- bookings/claims: kunden infogar/läser sina egna, en anställd läser/
+-- uppdaterar alla.
+create table if not exists public.missing_insurance_requests (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null references auth.users(id) on delete cascade,
+  kind text not null,
+  note text,
+  status text not null default 'ny' check (status in ('ny', 'hanterad', 'avbrutet')),
+  created_at timestamptz not null default now()
+);
+
+alter table public.missing_insurance_requests enable row level security;
+
+drop policy if exists "missing_insurance_requests_insert_own" on public.missing_insurance_requests;
+create policy "missing_insurance_requests_insert_own" on public.missing_insurance_requests
+  for insert with check (auth.uid() = user_id);
+
+drop policy if exists "missing_insurance_requests_select_own_or_employee" on public.missing_insurance_requests;
+create policy "missing_insurance_requests_select_own_or_employee" on public.missing_insurance_requests
+  for select using (
+    auth.uid() = user_id
+    or exists (select 1 from public.employees where email = auth.jwt() ->> 'email')
+  );
+
+drop policy if exists "missing_insurance_requests_update_employee" on public.missing_insurance_requests;
+create policy "missing_insurance_requests_update_employee" on public.missing_insurance_requests
+  for update using (exists (select 1 from public.employees where email = auth.jwt() ->> 'email'));
