@@ -1,40 +1,41 @@
 import { test, expect, type Page } from "@playwright/test";
 
-// Grundläggande smoke-tester för de mest kritiska flödena. Varje testkonto
-// får en unik, tidsstämplad e-post — samma engångskontomönster som all
-// manuell verifiering i den här kodbasen använt hela utvecklingen igenom.
+// Grundläggande smoke-tester för de mest kritiska flödena.
+//
+// Obligatorisk e-postbekräftelse (6-siffrig kod, skickad via Resend) gör
+// att en helt ny signup inte längre kan slutföras automatiskt — det finns
+// ingen riktig inkorg att läsa koden ur i CI/Playwright. Inloggningsberoende
+// tester återanvänder därför ett befintligt, redan bekräftat testkonto
+// (E2E_LOGIN_EMAIL/E2E_LOGIN_PASSWORD i .env.local — se buddy_test_accounts
+// i minnesanteckningarna för vilket konto). Signup-testet verifierar bara
+// att flödet fram till kod-skärmen fungerar, utan att slutföra det.
 function uniqueEmail(prefix: string): string {
   return `${prefix}.${Date.now()}@example.com`;
 }
 
 const PASSWORD = "SmokeTest123!";
 
-// Efter signup hamnar en ny användare i onboardingen (namn, ev. fullmakt
-// osv.), inte direkt på översikten. "Hoppa över, jag gör det sen" finns
-// på varje steg — klicka igenom tills Profilmeny (TopBar) syns.
-async function signUpAndReachDashboard(page: Page, email: string) {
+const LOGIN_EMAIL = process.env.E2E_LOGIN_EMAIL;
+const LOGIN_PASSWORD = process.env.E2E_LOGIN_PASSWORD;
+
+// Loggar in med ett befintligt, bekräftat konto och väntar in översikten.
+// Kontot har redan slutfört onboardingen tidigare, så ingen "Hoppa
+// över"-klickning behövs här (till skillnad från ett helt nytt konto).
+async function loginAndReachDashboard(page: Page) {
+  test.skip(!LOGIN_EMAIL || !LOGIN_PASSWORD, "E2E_LOGIN_EMAIL/E2E_LOGIN_PASSWORD saknas i .env.local");
+
   await page.goto("/login?type=privat");
-  await page.locator('input[type="email"]').fill(email);
-  await page.locator('input[type="password"]').fill(PASSWORD);
-  await page.getByRole("button", { name: "Skapa konto" }).click();
+  await page.getByRole("button", { name: /Har du redan ett konto\? Logga in/i }).click();
+  await page.locator('input[type="email"]').fill(LOGIN_EMAIL!);
+  await page.locator('input[type="password"]').fill(LOGIN_PASSWORD!);
+  await page.getByRole("button", { name: "Logga in" }).click();
 
   const profileMenu = page.getByRole("button", { name: "Profilmeny" });
-  for (let i = 0; i < 10; i++) {
-    if (await profileMenu.isVisible().catch(() => false)) break;
-    // Onboardingen byter steg (och därmed DOM) mellan varje klick, så
-    // "Hoppa över"-knappen hinner ofta bli detached innan klicket
-    // hinner utföras — fånga det och försök igen på nästa varv.
-    await page
-      .getByRole("button", { name: /Hoppa över/i })
-      .click({ timeout: 2_000 })
-      .catch(() => {});
-  }
   await expect(profileMenu).toBeVisible({ timeout: 15_000 });
 
-  // Första besöket på översikten visar en introduktions-overlay
-  // ("Såhär funkar Buddy") som blockerar klick tills den stängs — den
-  // kan hinna monteras strax EFTER att Profilmeny redan syns, så en
-  // engångskoll här är racy. Vänta in den (om den kommer) och stäng.
+  // Introduktions-overlayn ("Såhär funkar Buddy") visas bara vid första
+  // besöket någonsin på översikten för ett konto — ett redan använt
+  // testkonto har oftast redan sett den, men vänta in den om den kommer.
   const scrim = page.locator(".bd-scrim");
   await scrim.waitFor({ state: "visible", timeout: 1_500 }).catch(() => {});
   if (await scrim.isVisible().catch(() => false)) {
@@ -66,21 +67,33 @@ test.describe("Marknadssida", () => {
 });
 
 test.describe("Konto och inloggning", () => {
-  test("ny användare kan skapa konto och nå en inloggad vy", async ({ page }) => {
+  test("signup-knappen kräver ett giltigt telefonnummer", async ({ page }) => {
+    // Verifierar bara gate-logiken (A1-A3), inte hela signup-till-kod-resan
+    // — att faktiskt skicka formuläret skulle skapa ett nytt konto och
+    // trigga ett e-postutskick vid varje testkörning, och @example.com-
+    // adresser (den enda typ som är säker att använda i ett automatiskt
+    // test) avvisas direkt av Resend eftersom domänen inte kan ta emot post.
     const email = uniqueEmail("smoke.signup");
-    await signUpAndReachDashboard(page, email);
+    await page.goto("/login?type=privat");
+    await page.locator('input[type="email"]').fill(email);
+    await page.locator('input[type="password"]').fill(PASSWORD);
+
+    const submit = page.getByRole("button", { name: "Skapa konto" });
+    await expect(submit).toBeDisabled();
+
+    await page.locator('input[type="tel"]').fill("123");
+    await expect(submit).toBeDisabled();
+
+    await page.locator('input[type="tel"]').fill("0701234567");
+    await expect(submit).toBeEnabled();
   });
 
   test("felaktigt lösenord vid inloggning visar tydligt fel", async ({ page }) => {
-    const email = uniqueEmail("smoke.badlogin");
-    await signUpAndReachDashboard(page, email);
-
-    await page.getByRole("button", { name: "Profilmeny" }).click();
-    await page.getByRole("button", { name: "Logga ut" }).click();
+    test.skip(!LOGIN_EMAIL || !LOGIN_PASSWORD, "E2E_LOGIN_EMAIL/E2E_LOGIN_PASSWORD saknas i .env.local");
 
     await page.goto("/login?type=privat");
     await page.getByRole("button", { name: /Har du redan ett konto\? Logga in/i }).click();
-    await page.locator('input[type="email"]').fill(email);
+    await page.locator('input[type="email"]').fill(LOGIN_EMAIL!);
     await page.locator('input[type="password"]').fill("FelLosenord123!");
     await page.getByRole("button", { name: "Logga in" }).click();
     await expect(page.getByText(/Invalid login credentials|Felaktiga inloggningsuppgifter/i)).toBeVisible();
@@ -89,8 +102,7 @@ test.describe("Konto och inloggning", () => {
 
 test.describe("Boka specialist", () => {
   test("inloggad kund kan boka ett möte end-to-end", async ({ page }) => {
-    const email = uniqueEmail("smoke.booking");
-    await signUpAndReachDashboard(page, email);
+    await loginAndReachDashboard(page);
 
     await page.goto("/book");
     await page.getByRole("button", { name: "Övrigt" }).click();
@@ -104,10 +116,10 @@ test.describe("Boka specialist", () => {
     await page.locator(".grid.grid-cols-3 button").first().click();
     await page.getByRole("button", { name: "Fortsätt" }).click();
 
-    await page.locator('input[placeholder="sam@exempel.se"]').fill(email);
+    await page.locator('input[placeholder="sam@exempel.se"]').fill(LOGIN_EMAIL!);
     await page.getByRole("button", { name: "Bekräfta bokning" }).click();
 
     await expect(page.getByText("Din tid är bokad")).toBeVisible();
-    await expect(page.getByText(`Bekräftelse skickad till ${email}`)).toBeVisible();
+    await expect(page.getByText(`Bekräftelse skickad till ${LOGIN_EMAIL}`)).toBeVisible();
   });
 });

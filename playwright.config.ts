@@ -1,10 +1,15 @@
 import { defineConfig, devices } from "@playwright/test";
+import { config } from "dotenv";
+
+config({ path: ".env.local" });
 
 // Grundläggande smoke-tester för de mest kritiska flödena — inte en
 // fullständig E2E-svit. Kör mot en riktig dev-server (webServer nedan
-// startar den automatiskt) mot samma Supabase-projekt som utveckling,
-// så testerna skapar riktiga (men unika, tidsstämplade) testkonton —
-// samma mönster som all manuell verifiering i den här kodbasen hittills.
+// startar den automatiskt) mot samma Supabase-projekt som utveckling.
+// Inloggningsberoende tester återanvänder ett befintligt, bekräftat
+// testkonto (E2E_LOGIN_EMAIL/E2E_LOGIN_PASSWORD i .env.local) istället
+// för att registrera nya konton — obligatorisk e-postbekräftelse gör att
+// nya konton inte längre kan slutföras utan en riktig, läsbar inkorg.
 export default defineConfig({
   testDir: "./e2e",
   fullyParallel: false,

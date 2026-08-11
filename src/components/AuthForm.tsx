@@ -7,6 +7,7 @@ import { ArrowLeft, Check, Loader2, Mail } from "lucide-react";
 import { Logo } from "@/components/Logo";
 import { Field, inputClass } from "@/components/onboarding/shared";
 import { createClient } from "@/lib/supabase/client";
+import { isValidSwedishMobile } from "@/lib/phone";
 import type { UserType } from "@/lib/types";
 
 type Mode = "login" | "signup";
@@ -16,6 +17,7 @@ export function AuthForm({ userType }: { userType: UserType }) {
   const [mode, setMode] = useState<Mode>("signup");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [phone, setPhone] = useState("");
   const [referralCode, setReferralCode] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -24,7 +26,8 @@ export function AuthForm({ userType }: { userType: UserType }) {
   const [verifying, setVerifying] = useState(false);
   const [resendMessage, setResendMessage] = useState<string | null>(null);
 
-  const valid = email.trim().length > 3 && password.length >= 6;
+  const valid =
+    email.trim().length > 3 && password.length >= 6 && (mode === "login" || isValidSwedishMobile(phone));
 
   const handleSubmit = async () => {
     if (!valid || loading) return;
@@ -36,7 +39,9 @@ export function AuthForm({ userType }: { userType: UserType }) {
       const { data, error: signUpError } = await supabase.auth.signUp({
         email: email.trim(),
         password,
-        options: { data: { user_type: userType, referral_code_used: referralCode.trim() || null } },
+        options: {
+          data: { user_type: userType, referral_code_used: referralCode.trim() || null, phone: phone.trim() },
+        },
       });
       setLoading(false);
       if (signUpError) {
@@ -175,6 +180,18 @@ export function AuthForm({ userType }: { userType: UserType }) {
                 placeholder="Minst 6 tecken"
               />
             </Field>
+            {mode === "signup" && (
+              <Field label="Mobilnummer">
+                <input
+                  type="tel"
+                  inputMode="tel"
+                  className={inputClass}
+                  value={phone}
+                  onChange={(e) => setPhone(e.target.value)}
+                  placeholder="070-123 45 67"
+                />
+              </Field>
+            )}
             {mode === "signup" && (
               <Field label="Värvningskod (valfritt)">
                 <input

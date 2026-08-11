@@ -564,3 +564,35 @@ drop trigger if exists on_profile_ready_to_compare on public.profiles;
 create trigger on_profile_ready_to_compare
   after update on public.profiles
   for each row execute function public.mark_referral_qualified();
+
+-- Kundresa v2 steg 1: mobilnummer är obligatoriskt vid registrering
+-- (AuthForm.tsx) och skickas med som user-metadata precis som
+-- referral_code_used, så det kan sparas redan när profiles-raden skapas.
+create or replace function public.handle_new_user()
+returns trigger as $$
+declare
+  v_referrer_id uuid;
+begin
+  if new.raw_user_meta_data->>'referral_code_used' is not null then
+    select id into v_referrer_id from public.profiles
+    where referral_code = upper(new.raw_user_meta_data->>'referral_code_used')
+    limit 1;
+  end if;
+
+  insert into public.profiles (id, user_type, name, email, phone, referred_by)
+  values (
+    new.id,
+    coalesce(new.raw_user_meta_data->>'user_type', 'privat'),
+    coalesce(new.raw_user_meta_data->>'name', ''),
+    new.email,
+    nullif(trim(new.raw_user_meta_data->>'phone'), ''),
+    v_referrer_id
+  );
+
+  if v_referrer_id is not null then
+    insert into public.referral_events (referrer_id, referred_id) values (v_referrer_id, new.id);
+  end if;
+
+  return new;
+end;
+$$ language plpgsql security definer set search_path = public;
