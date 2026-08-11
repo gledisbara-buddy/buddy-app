@@ -43,6 +43,7 @@ import {
   type OnskatSkydd,
   type PersonRelation,
   type Sysselsattning,
+  type TelekomTyp,
 } from "@/lib/items";
 
 function BilForm({ onSave, onCancel }: { onSave: (item: InsuranceItem) => void; onCancel: () => void }) {
@@ -516,7 +517,15 @@ const CATEGORY_FORMS: Record<ItemKind, React.ComponentType<{ onSave: (item: Insu
   prenumeration: PrenumerationForm,
 };
 
-export function Onboarding({ mode = "full", initialKind }: { mode?: "full" | "add"; initialKind?: ItemKind }) {
+export function Onboarding({
+  mode = "full",
+  initialKind,
+  initialTyp,
+}: {
+  mode?: "full" | "add";
+  initialKind?: ItemKind;
+  initialTyp?: TelekomTyp;
+}) {
   const router = useRouter();
   const { userType, loading, items, addItem, removeItem, updateProfile, setPolicy } = useBuddy();
   const [phase, setPhase] = useState<"name" | "poa" | "hub">(mode === "add" ? "hub" : "name");
@@ -624,7 +633,10 @@ export function Onboarding({ mode = "full", initialKind }: { mode?: "full" | "ad
               />
             )}
 
-            {addMode === "manual" && (
+            {addMode === "manual" && activeCategory === "telekom" && (
+              <TelekomForm onSave={(item) => handleItemAdded(item)} onCancel={close} initialTyp={initialTyp} />
+            )}
+            {addMode === "manual" && activeCategory !== "telekom" && (
               <FormComponent onSave={(item) => handleItemAdded(item)} onCancel={close} />
             )}
           </div>

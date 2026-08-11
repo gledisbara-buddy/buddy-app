@@ -27,11 +27,13 @@ const MOBIL_NATVERKSTACKNING: Record<string, number> = {
 export function TelekomForm({
   onSave,
   onCancel,
+  initialTyp,
 }: {
   onSave: (item: InsuranceItem) => void;
   onCancel: () => void;
+  initialTyp?: TelekomTyp;
 }) {
-  const [typ, setTyp] = useState<TelekomTyp | null>(null);
+  const [typ, setTyp] = useState<TelekomTyp | null>(initialTyp ?? null);
 
   // mobil
   const [operatorMobil, setOperatorMobil] = useState("");

@@ -56,7 +56,7 @@ function ItemStatusBadge({ status }: { status: ItemStatus }) {
 const INTRO_POINTS = [
   {
     icon: LayoutGrid,
-    text: "Lägg till det du vill hålla koll på — försäkring, mobil, kreditkort, el och mer, i tre kategorier.",
+    text: "Lägg till det du vill hålla koll på — försäkring, mobil, kreditkort, el och mer, i fyra kategorier.",
   },
   {
     icon: ShieldCheck,
@@ -102,7 +102,7 @@ export function Dashboard({ showIntro: initialShowIntro }: { showIntro?: boolean
   }
 
   const groups = ITEM_GROUPS.map((g) => {
-    const groupItems = items.filter((i) => g.kinds.includes(i.kind));
+    const groupItems = items.filter(g.matchesItem);
     const comparableItems = groupItems.filter(isComparableItem);
     const signedCount = comparableItems.filter((i) => policies[i.id]?.source === "compared").length;
     return { ...g, items: groupItems, comparableCount: comparableItems.length, signedCount };
@@ -345,7 +345,7 @@ export function Dashboard({ showIntro: initialShowIntro }: { showIntro?: boolean
         </div>
 
         {!active ? (
-          <div className="grid md:grid-cols-3 gap-4 mb-8">
+          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
             {groups.map((g) => {
               const Icon = g.icon;
               return (
@@ -459,18 +459,19 @@ export function Dashboard({ showIntro: initialShowIntro }: { showIntro?: boolean
             )}
 
             <div className="grid md:grid-cols-3 gap-4">
-              {ITEM_CATEGORIES.filter((cat) => active.kinds.includes(cat.kind)).map((cat) => {
-                const Icon = cat.icon;
+              {active.addTargets.map((target) => {
+                const Icon = target.icon;
+                const href = `/onboarding?mode=add&kind=${target.kind}${target.typ ? `&typ=${target.typ}` : ""}`;
                 return (
                   <button
-                    key={cat.kind}
-                    onClick={() => router.push(`/onboarding?mode=add&kind=${cat.kind}`)}
+                    key={`${target.kind}-${target.typ ?? ""}`}
+                    onClick={() => router.push(href)}
                     className="bd-card rounded-2xl border border-dashed border-line p-5 flex items-center gap-3 text-left bg-transparent"
                   >
                     <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-none bg-frost">
                       <Icon size={18} className="text-forest" />
                     </div>
-                    <div className="text-sm font-medium text-slate">Lägg till {cat.label.toLowerCase()}</div>
+                    <div className="text-sm font-medium text-slate">Lägg till {target.label.toLowerCase()}</div>
                   </button>
                 );
               })}

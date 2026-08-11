@@ -258,26 +258,71 @@ export const ITEM_CATEGORIES: { kind: ItemKind; label: string; icon: LucideIcon 
   { kind: "prenumeration", label: "Övriga abonnemang", icon: Repeat },
 ];
 
-export type ItemGroupId = "forsakring" | "telekom" | "ekonomi";
+export const TELEKOM_TYP_LABELS: Record<TelekomTyp, string> = {
+  mobil: "Mobilabonnemang",
+  bredband: "Bredband",
+  tv_streaming: "TV & streaming",
+};
 
-export const ITEM_GROUPS: { id: ItemGroupId; label: string; icon: LucideIcon; kinds: ItemKind[] }[] = [
+export type ItemGroupId = "forsakring" | "mobil" | "prenumeration" | "ekonomi";
+
+// Vad en "Lägg till"-knapp inom en grupp länkar till — typ är bara satt när
+// den ska hoppa förbi TelekomForms interna 3-vägsval (se TelekomForm.tsx).
+export type AddTarget = { kind: ItemKind; typ?: TelekomTyp; label: string; icon: LucideIcon };
+
+function addTargetsFromKinds(kinds: ItemKind[]): AddTarget[] {
+  return kinds.map((kind) => {
+    const cat = ITEM_CATEGORIES.find((c) => c.kind === kind)!;
+    return { kind: cat.kind, label: cat.label, icon: cat.icon };
+  });
+}
+
+const FORSAKRING_KINDS: ItemKind[] = ["boende", "bil", "ovrigt_fordon", "person", "djur"];
+const EKONOMI_KINDS: ItemKind[] = ["kreditkort", "el"];
+
+export const ITEM_GROUPS: {
+  id: ItemGroupId;
+  label: string;
+  icon: LucideIcon;
+  kinds: ItemKind[];
+  matchesItem: (item: InsuranceItem) => boolean;
+  addTargets: AddTarget[];
+}[] = [
   {
     id: "forsakring",
-    label: "Försäkring",
+    label: "Försäkringar",
     icon: ShieldCheck,
-    kinds: ["boende", "bil", "ovrigt_fordon", "person", "djur"],
+    kinds: FORSAKRING_KINDS,
+    matchesItem: (item) => FORSAKRING_KINDS.includes(item.kind),
+    addTargets: addTargetsFromKinds(FORSAKRING_KINDS),
   },
   {
-    id: "telekom",
-    label: "Telekom & prenumerationer",
+    id: "mobil",
+    label: "Mobilabonnemang",
     icon: Wifi,
-    kinds: ["telekom", "prenumeration"],
+    kinds: ["telekom"],
+    matchesItem: (item) => item.kind === "telekom" && item.typ === "mobil",
+    addTargets: [{ kind: "telekom", typ: "mobil", label: TELEKOM_TYP_LABELS.mobil, icon: Wifi }],
+  },
+  {
+    id: "prenumeration",
+    label: "Prenumerationer",
+    icon: Repeat,
+    kinds: ["prenumeration"],
+    matchesItem: (item) => item.kind === "prenumeration" || (item.kind === "telekom" && item.typ !== "mobil"),
+    addTargets: [
+      { kind: "telekom", typ: "bredband", label: TELEKOM_TYP_LABELS.bredband, icon: Wifi },
+      { kind: "telekom", typ: "tv_streaming", label: TELEKOM_TYP_LABELS.tv_streaming, icon: Wifi },
+      { kind: "prenumeration", label: "Övriga abonnemang", icon: Repeat },
+    ],
   },
   {
     id: "ekonomi",
     label: "Ekonomi",
     icon: Wallet,
-    kinds: ["kreditkort", "el"],
+    kinds: EKONOMI_KINDS,
+    matchesItem: (item) => EKONOMI_KINDS.includes(item.kind),
+    addTargets: addTargetsFromKinds(EKONOMI_KINDS),
   },
 ];
 
@@ -349,12 +394,6 @@ export const INNE_UTE_LABELS: Record<InneUte, string> = {
   inne: "Innedjur",
   ute: "Utedjur",
   bade: "Både och",
-};
-
-export const TELEKOM_TYP_LABELS: Record<TelekomTyp, string> = {
-  mobil: "Mobilabonnemang",
-  bredband: "Bredband",
-  tv_streaming: "TV & streaming",
 };
 
 export const ANSLUTNING_LABELS: Record<AnslutningTyp, string> = {

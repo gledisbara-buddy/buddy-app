@@ -46,10 +46,15 @@ const GROUP_INTRO: Record<ItemGroupId, { title: string; desc: string; bullets: s
     desc: "Boende, bil, person eller husdjur — vi ställer olika frågor beroende på vad du har, så att jämförelsen faktiskt speglar din situation.",
     bullets: ["Skräddarsydda frågor per sak", "Jämför pris och villkor sida vid sida", "Byt när du vill, ingen bindningstid"],
   },
-  telekom: {
-    title: "Mobil, bredband och prenumerationer i ett",
-    desc: "Mobilabonnemang, bredband, TV-streaming eller gymkort — lägg in vad du betalar idag så ser du snabbt om det finns bättre alternativ.",
-    bullets: ["Mobil, bredband och TV/streaming", "Övriga abonnemang i en samlad lista", "Se allt du betalar per månad"],
+  mobil: {
+    title: "Ditt mobilabonnemang, granskat",
+    desc: "Lägg in vad du betalar för mobilen idag så ser du snabbt om det finns bättre alternativ — samma nät, lägre pris.",
+    bullets: ["Jämför pris, data och bindningstid", "Uppskattad nätverkstäckning per operatör", "Byt utan att tappa numret"],
+  },
+  prenumeration: {
+    title: "Bredband, streaming och alla dina abonnemang",
+    desc: "Bredband, TV-streaming, gymkort eller andra abonnemang — lägg in vad du betalar idag så samlar Buddy allt på ett ställe.",
+    bullets: ["Bredband och TV/streaming", "Övriga abonnemang i en samlad lista", "Se allt du betalar per månad"],
   },
   ekonomi: {
     title: "Koll på kort och elavtal",
