@@ -6,6 +6,7 @@ import {
   ArrowLeft,
   ArrowRight,
   Baby,
+  Building2,
   CalendarDays,
   ChevronDown,
   ChevronRight,
@@ -399,6 +400,24 @@ export function Dashboard({ showIntro: initialShowIntro }: { showIntro?: boolean
         ) : (
           <div className="mb-8">
             <h2 className="bd-display text-2xl mb-4">{active.label}</h2>
+
+            {active.id === "prenumeration" && (
+              <button
+                onClick={() => router.push("/anslut-bank")}
+                className="w-full flex items-center gap-3 rounded-2xl p-5 mb-4 text-left bg-ink"
+              >
+                <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-none bg-white/10">
+                  <Building2 size={18} className="text-white" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="text-sm font-semibold text-white">Anslut din bank</div>
+                  <div className="text-xs text-white/70">
+                    Vi läser av dina återkommande dragningar och föreslår vad som ska läggas in — Demo
+                  </div>
+                </div>
+                <ArrowRight size={16} className="text-white/70 flex-none" />
+              </button>
+            )}
 
             {active.items.length > 0 && (
               <div className="grid md:grid-cols-3 gap-4 mb-4">
