@@ -97,7 +97,17 @@ export function ClaimFlow({ initialItemTitle }: { initialItemTitle?: string } = 
 
   return (
     <div className="h-screen w-full flex flex-col">
-      <TopBar onBack={handleBack} right={<span className="bd-eyebrow">Skadeanmälan</span>} />
+      <TopBar
+        onBack={handleBack}
+        right={
+          <div className="flex items-center gap-2">
+            <span className="bd-eyebrow">Skadeanmälan</span>
+            <span className="text-xs font-medium px-2.5 py-1 rounded-full bg-frost-2 text-forest whitespace-nowrap">
+              Demo-läge
+            </span>
+          </div>
+        }
+      />
 
       {confirmLeave && (
         <ConfirmDialog

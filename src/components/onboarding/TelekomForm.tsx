@@ -168,6 +168,7 @@ export function TelekomForm({
                 placeholder="070-123 45 67"
               />
             </Field>
+            <p className="text-xs -mt-2 mb-4 text-slate">Simulerad operatörsuppslagning i den här prototypen.</p>
 
             {lookupState === "loading" && (
               <div className="flex items-center gap-2 text-sm mb-4 text-slate">
