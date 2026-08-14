@@ -7,6 +7,7 @@ import { ProfileMenu } from "@/components/ProfileMenu";
 import { RequestsInbox } from "@/components/internal/RequestsInbox";
 import { CancellationQueue } from "@/components/internal/CancellationQueue";
 import { MissingInsuranceQueue } from "@/components/internal/MissingInsuranceQueue";
+import { AccountDeletionQueue } from "@/components/internal/AccountDeletionQueue";
 import { CustomerSearchRail } from "@/components/internal/CustomerSearchRail";
 import { CustomerWorkspace } from "@/components/internal/CustomerWorkspace";
 import { MfaGate } from "@/components/internal/MfaGate";
@@ -34,7 +35,7 @@ const CUSTOMER_SELECT =
 export function InternalView() {
   const router = useRouter();
   const { userType, loading, isEmployee, profile } = useBuddy();
-  const [tab, setTab] = useState<"forfragningar" | "uppsagningar" | "saknade" | "kundsok">("forfragningar");
+  const [tab, setTab] = useState<"forfragningar" | "uppsagningar" | "saknade" | "radering" | "kundsok">("forfragningar");
   const [selectedCustomer, setSelectedCustomer] = useState<InternalCustomerProfile | null>(null);
 
   useEffect(() => {
@@ -111,6 +112,17 @@ export function InternalView() {
               Saknade försäkringar
             </button>
             <button
+              onClick={() => setTab("radering")}
+              className="px-4 py-1.5 rounded-full text-xs font-semibold"
+              style={
+                tab === "radering"
+                  ? { background: "white", color: "var(--color-ink)", boxShadow: "0 1px 3px rgba(0,0,0,.08)" }
+                  : { color: "var(--color-slate)" }
+              }
+            >
+              Kontoradering
+            </button>
+            <button
               onClick={() => setTab("kundsok")}
               className="px-4 py-1.5 rounded-full text-xs font-semibold"
               style={
@@ -134,6 +146,15 @@ export function InternalView() {
           )}
           {tab === "saknade" && (
             <MissingInsuranceQueue
+              actorEmail={profile?.email ?? ""}
+              onOpenCustomer={(id) => {
+                fetchCustomer(id);
+                setTab("kundsok");
+              }}
+            />
+          )}
+          {tab === "radering" && (
+            <AccountDeletionQueue
               actorEmail={profile?.email ?? ""}
               onOpenCustomer={(id) => {
                 fetchCustomer(id);

@@ -783,3 +783,35 @@ create policy "items_insert_employee" on public.items
 drop policy if exists "policies_insert_employee" on public.policies;
 create policy "policies_insert_employee" on public.policies
   for insert with check (exists (select 1 from public.employees where email = auth.jwt() ->> 'email'));
+
+-- GDPR-radering: kunden begär radering av sitt konto, en anställd
+-- hanterar den manuellt (samma "kö av ärenden en anställd hanterar"-
+-- mönster som missing_insurance_requests/cancellationPending — se
+-- AccountDeletionQueue.tsx). Själva raderingen av auth.users-raden görs
+-- utanför appen (Supabase Studio), eftersom det kräver service-role-
+-- behörighet som den här klientdrivna appen aldrig har. Att markera
+-- ärendet "done" här betyder alltså "kunden är borttagen", inte att
+-- appen själv utfört raderingen.
+create table if not exists public.account_deletion_requests (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null references auth.users(id) on delete cascade,
+  status text not null default 'pending' check (status in ('pending', 'done')),
+  created_at timestamptz not null default now()
+);
+
+alter table public.account_deletion_requests enable row level security;
+
+drop policy if exists "account_deletion_requests_insert_own" on public.account_deletion_requests;
+create policy "account_deletion_requests_insert_own" on public.account_deletion_requests
+  for insert with check (auth.uid() = user_id);
+
+drop policy if exists "account_deletion_requests_select_own_or_employee" on public.account_deletion_requests;
+create policy "account_deletion_requests_select_own_or_employee" on public.account_deletion_requests
+  for select using (
+    auth.uid() = user_id
+    or exists (select 1 from public.employees where email = auth.jwt() ->> 'email')
+  );
+
+drop policy if exists "account_deletion_requests_update_employee" on public.account_deletion_requests;
+create policy "account_deletion_requests_update_employee" on public.account_deletion_requests
+  for update using (exists (select 1 from public.employees where email = auth.jwt() ->> 'email'));

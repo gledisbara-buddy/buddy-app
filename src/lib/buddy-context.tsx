@@ -188,6 +188,10 @@ type BuddyState = {
   submitClaim: (input: ClaimInput) => void;
   missingInsuranceRequests: MissingInsuranceRequestRecord[];
   submitMissingInsuranceRequest: (kind: ItemKind, note: string) => void;
+  // GDPR-radering (SettingsPage.tsx) — sant om kunden har ett obesvarat
+  // raderingsärende, se account_deletion_requests i schema.sql.
+  accountDeletionRequested: boolean;
+  submitAccountDeletionRequest: () => void;
   logout: () => void;
 };
 
@@ -351,6 +355,7 @@ export function BuddyProvider({ children }: { children: ReactNode }) {
   const [bookings, setBookings] = useState<BookingRecord[]>([]);
   const [claims, setClaims] = useState<ClaimRecord[]>([]);
   const [missingInsuranceRequests, setMissingInsuranceRequests] = useState<MissingInsuranceRequestRecord[]>([]);
+  const [accountDeletionRequested, setAccountDeletionRequested] = useState(false);
 
   const resetLocalState = () => {
     setUserId(null);
@@ -368,6 +373,7 @@ export function BuddyProvider({ children }: { children: ReactNode }) {
     setBookings([]);
     setClaims([]);
     setMissingInsuranceRequests([]);
+    setAccountDeletionRequested(false);
   };
 
   const loadForUser = useCallback(
@@ -385,6 +391,7 @@ export function BuddyProvider({ children }: { children: ReactNode }) {
         { data: missingInsuranceRows },
         { data: householdRequestRows },
         { data: sentHouseholdRequestRows },
+        { data: deletionRequestRows },
       ] = await Promise.all([
         supabase
           .from("profiles")
@@ -414,6 +421,7 @@ export function BuddyProvider({ children }: { children: ReactNode }) {
           .order("created_at", { ascending: false }),
         supabase.rpc("get_my_household_requests"),
         supabase.rpc("get_my_sent_household_requests"),
+        supabase.from("account_deletion_requests").select("id").eq("user_id", uid).eq("status", "pending").limit(1),
       ]);
 
       if (profileRow) {
@@ -449,6 +457,7 @@ export function BuddyProvider({ children }: { children: ReactNode }) {
       setHousehold(householdRow ? mapHouseholdRow(householdRow as HouseholdRpcRow) : null);
       setHouseholdRequests(((householdRequestRows ?? []) as HouseholdRequestRow[]).map(mapHouseholdRequestRow));
       setSentHouseholdRequests(((sentHouseholdRequestRows ?? []) as SentHouseholdRequestRow[]).map(mapSentHouseholdRequestRow));
+      setAccountDeletionRequested(((deletionRequestRows ?? []) as { id: string }[]).length > 0);
       setBookings(((bookingRows ?? []) as BookingRow[]).map(mapBookingRow));
       setClaims(((claimRows ?? []) as ClaimRow[]).map(mapClaimRow));
       setMissingInsuranceRequests(((missingInsuranceRows ?? []) as MissingInsuranceRequestRow[]).map(mapMissingInsuranceRequestRow));
@@ -757,6 +766,15 @@ export function BuddyProvider({ children }: { children: ReactNode }) {
     [supabase, userId]
   );
 
+  const submitAccountDeletionRequest = useCallback(() => {
+    if (!userId) return;
+    setAccountDeletionRequested(true);
+    supabase
+      .from("account_deletion_requests")
+      .insert({ user_id: userId })
+      .then(logWriteError("raderingsbegäran"));
+  }, [supabase, userId]);
+
   const logout = useCallback(() => {
     supabase.auth.signOut();
   }, [supabase]);
@@ -795,6 +813,8 @@ export function BuddyProvider({ children }: { children: ReactNode }) {
       submitClaim,
       missingInsuranceRequests,
       submitMissingInsuranceRequest,
+      accountDeletionRequested,
+      submitAccountDeletionRequest,
       logout,
     }),
     [
@@ -829,6 +849,8 @@ export function BuddyProvider({ children }: { children: ReactNode }) {
       submitClaim,
       missingInsuranceRequests,
       submitMissingInsuranceRequest,
+      accountDeletionRequested,
+      submitAccountDeletionRequest,
       logout,
     ]
   );
