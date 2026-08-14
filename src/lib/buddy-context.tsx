@@ -663,6 +663,13 @@ export function BuddyProvider({ children }: { children: ReactNode }) {
       const row: Record<string, unknown> = { item_id: insuranceId, user_id: userId, data: quote };
       if (checkout) row.checkout = checkout;
       supabase.from("policies").upsert(row).then(logWriteError("offert"));
+      // policies är ett upsert (bara senaste raden) — policy_history är en
+      // separat, tillskrivande logg av samma händelse, se schema.sql. Får
+      // aldrig blockera huvudskrivningen ovan om den misslyckas.
+      supabase
+        .from("policy_history")
+        .insert({ item_id: insuranceId, user_id: userId, data: quote })
+        .then(logWriteError("offerthistorik"));
     },
     [supabase, userId]
   );

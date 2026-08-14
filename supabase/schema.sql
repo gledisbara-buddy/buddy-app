@@ -815,3 +815,34 @@ create policy "account_deletion_requests_select_own_or_employee" on public.accou
 drop policy if exists "account_deletion_requests_update_employee" on public.account_deletion_requests;
 create policy "account_deletion_requests_update_employee" on public.account_deletion_requests
   for update using (exists (select 1 from public.employees where email = auth.jwt() ->> 'email'));
+
+-- Historik per sak (21-punktsplanen): en append-only logg av varje offert
+-- som sparats för en post, till skillnad från policies (som bara håller
+-- den SENASTE — ett upsert skriver över föregående rad helt, ingen
+-- historik bevaras där). Skrivs av setPolicy() i buddy-context.tsx varje
+-- gång kunden sparar en ny offert (auto-hämtad eller tecknad). Historiken
+-- börjar tom för redan befintliga poster — bara ändringar som sker EFTER
+-- att den här tabellen finns samlas in, ingen bakåtfyllning är möjlig
+-- eftersom policies aldrig behöll de gamla värdena.
+create table if not exists public.policy_history (
+  id uuid primary key default gen_random_uuid(),
+  item_id uuid not null references public.items(id) on delete cascade,
+  user_id uuid not null references auth.users(id) on delete cascade,
+  data jsonb not null,
+  created_at timestamptz not null default now()
+);
+
+alter table public.policy_history enable row level security;
+
+drop policy if exists "policy_history_select_own_or_employee" on public.policy_history;
+create policy "policy_history_select_own_or_employee" on public.policy_history
+  for select using (
+    auth.uid() = user_id
+    or exists (select 1 from public.employees where email = auth.jwt() ->> 'email')
+  );
+
+drop policy if exists "policy_history_insert_own" on public.policy_history;
+create policy "policy_history_insert_own" on public.policy_history
+  for insert with check (auth.uid() = user_id);
+
+create index if not exists idx_policy_history_item_id on public.policy_history(item_id);

@@ -9,21 +9,41 @@ import { useBuddy } from "@/lib/buddy-context";
 import { isComparableItem, ITEM_CATEGORIES, itemSummary, itemTitle } from "@/lib/items";
 import { buildIcsFile } from "@/lib/booking";
 import { parseSwedishDate } from "@/lib/dates";
+import { createClient } from "@/lib/supabase/client";
+import type { Quote } from "@/lib/quote";
+
+type HistoryRow = { data: Quote; created_at: string };
+
+function formatHistoryDate(iso: string): string {
+  return new Date(iso).toLocaleDateString("sv-SE", { day: "numeric", month: "short", year: "numeric" });
+}
 
 // Del G i docs/kundresa-v2-steg2-plan.md: en fullständig detaljvy per post
 // innan kunden väljer att jämföra — nuvarande villkor, pris, förfallodatum.
-// Historik byggs inte här (ingen historik-datamodell finns än, se den
-// bredare 21-sektionsplanen); avsnittet visas bara om det finns något att
-// visa, och just nu finns det aldrig.
+// Historiken (21-punktsplanen) läses från policy_history — en separat,
+// tillskrivande logg som setPolicy() i buddy-context.tsx skriver till vid
+// sidan av den vanliga policies-uppdateringen (se schema.sql). Visas bara
+// om det faktiskt finns rader — en ny post har ingen historik än.
 export function ItemDetail({ itemId }: { itemId: string }) {
   const router = useRouter();
   const { items, policies, removeItem } = useBuddy();
   const [confirmDelete, setConfirmDelete] = useState(false);
+  const [history, setHistory] = useState<HistoryRow[]>([]);
   const item = items.find((i) => i.id === itemId);
 
   useEffect(() => {
     if (!item) router.replace("/dashboard");
   }, [item, router]);
+
+  useEffect(() => {
+    const supabase = createClient();
+    supabase
+      .from("policy_history")
+      .select("data, created_at")
+      .eq("item_id", itemId)
+      .order("created_at", { ascending: false })
+      .then(({ data }) => setHistory((data ?? []) as HistoryRow[]));
+  }, [itemId]);
 
   if (!item) return null;
 
@@ -125,6 +145,22 @@ export function ItemDetail({ itemId }: { itemId: string }) {
               </div>
             )}
           </div>
+
+          {history.length > 1 && (
+            <div className="bg-white rounded-2xl border border-line mb-6 overflow-hidden">
+              <div className="px-5 pt-4 pb-2 text-sm font-semibold">Historik</div>
+              <div className="divide-y divide-line">
+                {history.map((row, i) => (
+                  <div key={`${row.created_at}-${i}`} className="flex items-center justify-between px-5 py-3 text-sm">
+                    <span className="text-slate">{formatHistoryDate(row.created_at)}</span>
+                    <span className="font-medium text-right">
+                      {row.data.name} · {row.data.price} kr/mån
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
 
           {isComparableItem(item) && (
             <button
