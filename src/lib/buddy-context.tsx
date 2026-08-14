@@ -18,6 +18,7 @@ export type Profile = {
   referralCode?: string;
   fullmaktSignedAt?: string;
   fullmaktPdfPath?: string;
+  memberSince?: string;
 };
 
 // null skiljer sig från undefined här: null = rensa fältet i databasen,
@@ -206,6 +207,7 @@ type ProfileRow = {
   referral_code: string | null;
   fullmakt_signed_at: string | null;
   fullmakt_pdf_path: string | null;
+  created_at: string;
 };
 
 type ItemRow = { kind: string; data: InsuranceItem; needs: string[] | null };
@@ -395,7 +397,7 @@ export function BuddyProvider({ children }: { children: ReactNode }) {
       ] = await Promise.all([
         supabase
           .from("profiles")
-          .select("user_type, name, personnummer, phone, ready_to_compare, referral_code, fullmakt_signed_at, fullmakt_pdf_path")
+          .select("user_type, name, personnummer, phone, ready_to_compare, referral_code, fullmakt_signed_at, fullmakt_pdf_path, created_at")
           .eq("id", uid)
           .single(),
         supabase.from("items").select("kind, data, needs").eq("user_id", uid),
@@ -440,6 +442,7 @@ export function BuddyProvider({ children }: { children: ReactNode }) {
           referralCode,
           fullmaktSignedAt: row.fullmakt_signed_at ?? undefined,
           fullmaktPdfPath: row.fullmakt_pdf_path ?? undefined,
+          memberSince: row.created_at,
         });
         setReadyToCompareState(row.ready_to_compare);
         if (!row.referral_code && referralCode) {
