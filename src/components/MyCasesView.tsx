@@ -47,7 +47,7 @@ export function MyCasesView() {
 
   return (
     <div className="min-h-screen w-full">
-      <TopBar onBack={() => router.push("/dashboard")} right={<ProfileMenu />} />
+      <TopBar onBack={() => router.push("/dashboard")} right={<ProfileMenu />} showTabs />
       <div className="max-w-2xl mx-auto px-5 md:px-10 py-10 bd-fade">
         <span className="bd-eyebrow">Mina ärenden</span>
         <h1 className="bd-display text-3xl mt-2 mb-1">Dina bokningar & anmälningar</h1>

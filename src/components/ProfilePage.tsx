@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowRight, Check, FolderOpen } from "lucide-react";
+import { ArrowRight, Check, FolderOpen, LogOut } from "lucide-react";
 import { TopBar } from "@/components/TopBar";
 import { ProfileMenu } from "@/components/ProfileMenu";
 import { Field, inputClass } from "@/components/onboarding/shared";
@@ -10,7 +10,7 @@ import { useBuddy } from "@/lib/buddy-context";
 
 export function ProfilePage() {
   const router = useRouter();
-  const { userType, loading, profile, updateProfile } = useBuddy();
+  const { userType, loading, profile, updateProfile, logout } = useBuddy();
 
   useEffect(() => {
     if (!loading && !userType) router.replace("/kom-igang");
@@ -49,9 +49,17 @@ export function ProfilePage() {
     setTimeout(() => setSaved(false), 2500);
   };
 
+  const handleLogout = () => {
+    logout();
+    // Hard navigation med avsikt: en router.push här skulle kunna race:a mot
+    // den skyddade sidans egna "inte inloggad"-redirect (som triggas direkt
+    // efter att logout() nollställer userType) och kan förlora mot den.
+    window.location.href = "/";
+  };
+
   return (
     <div className="min-h-screen w-full">
-      <TopBar onBack={() => router.push("/dashboard")} right={<ProfileMenu />} />
+      <TopBar onBack={() => router.push("/dashboard")} right={<ProfileMenu />} showTabs />
       <div className="max-w-lg mx-auto px-5 md:px-10 py-10 bd-fade">
         <span className="bd-eyebrow">Ditt konto</span>
         <h1 className="bd-display text-3xl mt-2 mb-1">Min profil</h1>
@@ -118,6 +126,13 @@ export function ProfilePage() {
             <div className="text-xs text-slate">Fullmakt och andra dokument från Buddy</div>
           </div>
           <ArrowRight size={16} className="text-slate flex-none" />
+        </button>
+
+        <button
+          onClick={handleLogout}
+          className="w-full flex items-center justify-center gap-2 py-3.5 mt-6 text-sm font-semibold text-slate hover:text-ink"
+        >
+          <LogOut size={16} /> Logga ut
         </button>
       </div>
     </div>

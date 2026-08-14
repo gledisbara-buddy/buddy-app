@@ -246,7 +246,7 @@ export function Dashboard({ showIntro: initialShowIntro }: { showIntro?: boolean
           onCancel={() => setConfirmCancelId(null)}
         />
       )}
-      <TopBar right={<ProfileMenu />} />
+      <TopBar right={<ProfileMenu />} showTabs />
       <div className="max-w-4xl mx-auto px-5 md:px-10 py-10 bd-fade">
         <span className="bd-eyebrow">Din översikt</span>
         <h1 className="bd-display text-3xl mt-2 mb-1">Hej {profile?.name || "där"} 👋</h1>

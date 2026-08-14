@@ -126,7 +126,7 @@ export function HouseholdView() {
 
   return (
     <div className="min-h-screen w-full">
-      <TopBar onBack={() => router.push("/dashboard")} right={<ProfileMenu />} />
+      <TopBar onBack={() => router.push("/dashboard")} right={<ProfileMenu />} showTabs />
       <div className="max-w-lg mx-auto px-5 md:px-10 py-10 bd-fade">
         <span className="bd-eyebrow">Hushåll</span>
         <h1 className="bd-display text-3xl mt-2 mb-2">{household ? "Ert hushåll" : "Skapa ett hushåll"}</h1>

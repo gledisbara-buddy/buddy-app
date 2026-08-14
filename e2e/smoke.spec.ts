@@ -30,8 +30,8 @@ async function loginAndReachDashboard(page: Page) {
   await page.locator('input[type="password"]').fill(LOGIN_PASSWORD!);
   await page.getByRole("button", { name: "Logga in" }).click();
 
-  const profileMenu = page.getByRole("button", { name: "Profilmeny" });
-  await expect(profileMenu).toBeVisible({ timeout: 15_000 });
+  const profileButton = page.getByRole("button", { name: "Min profil" });
+  await expect(profileButton).toBeVisible({ timeout: 15_000 });
 
   // Introduktions-overlayn ("Såhär funkar Buddy") visas bara vid första
   // besöket någonsin på översikten för ett konto — ett redan använt
