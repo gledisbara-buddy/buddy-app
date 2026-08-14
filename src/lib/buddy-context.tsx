@@ -19,6 +19,9 @@ export type Profile = {
   fullmaktSignedAt?: string;
   fullmaktPdfPath?: string;
   memberSince?: string;
+  notifyEmail?: boolean;
+  notifySms?: boolean;
+  language?: "sv" | "en";
 };
 
 // null skiljer sig från undefined här: null = rensa fältet i databasen,
@@ -517,6 +520,9 @@ export function BuddyProvider({ children }: { children: ReactNode }) {
       if (patch.personnummer !== undefined) dbPatch.personnummer = patch.personnummer;
       if (patch.phone !== undefined) dbPatch.phone = patch.phone;
       if (patch.referralCode !== undefined) dbPatch.referral_code = patch.referralCode;
+      if (patch.notifyEmail !== undefined) dbPatch.notify_email = patch.notifyEmail;
+      if (patch.notifySms !== undefined) dbPatch.notify_sms = patch.notifySms;
+      if (patch.language !== undefined) dbPatch.language = patch.language;
       if (Object.keys(dbPatch).length > 0) {
         supabase.from("profiles").update(dbPatch).eq("id", userId).then(logWriteError("profil"));
       }

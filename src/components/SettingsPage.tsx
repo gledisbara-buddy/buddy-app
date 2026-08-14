@@ -8,13 +8,16 @@ import { ProfileMenu } from "@/components/ProfileMenu";
 import { ConfirmDialog } from "@/components/Overlay";
 import { Field, PillGroup } from "@/components/onboarding/shared";
 import { useBuddy } from "@/lib/buddy-context";
+import { createClient } from "@/lib/supabase/client";
 
 export function SettingsPage() {
   const router = useRouter();
   const {
     userType,
     loading,
+    userId,
     profile,
+    updateProfile,
     items,
     policies,
     bookings,
@@ -35,9 +38,35 @@ export function SettingsPage() {
   const [sprak, setSprak] = useState<"sv" | "en" | null>("sv");
   const [saved, setSaved] = useState(false);
 
+  // Hämtas separat från huvudkontexten (istället för via profile) så att
+  // sidan fortfarande fungerar innan notify_email/notify_sms/language-
+  // kolumnerna finns i databasen — annars hade en saknad kolumn kunnat
+  // slå ut hela inloggnings-queryn för alla, inte bara den här sidan.
+  useEffect(() => {
+    if (!userId) return;
+    const supabase = createClient();
+    supabase
+      .from("profiles")
+      .select("notify_email, notify_sms, language")
+      .eq("id", userId)
+      .maybeSingle()
+      .then(({ data }) => {
+        if (!data) return;
+        const row = data as { notify_email: boolean | null; notify_sms: boolean | null; language: string | null };
+        setEmailNotis(row.notify_email === false ? "nej" : "ja");
+        setSmsNotis(row.notify_sms ? "ja" : "nej");
+        setSprak(row.language === "en" ? "en" : "sv");
+      });
+  }, [userId]);
+
   if (loading || !userType) return null;
 
   const handleSave = () => {
+    updateProfile({
+      notifyEmail: emailNotis !== "nej",
+      notifySms: smsNotis === "ja",
+      language: sprak === "en" ? "en" : "sv",
+    });
     setSaved(true);
     setTimeout(() => setSaved(false), 2500);
   };

@@ -923,3 +923,11 @@ begin
     order by p.name, i.kind;
 end;
 $$;
+
+-- Notisinställningar (Inställningar-sidan) — låg tidigare bara i lokalt
+-- komponent-state i SettingsPage.tsx och sparades aldrig, så ändringar
+-- försvann vid nästa inloggning. Vanliga profilkolumner, samma mönster
+-- som email ovan.
+alter table public.profiles add column if not exists notify_email boolean not null default true;
+alter table public.profiles add column if not exists notify_sms boolean not null default false;
+alter table public.profiles add column if not exists language text not null default 'sv';
