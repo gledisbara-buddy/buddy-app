@@ -10,7 +10,7 @@ import { Field, PillGroup, inputClass } from "@/components/onboarding/shared";
 import { useBuddy } from "@/lib/buddy-context";
 import { HOUSEHOLD_RELATION_LABELS, type HouseholdRelation } from "@/lib/household";
 import { createClient } from "@/lib/supabase/client";
-import { ITEM_GROUPS, type ItemKind } from "@/lib/items";
+import { ITEM_CATEGORIES, ITEM_GROUPS, itemSummary, itemTitle, type InsuranceItem, type ItemKind } from "@/lib/items";
 
 const SENT_STATUS_LABELS: Record<"pending" | "approved" | "declined", string> = {
   pending: "Väntar på svar",
@@ -19,10 +19,12 @@ const SENT_STATUS_LABELS: Record<"pending" | "approved" | "declined", string> = 
 };
 
 type HouseholdSummary = { memberCount: number; totalMonthlyCost: number; kindCounts: Record<string, number> };
+type MemberItem = { memberUserId: string; memberName: string; item: InsuranceItem; price: number | null };
 
 export function HouseholdView() {
   const router = useRouter();
   const {
+    userId,
     userType,
     loading,
     profile,
@@ -44,6 +46,7 @@ export function HouseholdView() {
   const [respondingId, setRespondingId] = useState<string | null>(null);
   const [confirmLeave, setConfirmLeave] = useState(false);
   const [summary, setSummary] = useState<HouseholdSummary | null>(null);
+  const [memberItems, setMemberItems] = useState<MemberItem[] | null>(null);
 
   useEffect(() => {
     if (!loading && !userType) router.replace("/kom-igang");
@@ -65,6 +68,22 @@ export function HouseholdView() {
         setSummary({ memberCount: row.member_count, totalMonthlyCost: row.total_monthly_cost, kindCounts: row.kind_counts ?? {} });
       });
   }, [household]);
+
+  // Medlemmarnas faktiska saker — se get_household_items() i schema.sql.
+  // Bara ANDRA medlemmars saker (inte den inloggades egna, de syns redan
+  // på den egna översikten) — annars vore listan bara en dubblett.
+  useEffect(() => {
+    if (!household) return;
+    const supabase = createClient();
+    supabase
+      .rpc("get_household_items")
+      .then(({ data }) => {
+        const rows = (data ?? []) as { member_user_id: string; member_name: string; kind: string; data: InsuranceItem; price: number | null }[];
+        setMemberItems(
+          rows.filter((r) => r.member_user_id !== userId).map((r) => ({ memberUserId: r.member_user_id, memberName: r.member_name, item: r.data, price: r.price }))
+        );
+      });
+  }, [household, userId]);
 
   useEffect(() => {
     if (!inviteSent) return;
@@ -214,6 +233,40 @@ export function HouseholdView() {
                       </div>
                     );
                   })}
+                </div>
+              </div>
+            )}
+
+            {memberItems && memberItems.length > 0 && (
+              <div className="bg-white rounded-2xl border border-line p-5 mb-4">
+                <div className="text-xs mb-3 text-slate">FAMILJENS SAKER</div>
+                <div className="flex flex-col gap-4">
+                  {Object.entries(
+                    memberItems.reduce<Record<string, MemberItem[]>>((acc, mi) => {
+                      (acc[mi.memberName] ??= []).push(mi);
+                      return acc;
+                    }, {})
+                  ).map(([name, items]) => (
+                    <div key={name}>
+                      <div className="text-xs font-semibold mb-2">{name}</div>
+                      <div className="flex flex-col gap-2">
+                        {items.map((mi, i) => {
+                          const Icon = ITEM_CATEGORIES.find((c) => c.kind === mi.item.kind)?.icon;
+                          return (
+                            <div key={`${mi.memberUserId}-${i}`} className="flex items-center justify-between gap-3 text-sm">
+                              <span className="flex items-center gap-2 min-w-0">
+                                {Icon && <Icon size={14} className="text-forest flex-none" />}
+                                <span className="truncate">
+                                  {itemTitle(mi.item)} <span className="text-slate">· {itemSummary(mi.item)}</span>
+                                </span>
+                              </span>
+                              {mi.price != null && <span className="font-medium flex-none">{mi.price} kr/mån</span>}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  ))}
                 </div>
               </div>
             )}

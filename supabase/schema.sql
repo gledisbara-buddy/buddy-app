@@ -889,3 +889,37 @@ begin
       ), '{}'::jsonb);
 end;
 $$;
+
+-- Hushållsmedlemmarnas FAKTISKA saker (inte bara aggregat, till skillnad
+-- från get_household_summary ovan) — Gledis rapporterade att en kopplad
+-- hushållsmedlems försäkringar "inte dyker upp" någonstans, vilket
+-- stämmer: den ursprungliga hushålls-vyn visade bara summerade tal av
+-- försiktighetsskäl. Efter dubbelt godkännande (household_requests) är
+-- medlemmarna redan bekräftade familjemedlemmar, så att visa VILKA saker
+-- de har (kind + sammanfattning + pris) är rimligt — precis vad ett
+-- hushåll är till för. Fortfarande aldrig personnummer/telefon/mejl,
+-- bara namn (samma fält som get_my_household() redan exponerar).
+create or replace function public.get_household_items()
+returns table(member_user_id uuid, member_name text, kind text, data jsonb, price numeric)
+language plpgsql
+security definer
+set search_path = public
+stable
+as $$
+declare
+  v_household_id uuid;
+begin
+  select household_id into v_household_id from public.profiles where id = auth.uid();
+  if v_household_id is null then
+    return;
+  end if;
+
+  return query
+    select i.user_id, p.name, i.kind, i.data,
+      (select (pol.data->>'price')::numeric from public.policies pol where pol.item_id = i.id)
+    from public.items i
+    join public.profiles p on p.id = i.user_id
+    where i.user_id in (select id from public.profiles where household_id = v_household_id)
+    order by p.name, i.kind;
+end;
+$$;
