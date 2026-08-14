@@ -15,13 +15,27 @@ const ibmPlexMono = IBM_Plex_Mono({
   weight: ["500"],
 });
 
+const SITE_DESCRIPTION = "Din digitala assistent för allt du betalar för";
+
 export const metadata: Metadata = {
   metadataBase: new URL("https://www.minbuddy.se"),
   title: {
     default: "Buddy",
     template: "%s | Buddy",
   },
-  description: "Din digitala assistent för allt du betalar för",
+  description: SITE_DESCRIPTION,
+  openGraph: {
+    type: "website",
+    locale: "sv_SE",
+    siteName: "Buddy",
+    title: "Buddy",
+    description: SITE_DESCRIPTION,
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Buddy",
+    description: SITE_DESCRIPTION,
+  },
 };
 
 export default function RootLayout({
