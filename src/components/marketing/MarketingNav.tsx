@@ -17,44 +17,56 @@ const LINKS = [
   { href: "/kontakt", label: "Kontakt" },
 ];
 
+function NavLinks({ pathname, className }: { pathname: string; className: string }) {
+  return (
+    <nav className={className}>
+      {LINKS.map((link) => {
+        const active = link.href === "/" ? pathname === "/" : pathname.startsWith(link.href);
+        return (
+          <Link
+            key={link.href}
+            href={link.href}
+            className="px-3 py-2 rounded-full text-sm font-medium flex-none whitespace-nowrap"
+            style={{
+              color: active ? "var(--color-forest)" : "var(--color-ink)",
+              background: active ? "var(--color-frost-2)" : "transparent",
+            }}
+          >
+            {link.label}
+          </Link>
+        );
+      })}
+    </nav>
+  );
+}
+
 export function MarketingNav() {
   const pathname = usePathname();
   const { userType } = useBuddy();
 
   return (
-    <header
-      className="w-full flex items-center justify-between gap-4 px-5 md:px-10 py-4 border-b border-line flex-wrap"
-      style={{ background: "var(--color-frost-90)" }}
-    >
-      <Logo />
-      <nav className="flex items-center gap-1 flex-wrap">
-        {LINKS.map((link) => {
-          const active = link.href === "/" ? pathname === "/" : pathname.startsWith(link.href);
-          return (
-            <Link
-              key={link.href}
-              href={link.href}
-              className="px-3 py-2 rounded-full text-sm font-medium"
-              style={{
-                color: active ? "var(--color-forest)" : "var(--color-ink)",
-                background: active ? "var(--color-frost-2)" : "transparent",
-              }}
-            >
-              {link.label}
-            </Link>
-          );
-        })}
-      </nav>
-      {userType ? (
-        <ProfileMenu />
-      ) : (
-        <Link
-          href="/kom-igang"
-          className="bd-btn px-4 py-2 rounded-full text-sm font-semibold text-white bg-forest flex-none"
-        >
-          Logga in
-        </Link>
-      )}
+    <header className="w-full border-b border-line" style={{ background: "var(--color-frost-90)" }}>
+      <div className="flex items-center justify-between gap-4 px-5 md:px-10 py-4">
+        <Logo />
+        <NavLinks pathname={pathname} className="hidden md:flex items-center gap-1" />
+        {userType ? (
+          <ProfileMenu />
+        ) : (
+          <Link
+            href="/kom-igang"
+            className="bd-btn px-4 py-2 rounded-full text-sm font-semibold text-white bg-forest flex-none"
+          >
+            Logga in
+          </Link>
+        )}
+      </div>
+      {/* Egen, horisontellt skrollbar rad på mobilen istället för att
+          radbryta 8 länkar till tre rader — samma mönster som TabBar.tsx
+          använder i inloggat läge. */}
+      <NavLinks
+        pathname={pathname}
+        className="flex md:hidden items-center gap-1 overflow-x-auto px-5 pb-3 -mt-1"
+      />
     </header>
   );
 }

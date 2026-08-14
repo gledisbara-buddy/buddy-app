@@ -170,7 +170,7 @@ function GroupSection({ group, index }: { group: (typeof ITEM_GROUPS)[number]; i
   const alt = index % 2 === 1;
 
   return (
-    <section className={`py-16 border-t border-line ${alt ? "bg-frost-2" : ""}`}>
+    <section id={group.id} className={`py-16 border-t border-line ${alt ? "bg-frost-2" : ""}`}>
       <div className="max-w-6xl mx-auto px-5 md:px-10">
         <div className={`flex flex-col lg:flex-row items-center gap-10 lg:gap-16 mb-12 ${alt ? "lg:flex-row-reverse" : ""}`}>
           <div className="w-full lg:w-[280px] flex-none">

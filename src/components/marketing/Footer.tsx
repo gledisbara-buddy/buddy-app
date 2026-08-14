@@ -5,10 +5,10 @@ const COLUMNS: { title: string; links: { href: string; label: string }[] }[] = [
   {
     title: "Jämför",
     links: [
-      { href: "/jamfor", label: "Boende & bil" },
-      { href: "/jamfor", label: "Mobil & bredband" },
-      { href: "/jamfor", label: "Kreditkort" },
-      { href: "/jamfor", label: "El & energi" },
+      { href: "/jamfor#forsakring", label: "Försäkringar" },
+      { href: "/jamfor#mobil", label: "Mobilabonnemang" },
+      { href: "/jamfor#prenumeration", label: "Bredband & prenumerationer" },
+      { href: "/jamfor#ekonomi", label: "Kreditkort & el" },
     ],
   },
   {
