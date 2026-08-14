@@ -33,9 +33,38 @@ import { useBuddy } from "@/lib/buddy-context";
 import { formatBookingDay } from "@/lib/booking";
 import { buildTodoList } from "@/lib/todo";
 import { computeTrustScore } from "@/lib/trust-score";
-import { isComparableItem, ITEM_CATEGORIES, ITEM_GROUPS, itemSummary, itemTitle, type ItemGroupId } from "@/lib/items";
+import {
+  createItemId,
+  groupForKind,
+  isComparableItem,
+  ITEM_CATEGORIES,
+  ITEM_GROUPS,
+  itemSummary,
+  itemTitle,
+  type InsuranceItem,
+  type ItemGroupId,
+} from "@/lib/items";
+import type { Quote } from "@/lib/quote";
 
 type ItemStatus = "saved" | "added" | "uncompared" | "compared" | "fetched" | "pending";
+
+// Vem ska Buddy höra av sig till för att säga upp? Finns redan ett
+// tecknat/auto-hämtat avtal (signed) används det bolagsnamnet. Annars
+// försöker vi hitta ett rimligt namn direkt på saken själv (operatör/
+// leverantör/elbolag) — täcker abonnemang som lagts till manuellt och
+// aldrig fått en Quote. Försäkringsposter utan vare sig Quote eller ett
+// sånt fält har inget känt bolag att säga upp hos, så knappen döljs då.
+function getCancelTarget(item: InsuranceItem, signed?: Quote): { name: string; price?: number } | null {
+  if (signed) return { name: signed.name, price: signed.price };
+  if (item.kind === "telekom") {
+    if (item.typ === "tv_streaming") return { name: item.tjanst, price: item.prisPerManad };
+    return { name: item.operator, price: item.prisPerManad };
+  }
+  if (item.kind === "prenumeration") return { name: item.leverantor || item.namn, price: item.prisPerManad };
+  if (item.kind === "el") return { name: item.elbolag };
+  if (item.kind === "kreditkort" && item.harReddan && item.utgivare) return { name: item.utgivare };
+  return null;
+}
 
 const STATUS_CONFIG: Record<ItemStatus, { label: string; color: string }> = {
   saved: { label: "Sparad — jämförelse kommer snart", color: "var(--color-slate)" },
@@ -82,6 +111,7 @@ export function Dashboard({ showIntro: initialShowIntro }: { showIntro?: boolean
     items,
     removeItem,
     policies,
+    setPolicy,
     readyToCompare,
     setReadyToCompare,
     bookings,
@@ -91,7 +121,9 @@ export function Dashboard({ showIntro: initialShowIntro }: { showIntro?: boolean
   const [activeGroup, setActiveGroup] = useState<ItemGroupId | null>(null);
   const [showIntro, setShowIntro] = useState(!!initialShowIntro);
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
+  const [confirmCancelId, setConfirmCancelId] = useState<string | null>(null);
   const [switching, setSwitching] = useState(false);
+  const [showTrustChecklist, setShowTrustChecklist] = useState(false);
 
   useEffect(() => {
     if (!loading && !userType) router.replace("/kom-igang");
@@ -185,6 +217,35 @@ export function Dashboard({ showIntro: initialShowIntro }: { showIntro?: boolean
           onCancel={() => setConfirmDeleteId(null)}
         />
       )}
+      {confirmCancelId && (
+        <ConfirmDialog
+          title="Säg upp den här saken?"
+          body="Buddy tar kontakt med bolaget och sköter uppsägningen åt dig. Du ser status under Att göra tills den är klar."
+          confirmLabel="Säg upp åt mig"
+          onConfirm={() => {
+            const existing = policies[confirmCancelId];
+            const now = new Date().toISOString();
+            if (existing) {
+              setPolicy(confirmCancelId, { ...existing, cancellationPending: true, cancellationRequestedAt: now });
+            } else {
+              const item = items.find((i) => i.id === confirmCancelId);
+              const target = item ? getCancelTarget(item) : null;
+              if (target) {
+                setPolicy(confirmCancelId, {
+                  id: createItemId(),
+                  name: target.name,
+                  price: target.price ?? 0,
+                  highlights: [],
+                  cancellationPending: true,
+                  cancellationRequestedAt: now,
+                });
+              }
+            }
+            setConfirmCancelId(null);
+          }}
+          onCancel={() => setConfirmCancelId(null)}
+        />
+      )}
       <TopBar right={<ProfileMenu />} />
       <div className="max-w-4xl mx-auto px-5 md:px-10 py-10 bd-fade">
         <span className="bd-eyebrow">Din översikt</span>
@@ -193,27 +254,71 @@ export function Dashboard({ showIntro: initialShowIntro }: { showIntro?: boolean
 
         {trustScore && (
           <div className="rounded-2xl border border-line p-6 mb-6 bg-white">
-            <div className="flex items-start justify-between gap-4 flex-wrap mb-3">
-              <div>
-                <div className="text-xs font-semibold text-slate mb-1">TRYGGHETSPOÄNG</div>
-                <div className="bd-display text-5xl text-ink" style={{ fontVariantNumeric: "proportional-nums" }}>
-                  {trustScore.score}
+            <button onClick={() => setShowTrustChecklist((v) => !v)} className="w-full text-left">
+              <div className="flex items-start justify-between gap-4 flex-wrap mb-3">
+                <div>
+                  <div className="text-xs font-semibold text-slate mb-1">TRYGGHETSPOÄNG</div>
+                  <div className="bd-display text-5xl text-ink" style={{ fontVariantNumeric: "proportional-nums" }}>
+                    {trustScore.score}
+                  </div>
+                </div>
+                <div className="text-sm text-slate text-right max-w-[220px]">
+                  {trustScore.comparedCount < trustScore.comparableCount
+                    ? `${trustScore.comparedCount} av ${trustScore.comparableCount} avtal jämförda`
+                    : "Alla avtal jämförda"}
+                  {trustScore.hasUrgentRenewal && <> · en förnyelse brådskar</>}
+                  {!trustScore.fullmaktSigned && <> · fullmakt inte signerad</>}
+                  <div className="text-xs font-semibold mt-1 text-forest">
+                    {showTrustChecklist ? "Dölj förslag" : "Vad kan jag göra bättre?"}
+                  </div>
                 </div>
               </div>
-              <div className="text-sm text-slate text-right max-w-[220px]">
-                {trustScore.comparedCount < trustScore.comparableCount
-                  ? `${trustScore.comparedCount} av ${trustScore.comparableCount} avtal jämförda`
-                  : "Alla avtal jämförda"}
-                {trustScore.hasUrgentRenewal && <> · en förnyelse brådskar</>}
-                {!trustScore.fullmaktSigned && <> · fullmakt inte signerad</>}
+              <div className="h-2 rounded-full overflow-hidden bg-frost-2">
+                <div
+                  className="h-full rounded-full bg-forest"
+                  style={{ width: `${trustScore.score}%`, transition: "width 500ms ease" }}
+                />
               </div>
-            </div>
-            <div className="h-2 rounded-full overflow-hidden bg-frost-2">
-              <div
-                className="h-full rounded-full bg-forest"
-                style={{ width: `${trustScore.score}%`, transition: "width 500ms ease" }}
-              />
-            </div>
+            </button>
+            {showTrustChecklist && (
+              <div className="mt-4 pt-4 border-t border-line space-y-1">
+                {trustScore.score === 100 ? (
+                  <div className="text-sm text-forest font-medium py-1.5">Allt i toppskick — inget mer att göra just nu.</div>
+                ) : (
+                  <>
+                    {trustScore.comparedCount < trustScore.comparableCount &&
+                      (readyToCompare ? (
+                        <button
+                          onClick={() => {
+                            const next = items.find((i) => isComparableItem(i) && policies[i.id]?.source !== "compared");
+                            if (next) router.push(`/compare/${next.id}`);
+                          }}
+                          className="w-full flex items-center justify-between gap-3 text-left text-sm py-1.5"
+                        >
+                          <span className="text-ink">
+                            Jämför {trustScore.comparableCount - trustScore.comparedCount} kvarvarande avtal
+                          </span>
+                          <ArrowRight size={14} className="text-forest flex-none" />
+                        </button>
+                      ) : (
+                        <div className="text-sm text-slate py-1.5">Bli klar med att lägga till dina saker för att kunna jämföra</div>
+                      ))}
+                    {trustScore.hasUrgentRenewal && (
+                      <div className="text-sm text-ink py-1.5">En förnyelse brådskar — se Att göra-listan nedan</div>
+                    )}
+                    {!trustScore.fullmaktSigned && (
+                      <button
+                        onClick={() => router.push("/importera")}
+                        className="w-full flex items-center justify-between gap-3 text-left text-sm py-1.5"
+                      >
+                        <span className="text-ink">Signera fullmakten</span>
+                        <ArrowRight size={14} className="text-forest flex-none" />
+                      </button>
+                    )}
+                  </>
+                )}
+              </div>
+            )}
           </div>
         )}
 
@@ -507,8 +612,11 @@ export function Dashboard({ showIntro: initialShowIntro }: { showIntro?: boolean
                 )}
                 {active.items.map((item) => {
                   const signed = policies[item.id];
+                  const cancelTarget = getCancelTarget(item, signed);
+                  const canCompare = isComparableItem(item) && readyToCompare;
+                  const canClaim = groupForKind(item.kind) === "forsakring";
                   return (
-                    <div key={item.id} className="bg-white rounded-2xl border border-line p-5">
+                    <div key={item.id} className="bg-white rounded-2xl border border-line p-5 flex flex-col">
                       <div className="flex items-start justify-between mb-4">
                         <div className="w-10 h-10 rounded-xl flex items-center justify-center bg-frost-2">
                           {(() => {
@@ -522,56 +630,66 @@ export function Dashboard({ showIntro: initialShowIntro }: { showIntro?: boolean
                       </div>
                       <button onClick={() => router.push(`/objekt/${item.id}`)} className="text-left mb-4 block">
                         <div className="font-semibold text-[15px] mb-1">{itemTitle(item)}</div>
-                        <div className="text-xs text-slate">{itemSummary(item)}</div>
+                        <div className="text-xs text-slate mb-2">{itemSummary(item)}</div>
+                        <div className="text-xs font-semibold flex items-center gap-1 text-forest">
+                          Visa mer <ArrowRight size={12} />
+                        </div>
                       </button>
                       {!isComparableItem(item) ? (
-                        <ItemStatusBadge status="saved" />
+                        <div className="mb-3">
+                          <ItemStatusBadge status="saved" />
+                        </div>
                       ) : !readyToCompare ? (
-                        <ItemStatusBadge status="added" />
+                        <div className="mb-3">
+                          <ItemStatusBadge status="added" />
+                        </div>
                       ) : signed?.source === "compared" ? (
-                        <>
-                          <div className="mb-3">
-                            <ItemStatusBadge status="compared" /> <span className="text-xs text-ink">hos {signed.name} — {signed.price} kr/mån</span>
-                          </div>
-                          <button
-                            onClick={() => router.push(`/compare/${item.id}`)}
-                            className="text-sm font-semibold flex items-center gap-1 text-forest"
-                          >
-                            Jämför igen <ArrowRight size={14} />
-                          </button>
-                        </>
+                        <div className="mb-3">
+                          <ItemStatusBadge status="compared" /> <span className="text-xs text-ink">hos {signed.name} — {signed.price} kr/mån</span>
+                        </div>
                       ) : signed?.source === "fetched" ? (
-                        <>
-                          <div className="mb-2">
-                            <ItemStatusBadge status="fetched" />
-                          </div>
-                          <div className="text-xs text-ink">
+                        <div className="mb-3">
+                          <ItemStatusBadge status="fetched" />
+                          <div className="text-xs text-ink mt-1">
                             <b>{signed.name}</b> · {signed.price} kr/mån
                           </div>
                           {signed.omfattning && <div className="text-xs text-slate">{signed.omfattning}</div>}
-                          {signed.forfallodatum && (
-                            <div className="text-xs mb-3 text-slate">Förfaller {signed.forfallodatum}</div>
-                          )}
-                          <button
-                            onClick={() => router.push(`/compare/${item.id}`)}
-                            className="text-sm font-semibold flex items-center gap-1 text-forest"
-                          >
-                            Jämför nu <ArrowRight size={14} />
-                          </button>
-                        </>
+                          {signed.forfallodatum && <div className="text-xs text-slate">Förfaller {signed.forfallodatum}</div>}
+                        </div>
                       ) : (
-                        <>
-                          <div className="mb-3">
-                            <ItemStatusBadge status="uncompared" />
-                          </div>
+                        <div className="mb-3">
+                          <ItemStatusBadge status="uncompared" />
+                        </div>
+                      )}
+                      {signed?.cancellationPending && (
+                        <div className="text-xs font-semibold mb-3 text-amber-deep">Uppsägning pågår hos Buddy</div>
+                      )}
+                      <div className="mt-auto flex flex-wrap items-center gap-x-3 gap-y-2 pt-1">
+                        {canCompare && (
                           <button
                             onClick={() => router.push(`/compare/${item.id}`)}
                             className="text-sm font-semibold flex items-center gap-1 text-forest"
                           >
-                            Jämför nu <ArrowRight size={14} />
+                            {signed?.source === "compared" ? "Jämför igen" : "Jämför nu"} <ArrowRight size={14} />
                           </button>
-                        </>
-                      )}
+                        )}
+                        {cancelTarget && !signed?.cancellationPending && (
+                          <button
+                            onClick={() => setConfirmCancelId(item.id)}
+                            className="text-sm font-medium text-slate hover:text-ink"
+                          >
+                            Säg upp
+                          </button>
+                        )}
+                        {canClaim && (
+                          <button
+                            onClick={() => router.push(`/claim?item=${encodeURIComponent(itemTitle(item))}`)}
+                            className="text-sm font-medium text-slate hover:text-ink"
+                          >
+                            Hjälp med skada
+                          </button>
+                        )}
+                      </div>
                     </div>
                   );
                 })}

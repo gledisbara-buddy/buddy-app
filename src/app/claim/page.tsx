@@ -1,5 +1,10 @@
 import { ClaimFlow } from "@/components/ClaimFlow";
 
-export default function ClaimPage() {
-  return <ClaimFlow />;
+export default async function ClaimPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ item?: string }>;
+}) {
+  const { item } = await searchParams;
+  return <ClaimFlow initialItemTitle={item} />;
 }

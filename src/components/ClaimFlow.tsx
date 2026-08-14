@@ -12,12 +12,17 @@ import { randomDelay } from "@/lib/chat";
 type Phase = "chat" | "upload" | "submitting" | "confirmed";
 type UploadedFile = { name: string; dataUrl: string };
 
-export function ClaimFlow() {
+export function ClaimFlow({ initialItemTitle }: { initialItemTitle?: string } = {}) {
   const router = useRouter();
   const { submitClaim, hasClaimPerk } = useBuddy();
   const [phase, setPhase] = useState<Phase>("chat");
   const [messages, setMessages] = useState<ChatMessage[]>([
-    { role: "assistant", content: "Hej. Tråkigt att höra att något har hänt — vad är det som har hänt?" },
+    {
+      role: "assistant",
+      content: initialItemTitle
+        ? `Hej. Tråkigt att höra att något har hänt med din ${initialItemTitle.toLowerCase()} — vad är det som har hänt?`
+        : "Hej. Tråkigt att höra att något har hänt — vad är det som har hänt?",
+    },
   ]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
