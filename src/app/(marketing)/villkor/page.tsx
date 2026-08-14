@@ -11,7 +11,7 @@ export default function VillkorPage() {
     <LegalPage
       eyebrow="Juridik"
       title="Allmänna villkor"
-      updated="9 augusti 2026"
+      updated="15 augusti 2026"
       sections={[
         {
           heading: "1. Om tjänsten",
@@ -19,7 +19,7 @@ export default function VillkorPage() {
         },
         {
           heading: "2. Ditt konto",
-          body: "Du loggar in med e-post och lösenord och ansvarar för att uppgifterna du lämnar är korrekta samt för att hålla ditt lösenord hemligt. Vill du avsluta ditt konto och få dina uppgifter raderade kontaktar du kundtjänst.",
+          body: "Du loggar in med e-post och lösenord och ansvarar för att uppgifterna du lämnar är korrekta samt för att hålla ditt lösenord hemligt. Vill du avsluta ditt konto och få dina uppgifter raderade skickar du en raderingsbegäran under Inställningar i appen, eller kontaktar kundtjänst.",
         },
         {
           heading: "3. Fullmakt",
