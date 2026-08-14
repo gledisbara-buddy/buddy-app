@@ -2,28 +2,15 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Check, ClipboardSignature, Download } from "lucide-react";
+import { ArrowRight, Check, FolderOpen } from "lucide-react";
 import { TopBar } from "@/components/TopBar";
 import { ProfileMenu } from "@/components/ProfileMenu";
-import { FullmaktSigning } from "@/components/FullmaktSigning";
 import { Field, inputClass } from "@/components/onboarding/shared";
 import { useBuddy } from "@/lib/buddy-context";
-import { createClient } from "@/lib/supabase/client";
 
 export function ProfilePage() {
   const router = useRouter();
   const { userType, loading, profile, updateProfile } = useBuddy();
-  const [showSigning, setShowSigning] = useState(false);
-  const [downloading, setDownloading] = useState(false);
-
-  const handleDownload = async () => {
-    if (!profile?.fullmaktPdfPath) return;
-    setDownloading(true);
-    const supabase = createClient();
-    const { data } = await supabase.storage.from("fullmakter").createSignedUrl(profile.fullmaktPdfPath, 300);
-    setDownloading(false);
-    if (data?.signedUrl) window.open(data.signedUrl, "_blank");
-  };
 
   useEffect(() => {
     if (!loading && !userType) router.replace("/kom-igang");
@@ -119,45 +106,19 @@ export function ProfilePage() {
           </button>
         </div>
 
-        <div className="bg-white rounded-2xl border border-line p-6 mt-6">
-          <div className="flex items-center gap-2 mb-1">
-            <ClipboardSignature size={16} className="text-forest" />
-            <h2 className="font-semibold text-[15px]">Din fullmakt</h2>
+        <button
+          onClick={() => router.push("/arkiv")}
+          className="w-full flex items-center gap-3 bg-white rounded-2xl border border-line p-6 mt-6 text-left hover:bg-frost"
+        >
+          <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-none bg-frost-2">
+            <FolderOpen size={16} className="text-forest" />
           </div>
-
-          {profile?.fullmaktSignedAt ? (
-            <>
-              <p className="text-sm mb-4 text-slate">
-                Signerad{" "}
-                {new Date(profile.fullmaktSignedAt).toLocaleString("sv-SE", { dateStyle: "long", timeStyle: "short" })}.
-              </p>
-              <button
-                onClick={handleDownload}
-                disabled={downloading}
-                className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-full border border-line text-sm font-medium disabled:opacity-50"
-              >
-                <Download size={15} /> {downloading ? "Hämtar…" : "Ladda ner PDF"}
-              </button>
-            </>
-          ) : showSigning ? (
-            <div className="mt-4">
-              <FullmaktSigning onDone={() => setShowSigning(false)} onSkip={() => setShowSigning(false)} />
-            </div>
-          ) : (
-            <>
-              <p className="text-sm mb-4 text-slate">
-                Du har inte signerat någon fullmakt än. Den behövs för att Buddy ska kunna teckna, säga upp
-                och hjälpa till med skadereglering å dina vägnar.
-              </p>
-              <button
-                onClick={() => setShowSigning(true)}
-                className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-full text-white text-sm font-medium bg-forest"
-              >
-                Signera fullmakt
-              </button>
-            </>
-          )}
-        </div>
+          <div className="flex-1 min-w-0">
+            <div className="font-semibold text-[15px]">Dokumentarkiv</div>
+            <div className="text-xs text-slate">Fullmakt och andra dokument från Buddy</div>
+          </div>
+          <ArrowRight size={16} className="text-slate flex-none" />
+        </button>
       </div>
     </div>
   );
