@@ -1,12 +1,13 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { ClipboardSignature } from "lucide-react";
 import { EditableField } from "@/components/internal/EditableField";
 import { CustomerItemsTab } from "@/components/internal/CustomerItemsTab";
 import { CustomerCasesTab } from "@/components/internal/CustomerCasesTab";
 import { CustomerNotesTab } from "@/components/internal/CustomerNotesTab";
 import { CustomerActivityTab } from "@/components/internal/CustomerActivityTab";
+import { createClient } from "@/lib/supabase/client";
 import type { InternalCustomerProfile } from "@/components/InternalView";
 
 type Tab = "saker" | "arenden" | "anteckningar" | "aktivitet";
@@ -28,6 +29,31 @@ export function CustomerWorkspace({
   onFieldSave: (field: "personnummer" | "phone" | "address", value: string) => Promise<boolean>;
 }) {
   const [tab, setTab] = useState<Tab>("saker");
+  // Isolerad från customer-frågan i InternalView.tsx (CUSTOMER_SELECT) med
+  // avsikt — notify_email är en ny kolumn som kanske inte finns i
+  // databasen än, och en trasig kolumn i huvudfrågan hade slagit ut hela
+  // kundvyn. Standard "skicka" (true) om hämtningen misslyckas eller
+  // kolumnen saknas, samma beteende som innan den här inställningen fanns.
+  const [customerNotifyEmail, setCustomerNotifyEmail] = useState(true);
+  // Nollställ till default under rendering när kunden byts (inte i en
+  // effekt) — samma "syncedX"-mönster som SettingsPage.tsx/Dashboard.tsx.
+  const [syncedCustomerId, setSyncedCustomerId] = useState(customer.id);
+  if (customer.id !== syncedCustomerId) {
+    setSyncedCustomerId(customer.id);
+    setCustomerNotifyEmail(true);
+  }
+
+  useEffect(() => {
+    createClient()
+      .from("profiles")
+      .select("notify_email")
+      .eq("id", customer.id)
+      .maybeSingle()
+      .then(({ data }) => {
+        const row = data as { notify_email: boolean | null } | null;
+        if (row && row.notify_email === false) setCustomerNotifyEmail(false);
+      });
+  }, [customer.id]);
 
   return (
     <div className="flex-1 min-w-0">
@@ -101,8 +127,22 @@ export function CustomerWorkspace({
         ))}
       </div>
 
-      {tab === "saker" && <CustomerItemsTab customerId={customer.id} actorEmail={actorEmail} customerEmail={customer.email} />}
-      {tab === "arenden" && <CustomerCasesTab customerId={customer.id} actorEmail={actorEmail} customerEmail={customer.email} />}
+      {tab === "saker" && (
+        <CustomerItemsTab
+          customerId={customer.id}
+          actorEmail={actorEmail}
+          customerEmail={customer.email}
+          customerNotifyEmail={customerNotifyEmail}
+        />
+      )}
+      {tab === "arenden" && (
+        <CustomerCasesTab
+          customerId={customer.id}
+          actorEmail={actorEmail}
+          customerEmail={customer.email}
+          customerNotifyEmail={customerNotifyEmail}
+        />
+      )}
       {tab === "anteckningar" && <CustomerNotesTab customerId={customer.id} actorEmail={actorEmail} />}
       {tab === "aktivitet" && <CustomerActivityTab customerId={customer.id} />}
     </div>

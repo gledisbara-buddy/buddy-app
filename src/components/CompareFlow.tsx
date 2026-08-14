@@ -371,7 +371,7 @@ export function CompareFlow({ itemId }: { itemId: string }) {
     // Spara-sammanfattningsmejl (Del i 21-sektionsplanen) — bara när det
     // faktiskt är en besparing mot ett tidigare auto-hämtat pris, annars
     // vore "du sparar" mejlet missvisande.
-    if (current && profile?.email && pendingQuote.price < current.price) {
+    if (current && profile?.email && profile.notifyEmail !== false && pendingQuote.price < current.price) {
       const oldPrice = current.price;
       const newPrice = pendingQuote.price;
       (async () => {

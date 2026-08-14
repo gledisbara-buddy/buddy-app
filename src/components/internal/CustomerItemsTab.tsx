@@ -19,10 +19,12 @@ export function CustomerItemsTab({
   customerId,
   actorEmail,
   customerEmail,
+  customerNotifyEmail,
 }: {
   customerId: string;
   actorEmail: string;
   customerEmail: string | null;
+  customerNotifyEmail: boolean;
 }) {
   const [items, setItems] = useState<InsuranceItem[]>([]);
   const [policies, setPolicies] = useState<Record<string, Quote>>({});
@@ -94,7 +96,7 @@ export function CustomerItemsTab({
       { ...current, cancellationPending: true, cancellationRequestedAt: new Date().toISOString() }
     );
     setConfirmAction(null);
-    if (ok && customerEmail) {
+    if (ok && customerEmail && customerNotifyEmail) {
       const supabase = createClient();
       const { data } = await supabase.auth.getSession();
       const token = data.session?.access_token;

@@ -57,10 +57,12 @@ export function CustomerCasesTab({
   customerId,
   actorEmail,
   customerEmail,
+  customerNotifyEmail,
 }: {
   customerId: string;
   actorEmail: string;
   customerEmail: string | null;
+  customerNotifyEmail: boolean;
 }) {
   const [bookings, setBookings] = useState<BookingRow[]>([]);
   const [claims, setClaims] = useState<ClaimRow[]>([]);
@@ -110,7 +112,7 @@ export function CustomerCasesTab({
       newValue: status,
     });
     if (ok) setClaims((prev) => prev.map((c) => (c.id === row.id ? { ...c, status } : c)));
-    if (ok && customerEmail) {
+    if (ok && customerEmail && customerNotifyEmail) {
       const { data } = await supabase.auth.getSession();
       const token = data.session?.access_token;
       if (token) sendTransactionalEmail(token, { type: "claim_status_changed", to: customerEmail, status });

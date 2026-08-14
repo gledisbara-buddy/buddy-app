@@ -727,7 +727,7 @@ export function BuddyProvider({ children }: { children: ReactNode }) {
         .then(async (result) => {
           logWriteError("bokning")(result);
           if (result.data) setBookings((prev) => [...prev, mapBookingRow(result.data as BookingRow)]);
-          if (result.data && profile?.email) {
+          if (result.data && profile?.email && profile.notifyEmail !== false) {
             const { data } = await supabase.auth.getSession();
             const token = data.session?.access_token;
             if (token) {
