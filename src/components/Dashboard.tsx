@@ -19,6 +19,7 @@ import {
   Loader2,
   MessageCircle,
   Plus,
+  Search,
   ShieldAlert,
   ShieldCheck,
   Smartphone,
@@ -120,6 +121,7 @@ export function Dashboard({ showIntro: initialShowIntro }: { showIntro?: boolean
     householdRequests,
   } = useBuddy();
   const [activeGroup, setActiveGroup] = useState<ItemGroupId | null>(null);
+  const [itemSearch, setItemSearch] = useState("");
   const [showIntro, setShowIntro] = useState(!!initialShowIntro);
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
   const [confirmCancelId, setConfirmCancelId] = useState<string | null>(null);
@@ -129,6 +131,15 @@ export function Dashboard({ showIntro: initialShowIntro }: { showIntro?: boolean
   useEffect(() => {
     if (!loading && !userType) router.replace("/kom-igang");
   }, [loading, userType, router]);
+
+  // Nollställ sökrutan när kunden byter grupp — justerat under rendering
+  // (samma mönster som ProfilePage.tsx:s syncedLoading) istället för i en
+  // effekt, för att undvika en extra rendering-cykel.
+  const [syncedGroup, setSyncedGroup] = useState(activeGroup);
+  if (activeGroup !== syncedGroup) {
+    setSyncedGroup(activeGroup);
+    setItemSearch("");
+  }
 
   const closeIntro = () => {
     setShowIntro(false);
@@ -159,6 +170,16 @@ export function Dashboard({ showIntro: initialShowIntro }: { showIntro?: boolean
   });
 
   const active = activeGroup ? groups.find((g) => g.id === activeGroup) : undefined;
+
+  const searchQuery = itemSearch.trim().toLowerCase();
+  const filteredItems = active
+    ? searchQuery
+      ? active.items.filter(
+          (item) =>
+            itemTitle(item).toLowerCase().includes(searchQuery) || itemSummary(item).toLowerCase().includes(searchQuery)
+        )
+      : active.items
+    : [];
 
   // Kundens registrerade nummer (obligatoriskt vid registrering, se
   // src/lib/phone.ts) blir automatiskt en ofullständig post i
@@ -581,6 +602,18 @@ export function Dashboard({ showIntro: initialShowIntro }: { showIntro?: boolean
           <div className="mb-8">
             <h2 className="bd-display text-2xl mb-4">{active.label}</h2>
 
+            {active.items.length > 2 && (
+              <div className="relative mb-4">
+                <Search size={15} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate" />
+                <input
+                  value={itemSearch}
+                  onChange={(e) => setItemSearch(e.target.value)}
+                  placeholder="Sök bland dina saker"
+                  className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-line bg-white text-sm"
+                />
+              </div>
+            )}
+
             {active.id === "prenumeration" && (
               <button
                 onClick={() => router.push("/anslut-bank")}
@@ -599,7 +632,11 @@ export function Dashboard({ showIntro: initialShowIntro }: { showIntro?: boolean
               </button>
             )}
 
-            {(active.items.length > 0 || (active.id === "mobil" && pendingMobilNumber)) && (
+            {searchQuery && filteredItems.length === 0 && active.items.length > 0 && (
+              <p className="text-sm mb-4 text-slate">Inga saker matchar &quot;{itemSearch.trim()}&quot;.</p>
+            )}
+
+            {(filteredItems.length > 0 || (active.id === "mobil" && pendingMobilNumber)) && (
               <div className="grid md:grid-cols-3 gap-4 mb-4">
                 {active.id === "mobil" && pendingMobilNumber && (
                   <div className="bg-white rounded-2xl border border-dashed p-5" style={{ borderColor: "var(--color-amber-deep)" }}>
@@ -621,7 +658,7 @@ export function Dashboard({ showIntro: initialShowIntro }: { showIntro?: boolean
                     </button>
                   </div>
                 )}
-                {active.items.map((item) => {
+                {filteredItems.map((item) => {
                   const signed = policies[item.id];
                   const cancelTarget = getCancelTarget(item, signed);
                   const canCompare = isComparableItem(item) && readyToCompare;
