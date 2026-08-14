@@ -24,8 +24,19 @@ export default async function NyhetPage({ params }: { params: Promise<{ slug: st
   const article = getArticleBySlug(slug);
   if (!article) notFound();
 
+  const jsonLd = {
+    "@context": "https://schema.org",
+    "@type": "Article",
+    headline: article.title,
+    description: article.excerpt,
+    datePublished: article.date,
+    articleSection: article.category,
+    author: { "@type": "Organization", name: "Buddy" },
+  };
+
   return (
     <div className="max-w-2xl mx-auto px-5 md:px-10 py-16 bd-fade">
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
       <Link href="/nyheter" className="flex items-center gap-1.5 text-sm mb-8 opacity-60 hover:opacity-100">
         <ArrowLeft size={15} /> Alla nyheter
       </Link>
