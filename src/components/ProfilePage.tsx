@@ -2,11 +2,12 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowRight, Check, FolderOpen, LogOut } from "lucide-react";
+import { ArrowRight, Check, FolderOpen, KeyRound, LogOut } from "lucide-react";
 import { TopBar } from "@/components/TopBar";
 import { ProfileMenu } from "@/components/ProfileMenu";
 import { Field, inputClass } from "@/components/onboarding/shared";
 import { useBuddy } from "@/lib/buddy-context";
+import { createClient } from "@/lib/supabase/client";
 
 export function ProfilePage() {
   const router = useRouter();
@@ -21,6 +22,11 @@ export function ProfilePage() {
   const [phone, setPhone] = useState(profile?.phone ?? "");
   const [saved, setSaved] = useState(false);
   const [syncedLoading, setSyncedLoading] = useState(loading);
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [passwordSaving, setPasswordSaving] = useState(false);
+  const [passwordSaved, setPasswordSaved] = useState(false);
+  const [passwordError, setPasswordError] = useState<string | null>(null);
 
   // profile laddas asynkront från Supabase, så formuläret måste synkas om
   // en gång när det blir klart — useState:s initialvärde fångas annars bara
@@ -47,6 +53,30 @@ export function ProfilePage() {
     });
     setSaved(true);
     setTimeout(() => setSaved(false), 2500);
+  };
+
+  const handlePasswordChange = async () => {
+    setPasswordError(null);
+    if (newPassword.length < 6) {
+      setPasswordError("Lösenordet måste vara minst 6 tecken.");
+      return;
+    }
+    if (newPassword !== confirmPassword) {
+      setPasswordError("Lösenorden matchar inte.");
+      return;
+    }
+    setPasswordSaving(true);
+    const supabase = createClient();
+    const { error } = await supabase.auth.updateUser({ password: newPassword });
+    setPasswordSaving(false);
+    if (error) {
+      setPasswordError("Kunde inte byta lösenord just nu. Försök igen om en stund.");
+      return;
+    }
+    setNewPassword("");
+    setConfirmPassword("");
+    setPasswordSaved(true);
+    setTimeout(() => setPasswordSaved(false), 2500);
   };
 
   const handleLogout = () => {
@@ -110,6 +140,47 @@ export function ProfilePage() {
               </>
             ) : (
               "Spara ändringar"
+            )}
+          </button>
+        </div>
+
+        <div className="bg-white rounded-2xl border border-line p-6 mt-6">
+          <div className="flex items-center gap-2 mb-4">
+            <KeyRound size={16} className="text-forest" />
+            <h2 className="font-semibold text-[15px]">Byt lösenord</h2>
+          </div>
+          <Field label="Nytt lösenord">
+            <input
+              type="password"
+              className={inputClass}
+              value={newPassword}
+              onChange={(e) => setNewPassword(e.target.value)}
+              placeholder="Minst 6 tecken"
+            />
+          </Field>
+          <Field label="Bekräfta nytt lösenord">
+            <input
+              type="password"
+              className={inputClass}
+              value={confirmPassword}
+              onChange={(e) => setConfirmPassword(e.target.value)}
+              placeholder="Upprepa lösenordet"
+            />
+          </Field>
+          {passwordError && <p className="text-sm text-red-600 mb-4">{passwordError}</p>}
+          <button
+            onClick={handlePasswordChange}
+            disabled={!newPassword || !confirmPassword || passwordSaving}
+            className="bd-btn w-full flex items-center justify-center gap-2 py-3.5 rounded-full font-semibold text-white text-[15px] bg-forest disabled:opacity-50"
+          >
+            {passwordSaved ? (
+              <>
+                Lösenordet bytt <Check size={16} />
+              </>
+            ) : passwordSaving ? (
+              "Byter…"
+            ) : (
+              "Byt lösenord"
             )}
           </button>
         </div>
