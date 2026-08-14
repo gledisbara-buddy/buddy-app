@@ -2,12 +2,13 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, ArrowRight, CalendarPlus, Trash2 } from "lucide-react";
+import { ArrowLeft, ArrowRight, CalendarPlus, Download, Trash2 } from "lucide-react";
 import { Logo } from "@/components/Logo";
 import { ConfirmDialog } from "@/components/Overlay";
 import { useBuddy } from "@/lib/buddy-context";
-import { isComparableItem, ITEM_CATEGORIES, itemSummary, itemTitle } from "@/lib/items";
+import { isComparableItem, ITEM_CATEGORIES, itemDetailRows, itemSummary, itemTitle } from "@/lib/items";
 import { buildIcsFile } from "@/lib/booking";
+import { buildItemSummaryPdf } from "@/lib/item-pdf";
 import { parseSwedishDate } from "@/lib/dates";
 import { createClient } from "@/lib/supabase/client";
 import type { Quote } from "@/lib/quote";
@@ -29,6 +30,7 @@ export function ItemDetail({ itemId }: { itemId: string }) {
   const { items, policies, removeItem } = useBuddy();
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [history, setHistory] = useState<HistoryRow[]>([]);
+  const [downloadingPdf, setDownloadingPdf] = useState(false);
   const item = items.find((i) => i.id === itemId);
 
   useEffect(() => {
@@ -51,21 +53,7 @@ export function ItemDetail({ itemId }: { itemId: string }) {
   const Icon = ITEM_CATEGORIES.find((c) => c.kind === item.kind)!.icon;
   const forfallodatum = quote?.forfallodatum ?? ("forfallodatum" in item ? item.forfallodatum : undefined);
 
-  const detailRows: { label: string; value: string }[] = quote
-    ? [
-        { label: "Bolag", value: quote.name },
-        { label: "Pris", value: `${quote.price} kr/mån` },
-        ...(quote.omfattning ? [{ label: "Omfattning", value: quote.omfattning }] : []),
-        ...(quote.selfRisk != null ? [{ label: "Självrisk", value: `${quote.selfRisk.toLocaleString("sv-SE")} kr` }] : []),
-        ...(quote.karenstid ? [{ label: "Karenstid", value: quote.karenstid }] : []),
-        ...(quote.ersattningstak ? [{ label: "Ersättningstak", value: quote.ersattningstak }] : []),
-        ...(quote.bindningstid ? [{ label: "Bindningstid", value: quote.bindningstid }] : []),
-        ...(quote.uppsagningstid ? [{ label: "Uppsägningstid", value: quote.uppsagningstid }] : []),
-        ...(forfallodatum ? [{ label: "Förfaller", value: forfallodatum }] : []),
-      ]
-    : forfallodatum
-      ? [{ label: "Förfaller", value: forfallodatum }]
-      : [];
+  const detailRows = itemDetailRows(item, quote);
 
   const addRenewalToCalendar = () => {
     if (!forfallodatum) return;
@@ -83,6 +71,19 @@ export function ItemDetail({ itemId }: { itemId: string }) {
     const a = document.createElement("a");
     a.href = url;
     a.download = "buddy-fornyelse.ics";
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const downloadSummaryPdf = async () => {
+    setDownloadingPdf(true);
+    const pdfBytes = await buildItemSummaryPdf({ item, quote, generatedAt: new Date() });
+    setDownloadingPdf(false);
+    const blob = new Blob([pdfBytes as BlobPart], { type: "application/pdf" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `buddy-${itemTitle(item).toLowerCase().replace(/\s+/g, "-")}.pdf`;
     a.click();
     URL.revokeObjectURL(url);
   };
@@ -179,6 +180,14 @@ export function ItemDetail({ itemId }: { itemId: string }) {
               <CalendarPlus size={15} /> Påminn mig i kalendern
             </button>
           )}
+
+          <button
+            onClick={downloadSummaryPdf}
+            disabled={downloadingPdf}
+            className="w-full flex items-center justify-center gap-2 py-2.5 mt-3 rounded-full border border-line text-sm font-medium disabled:opacity-50"
+          >
+            <Download size={15} /> {downloadingPdf ? "Skapar PDF…" : "Ladda ner sammanfattning (PDF)"}
+          </button>
         </div>
       </div>
     </div>

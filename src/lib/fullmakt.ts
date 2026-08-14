@@ -16,7 +16,9 @@ export const FULLMAKT_PARAGRAPHS: string[] = [
 export const FULLMAKT_DRAFT_NOTICE =
   "Det här är ett utkast till fullmakt som ännu inte har juridiskt granskats. Texten används i nuläget för demo- och pitchsyfte och måste granskas av en jurist innan den används med riktiga kunder.";
 
-function wrapText(text: string, font: PDFFont, size: number, maxWidth: number): string[] {
+// Delas med item-pdf.ts — inte bara fullmakten som behöver radbrytning
+// mot en fast PDF-bredd.
+export function wrapText(text: string, font: PDFFont, size: number, maxWidth: number): string[] {
   const words = text.split(" ");
   const lines: string[] = [];
   let current = "";

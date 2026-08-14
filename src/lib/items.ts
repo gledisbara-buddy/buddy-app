@@ -12,6 +12,7 @@ import {
   Zap,
   type LucideIcon,
 } from "lucide-react";
+import type { Quote } from "@/lib/quote";
 
 export type BoendeTyp = "hyresratt" | "bostadsratt" | "villa" | "fritidshus" | "fritidsbostadsratt" | "magasinering";
 export type FordonTyp = "mc" | "husvagn" | "bat" | "slap" | "annat";
@@ -517,4 +518,23 @@ export function itemTitle(item: InsuranceItem): string {
     case "prenumeration":
       return item.namn;
   }
+}
+
+// Delas mellan ItemDetail.tsx (visar raderna) och item-pdf.ts (skriver
+// samma rader till en PDF) — samma "nuvarande villkor"-lista på båda
+// ställena, inte två separata listor som kan glida isär.
+export function itemDetailRows(item: InsuranceItem, quote: Quote | undefined): { label: string; value: string }[] {
+  const forfallodatum = quote?.forfallodatum ?? ("forfallodatum" in item ? item.forfallodatum : undefined);
+  if (!quote) return forfallodatum ? [{ label: "Förfaller", value: forfallodatum }] : [];
+  return [
+    { label: "Bolag", value: quote.name },
+    { label: "Pris", value: `${quote.price} kr/mån` },
+    ...(quote.omfattning ? [{ label: "Omfattning", value: quote.omfattning }] : []),
+    ...(quote.selfRisk != null ? [{ label: "Självrisk", value: `${quote.selfRisk.toLocaleString("sv-SE")} kr` }] : []),
+    ...(quote.karenstid ? [{ label: "Karenstid", value: quote.karenstid }] : []),
+    ...(quote.ersattningstak ? [{ label: "Ersättningstak", value: quote.ersattningstak }] : []),
+    ...(quote.bindningstid ? [{ label: "Bindningstid", value: quote.bindningstid }] : []),
+    ...(quote.uppsagningstid ? [{ label: "Uppsägningstid", value: quote.uppsagningstid }] : []),
+    ...(forfallodatum ? [{ label: "Förfaller", value: forfallodatum }] : []),
+  ];
 }
