@@ -540,6 +540,12 @@ export function BuddyProvider({ children }: { children: ReactNode }) {
         .update({ fullmakt_signed_at: signedAt, fullmakt_pdf_path: pdfPath })
         .eq("id", userId)
         .then(logWriteError("fullmakt"));
+      // Tillskrivande logg, se fullmakt_history i schema.sql — får aldrig
+      // blockera huvudskrivningen ovan om den misslyckas.
+      supabase
+        .from("fullmakt_history")
+        .insert({ user_id: userId, pdf_path: pdfPath, signed_at: signedAt })
+        .then(logWriteError("fullmaktshistorik"));
     },
     [supabase, userId]
   );

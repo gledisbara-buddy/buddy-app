@@ -931,3 +931,30 @@ $$;
 alter table public.profiles add column if not exists notify_email boolean not null default true;
 alter table public.profiles add column if not exists notify_sms boolean not null default false;
 alter table public.profiles add column if not exists language text not null default 'sv';
+
+-- Fullmakt-historik (Dokumentarkivet) — profiles.fullmakt_signed_at/
+-- fullmakt_pdf_path håller bara den SENASTE signeringen (ett upsert),
+-- precis som policies gjorde innan policy_history fanns. Samma
+-- tillskrivande logg-mönster här: en rad per signering, aldrig skrivs
+-- över. FullmaktSigning.tsx sparar numera varje PDF under ett unikt
+-- filnamn (fullmakt-<timestamp>.pdf) istället för att skriva över
+-- samma fil, så historiken faktiskt har riktiga filer att peka på.
+create table if not exists public.fullmakt_history (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null references auth.users(id) on delete cascade,
+  pdf_path text not null,
+  signed_at timestamptz not null default now()
+);
+
+alter table public.fullmakt_history enable row level security;
+
+drop policy if exists "fullmakt_history_select_own_or_employee" on public.fullmakt_history;
+create policy "fullmakt_history_select_own_or_employee" on public.fullmakt_history
+  for select using (
+    auth.uid() = user_id
+    or exists (select 1 from public.employees where email = auth.jwt() ->> 'email')
+  );
+
+drop policy if exists "fullmakt_history_insert_own" on public.fullmakt_history;
+create policy "fullmakt_history_insert_own" on public.fullmakt_history
+  for insert with check (auth.uid() = user_id);

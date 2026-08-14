@@ -73,13 +73,16 @@ export function FullmaktSigning({
         signatureDataUrl,
         signedAt: new Date(),
       });
-      const path = `${userId}/fullmakt.pdf`;
+      // Unikt filnamn per signering (inte bara "fullmakt.pdf") så en
+      // omsignering aldrig skriver över en tidigare version i storage —
+      // annars vore historiken i arkivet bara metadata utan faktiska filer
+      // att ladda ner, se ArchiveView.tsx.
+      const path = `${userId}/fullmakt-${Date.now()}.pdf`;
       const supabase = createClient();
       const { error: uploadError } = await supabase.storage
         .from("fullmakter")
         .upload(path, new Blob([pdfBytes as BlobPart], { type: "application/pdf" }), {
           contentType: "application/pdf",
-          upsert: true,
         });
       if (uploadError) {
         setError("Kunde inte spara fullmakten just nu. Försök igen om en stund.");
