@@ -2,11 +2,13 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, ArrowRight, Trash2 } from "lucide-react";
+import { ArrowLeft, ArrowRight, CalendarPlus, Trash2 } from "lucide-react";
 import { Logo } from "@/components/Logo";
 import { ConfirmDialog } from "@/components/Overlay";
 import { useBuddy } from "@/lib/buddy-context";
 import { isComparableItem, ITEM_CATEGORIES, itemSummary, itemTitle } from "@/lib/items";
+import { buildIcsFile } from "@/lib/booking";
+import { parseSwedishDate } from "@/lib/dates";
 
 // Del G i docs/kundresa-v2-steg2-plan.md: en fullständig detaljvy per post
 // innan kunden väljer att jämföra — nuvarande villkor, pris, förfallodatum.
@@ -44,6 +46,26 @@ export function ItemDetail({ itemId }: { itemId: string }) {
     : forfallodatum
       ? [{ label: "Förfaller", value: forfallodatum }]
       : [];
+
+  const addRenewalToCalendar = () => {
+    if (!forfallodatum) return;
+    const date = parseSwedishDate(forfallodatum);
+    if (!date) return;
+    date.setHours(9, 0, 0, 0);
+    const ics = buildIcsFile({
+      start: date,
+      durationMinutes: 30,
+      title: `${itemTitle(item)} förnyas`,
+      description: `Din ${itemTitle(item).toLowerCase()} hos Buddy förnyas ${forfallodatum} — bra tillfälle att jämföra priset igen.`,
+    });
+    const blob = new Blob([ics], { type: "text/calendar;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "buddy-fornyelse.ics";
+    a.click();
+    URL.revokeObjectURL(url);
+  };
 
   return (
     <div className="min-h-screen w-full flex flex-col">
@@ -110,6 +132,15 @@ export function ItemDetail({ itemId }: { itemId: string }) {
               className="bd-btn w-full flex items-center justify-center gap-2 py-3.5 rounded-full font-semibold text-white text-[15px] bg-forest"
             >
               Jämför <ArrowRight size={16} />
+            </button>
+          )}
+
+          {forfallodatum && (
+            <button
+              onClick={addRenewalToCalendar}
+              className="w-full flex items-center justify-center gap-2 py-2.5 mt-3 rounded-full border border-line text-sm font-medium"
+            >
+              <CalendarPlus size={15} /> Påminn mig i kalendern
             </button>
           )}
         </div>
