@@ -9,12 +9,16 @@ import { ConfirmDialog } from "@/components/Overlay";
 import { Field, PillGroup, inputClass } from "@/components/onboarding/shared";
 import { useBuddy } from "@/lib/buddy-context";
 import { HOUSEHOLD_RELATION_LABELS, type HouseholdRelation } from "@/lib/household";
+import { createClient } from "@/lib/supabase/client";
+import { ITEM_GROUPS, type ItemKind } from "@/lib/items";
 
 const SENT_STATUS_LABELS: Record<"pending" | "approved" | "declined", string> = {
   pending: "Väntar på svar",
   approved: "Godkänd",
   declined: "Nekad",
 };
+
+type HouseholdSummary = { memberCount: number; totalMonthlyCost: number; kindCounts: Record<string, number> };
 
 export function HouseholdView() {
   const router = useRouter();
@@ -39,10 +43,28 @@ export function HouseholdView() {
   const [inviteSent, setInviteSent] = useState(false);
   const [respondingId, setRespondingId] = useState<string | null>(null);
   const [confirmLeave, setConfirmLeave] = useState(false);
+  const [summary, setSummary] = useState<HouseholdSummary | null>(null);
 
   useEffect(() => {
     if (!loading && !userType) router.replace("/kom-igang");
   }, [loading, userType, router]);
+
+  // Samlad hushållsvy (21-punktsplanen) — hämtas separat från
+  // huvudkontexten eftersom den bara behövs på den här sidan. Bara
+  // aggregat (se get_household_summary() i schema.sql), aldrig enskilda
+  // medlemmars poster.
+  useEffect(() => {
+    if (!household) return;
+    const supabase = createClient();
+    supabase
+      .rpc("get_household_summary")
+      .maybeSingle()
+      .then(({ data }) => {
+        if (!data) return;
+        const row = data as { member_count: number; total_monthly_cost: number; kind_counts: Record<string, number> };
+        setSummary({ memberCount: row.member_count, totalMonthlyCost: row.total_monthly_cost, kindCounts: row.kind_counts ?? {} });
+      });
+  }, [household]);
 
   useEffect(() => {
     if (!inviteSent) return;
@@ -165,6 +187,36 @@ export function HouseholdView() {
                 ))}
               </div>
             </div>
+
+            {household && summary && summary.memberCount > 1 && (
+              <div className="bg-white rounded-2xl border border-line p-5 mb-4">
+                <div className="text-xs mb-3 text-slate">HELA HUSHÅLLET</div>
+                <div className="flex items-end justify-between mb-4">
+                  <div>
+                    <div className="bd-display text-3xl text-ink">{summary.totalMonthlyCost.toLocaleString("sv-SE")} kr</div>
+                    <div className="text-xs text-slate">tillsammans per månad</div>
+                  </div>
+                  <div className="text-sm text-slate text-right">
+                    {Object.values(summary.kindCounts).reduce((sum, n) => sum + n, 0)} saker · {summary.memberCount} personer
+                  </div>
+                </div>
+                <div className="flex flex-col gap-2">
+                  {ITEM_GROUPS.map((g) => {
+                    const count = g.kinds.reduce((sum, kind) => sum + (summary.kindCounts[kind as ItemKind] ?? 0), 0);
+                    if (count === 0) return null;
+                    const Icon = g.icon;
+                    return (
+                      <div key={g.id} className="flex items-center justify-between text-sm">
+                        <span className="flex items-center gap-2 text-slate">
+                          <Icon size={14} className="text-forest" /> {g.label}
+                        </span>
+                        <span className="font-medium">{count}</span>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
 
             <div className="bg-white rounded-2xl border border-line p-5 mb-3">
               <div className="text-xs mb-3 text-slate">LÄGG TILL FAMILJEMEDLEM</div>

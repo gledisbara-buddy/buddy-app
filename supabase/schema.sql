@@ -846,3 +846,46 @@ create policy "policy_history_insert_own" on public.policy_history
   for insert with check (auth.uid() = user_id);
 
 create index if not exists idx_policy_history_item_id on public.policy_history(item_id);
+
+-- Samlad hushållsvy (21-punktsplanen): bara AGGREGAT över hela hushållet
+-- (antal medlemmar, total månadskostnad, antal saker per kind) — aldrig
+-- enskilda medlemmars poster/priser en och en, av samma skäl som
+-- referral-räknefunktionerna: en medlem ska kunna se att hushållet
+-- tillsammans har t.ex. 6 saker och betalar 2 400 kr/mån utan att kunna
+-- baklänges räkna ut exakt vad en NAMNGIVEN medlem har eller betalar för
+-- en enskild sak. Läser bara den inloggades EGET household_id (aldrig ett
+-- klient-skickat id), samma säkerhetsmönster som get_my_household().
+create or replace function public.get_household_summary()
+returns table(member_count int, total_monthly_cost numeric, kind_counts jsonb)
+language plpgsql
+security definer
+set search_path = public
+stable
+as $$
+declare
+  v_household_id uuid;
+begin
+  select household_id into v_household_id from public.profiles where id = auth.uid();
+  if v_household_id is null then
+    return query select 0, 0::numeric, '{}'::jsonb;
+    return;
+  end if;
+
+  return query
+    select
+      (select count(*)::int from public.profiles where household_id = v_household_id),
+      coalesce((
+        select sum((p.data->>'price')::numeric)
+        from public.policies p
+        where p.user_id in (select id from public.profiles where household_id = v_household_id)
+      ), 0),
+      coalesce((
+        select jsonb_object_agg(k.kind, k.cnt) from (
+          select kind, count(*) as cnt
+          from public.items
+          where user_id in (select id from public.profiles where household_id = v_household_id)
+          group by kind
+        ) k
+      ), '{}'::jsonb);
+end;
+$$;
