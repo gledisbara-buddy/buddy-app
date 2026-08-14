@@ -32,6 +32,7 @@ import { ProfileMenu } from "@/components/ProfileMenu";
 import { useBuddy } from "@/lib/buddy-context";
 import { formatBookingDay } from "@/lib/booking";
 import { buildTodoList } from "@/lib/todo";
+import { computeTrustScore } from "@/lib/trust-score";
 import { isComparableItem, ITEM_CATEGORIES, ITEM_GROUPS, itemSummary, itemTitle, type ItemGroupId } from "@/lib/items";
 
 type ItemStatus = "saved" | "added" | "uncompared" | "compared" | "fetched" | "pending";
@@ -137,6 +138,8 @@ export function Dashboard({ showIntro: initialShowIntro }: { showIntro?: boolean
     profile?.phone && !items.some((i) => i.kind === "telekom" && i.typ === "mobil") ? profile.phone : null;
 
   const todoList = buildTodoList({ items, policies, profile, missingInsuranceRequests, pendingMobilNumber, householdRequests });
+  const hasUrgentRenewal = todoList.some((row) => row.id.startsWith("renewal-") && row.urgent);
+  const trustScore = computeTrustScore({ items, policies, profile, hasUrgentRenewal });
 
   // Bara nästa kommande bokning visas som banner — ISO-datum (YYYY-MM-DD)
   // går att jämföra direkt som strängar, ingen datumparsning behövs här.
@@ -187,6 +190,32 @@ export function Dashboard({ showIntro: initialShowIntro }: { showIntro?: boolean
         <span className="bd-eyebrow">Din översikt</span>
         <h1 className="bd-display text-3xl mt-2 mb-1">Hej {profile?.name || "där"} 👋</h1>
         <p className="text-sm mb-8 text-slate">Här är läget på dina saker.</p>
+
+        {trustScore && (
+          <div className="rounded-2xl border border-line p-6 mb-6 bg-white">
+            <div className="flex items-start justify-between gap-4 flex-wrap mb-3">
+              <div>
+                <div className="text-xs font-semibold text-slate mb-1">TRYGGHETSPOÄNG</div>
+                <div className="bd-display text-5xl text-ink" style={{ fontVariantNumeric: "proportional-nums" }}>
+                  {trustScore.score}
+                </div>
+              </div>
+              <div className="text-sm text-slate text-right max-w-[220px]">
+                {trustScore.comparedCount < trustScore.comparableCount
+                  ? `${trustScore.comparedCount} av ${trustScore.comparableCount} avtal jämförda`
+                  : "Alla avtal jämförda"}
+                {trustScore.hasUrgentRenewal && <> · en förnyelse brådskar</>}
+                {!trustScore.fullmaktSigned && <> · fullmakt inte signerad</>}
+              </div>
+            </div>
+            <div className="h-2 rounded-full overflow-hidden bg-frost-2">
+              <div
+                className="h-full rounded-full bg-forest"
+                style={{ width: `${trustScore.score}%`, transition: "width 500ms ease" }}
+              />
+            </div>
+          </div>
+        )}
 
         <div className="flex items-center justify-between mb-4">
           {active ? (
