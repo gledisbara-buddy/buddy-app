@@ -140,7 +140,7 @@ create table if not exists public.claims (
   receipt_count int not null default 0,
   skadetyp text,
   allvarlighetsgrad text,
-  status text not null default 'ny' check (status in ('ny', 'hanterad')),
+  status text not null default 'mottagen' check (status in ('mottagen', 'under_utredning', 'godkand', 'nekad', 'utbetald')),
   created_at timestamptz not null default now()
 );
 
@@ -966,3 +966,15 @@ create policy "fullmakt_history_select_own_or_employee" on public.fullmakt_histo
 drop policy if exists "fullmakt_history_insert_own" on public.fullmakt_history;
 create policy "fullmakt_history_insert_own" on public.fullmakt_history
   for insert with check (auth.uid() = user_id);
+
+-- Skadeärenden: ersätter det binära ny/hanterad med ett riktigt
+-- statusspår (mottagen → under_utredning → godkand/nekad → utbetald), se
+-- claim.ts. Befintliga rader migreras rakt av: "ny" har alltid betytt att
+-- inget hänt än, "hanterad" har betytt "klar" utan att skilja på utfall —
+-- närmaste rimliga nya värde är "godkand".
+update public.claims set status = 'mottagen' where status = 'ny';
+update public.claims set status = 'godkand' where status = 'hanterad';
+alter table public.claims alter column status set default 'mottagen';
+alter table public.claims drop constraint if exists claims_status_check;
+alter table public.claims add constraint claims_status_check
+  check (status in ('mottagen', 'under_utredning', 'godkand', 'nekad', 'utbetald'));

@@ -9,11 +9,33 @@ import { ConfirmDialog } from "@/components/Overlay";
 import { useBuddy, type BookingRecord, type ClaimRecord } from "@/lib/buddy-context";
 import { FIXED_TOPICS, formatBookingDay } from "@/lib/booking";
 import { itemTitle } from "@/lib/items";
+import { CLAIM_STATUS_LABELS, CLAIM_STATUS_STEPS, claimStatusColor, type ClaimStatus } from "@/lib/claim";
 
-function StatusPill({ status }: { status: "ny" | "hanterad" | "avbokad" }) {
+function BookingStatusPill({ status }: { status: "ny" | "hanterad" | "avbokad" }) {
   const label = status === "ny" ? "● Ny" : status === "hanterad" ? "● Hanterad" : "● Avbokad";
   const color = status === "ny" ? "text-amber-deep" : status === "hanterad" ? "text-forest" : "text-slate";
   return <span className={`text-xs font-semibold flex-none ${color}`}>{label}</span>;
+}
+
+// Visar var i processen anmälan är istället för bara "hanterad eller
+// inte" — mindre "vad händer nu"-oro för kunden. "nekad" är en sidogren
+// (visas bara som en egen rad, inte i stegraden eftersom den då aldrig
+// skulle nå "utbetald").
+function ClaimStepper({ status }: { status: ClaimStatus }) {
+  if (status === "nekad") {
+    return <div className="text-sm font-semibold text-red-600 mb-2">● Nekad</div>;
+  }
+  const currentIndex = CLAIM_STATUS_STEPS.indexOf(status);
+  return (
+    <div className="mb-3">
+      <div className="flex items-center gap-1 mb-1.5">
+        {CLAIM_STATUS_STEPS.map((step, i) => (
+          <div key={step} className={`h-1.5 flex-1 rounded-full ${i <= currentIndex ? "bg-forest" : "bg-frost-2"}`} />
+        ))}
+      </div>
+      <div className={`text-xs font-semibold ${claimStatusColor(status)}`}>{CLAIM_STATUS_LABELS[status]}</div>
+    </div>
+  );
 }
 
 function formatCreatedAt(iso: string): string {
@@ -98,7 +120,7 @@ export function MyCasesView() {
                         </div>
                       </div>
                     </div>
-                    <StatusPill status={b.status} />
+                    <BookingStatusPill status={b.status} />
                   </div>
                   {(b.topics.length > 0 || b.extraNote) && (
                     <div className="text-sm text-slate mb-2">
@@ -133,18 +155,16 @@ export function MyCasesView() {
             <div className="flex flex-col gap-3">
               {sortedClaims.map((c) => (
                 <div key={c.id} className="bg-white rounded-2xl border border-line p-5">
-                  <div className="flex items-start justify-between gap-3 mb-2">
-                    <div className="flex items-center gap-3">
-                      <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-none bg-frost-2">
-                        <ShieldAlert size={16} className="text-forest" />
-                      </div>
-                      <div>
-                        <div className="text-sm font-semibold">{c.skadetyp ?? "Skadeanmälan"}</div>
-                        <div className="text-xs text-slate">{formatCreatedAt(c.createdAt)}</div>
-                      </div>
+                  <div className="flex items-center gap-3 mb-3">
+                    <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-none bg-frost-2">
+                      <ShieldAlert size={16} className="text-forest" />
                     </div>
-                    <StatusPill status={c.status} />
+                    <div>
+                      <div className="text-sm font-semibold">{c.skadetyp ?? "Skadeanmälan"}</div>
+                      <div className="text-xs text-slate">{formatCreatedAt(c.createdAt)}</div>
+                    </div>
                   </div>
+                  <ClaimStepper status={c.status} />
                   <div className="text-sm text-slate">
                     {c.allvarlighetsgrad && <span>Allvarlighetsgrad: {c.allvarlighetsgrad} · </span>}
                     {c.photoCount} foto, {c.receiptCount} kvitton
@@ -158,7 +178,8 @@ export function MyCasesView() {
         <div className="rounded-2xl border border-line p-5 mt-8 flex items-start gap-3 bg-frost-2">
           <CalendarPlus size={16} className="mt-0.5 flex-none text-amber-deep" />
           <p className="text-xs text-ink">
-            Ny-status betyder att Buddy tagit emot ditt ärende. Hanterad betyder att en rådgivare gått igenom det.
+            Bokade möten kan du avboka själv fram tills dagen är inne. Skadeanmälningar följer ett eget
+            statusspår — du ser exakt var din anmälan är i processen.
           </p>
         </div>
       </div>

@@ -1,5 +1,31 @@
 export type ChatMessage = { role: "user" | "assistant"; content: string };
 
+// Ersätter det gamla binära ny/hanterad för skadeärenden med ett riktigt
+// statusspår — dels för att kunden ska se var i processen anmälan är
+// (mindre "vad händer nu"-oro), dels så en handläggare kan sätta rätt
+// läge istället för en enda "hanterad"-flagga som dolde om det var
+// godkänt, nekat eller bara under utredning.
+export type ClaimStatus = "mottagen" | "under_utredning" | "godkand" | "nekad" | "utbetald";
+
+// Den "raka vägen" ett godkänt ärende går igenom — används för
+// stegvisningen hos kunden. "nekad" är en sidogren, inte ett steg i den
+// här listan.
+export const CLAIM_STATUS_STEPS: ClaimStatus[] = ["mottagen", "under_utredning", "godkand", "utbetald"];
+
+export const CLAIM_STATUS_LABELS: Record<ClaimStatus, string> = {
+  mottagen: "Mottagen",
+  under_utredning: "Under utredning",
+  godkand: "Godkänd",
+  nekad: "Nekad",
+  utbetald: "Utbetald",
+};
+
+export function claimStatusColor(status: ClaimStatus): string {
+  if (status === "nekad") return "text-red-600";
+  if (status === "godkand" || status === "utbetald") return "text-forest";
+  return "text-amber-deep";
+}
+
 export type Classification = {
   skadetyp: string;
   allvarlighetsgrad: string;

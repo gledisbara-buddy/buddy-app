@@ -7,7 +7,7 @@ import { ConfirmDialog } from "@/components/Overlay";
 import { EditableField } from "@/components/internal/EditableField";
 import { saveField } from "@/lib/activity-log";
 import { sendTransactionalEmail } from "@/lib/email";
-import type { ChatMessage } from "@/lib/claim";
+import { CLAIM_STATUS_LABELS, CLAIM_STATUS_STEPS, claimStatusColor, type ChatMessage, type ClaimStatus } from "@/lib/claim";
 
 type BookingRow = {
   id: string;
@@ -28,7 +28,7 @@ type ClaimRow = {
   receipt_count: number;
   skadetyp: string | null;
   allvarlighetsgrad: string | null;
-  status: "ny" | "hanterad";
+  status: ClaimStatus;
   created_at: string;
 };
 
@@ -36,13 +36,13 @@ function formatDate(iso: string): string {
   return new Date(iso).toLocaleDateString("sv-SE", { day: "numeric", month: "short", year: "numeric" });
 }
 
-function statusLabel(status: BookingRow["status"] | ClaimRow["status"]): string {
+function bookingStatusLabel(status: BookingRow["status"]): string {
   if (status === "ny") return "● Ny";
   if (status === "avbokad") return "● Avbokad";
   return "● Hanterad";
 }
 
-function statusColor(status: BookingRow["status"] | ClaimRow["status"]): string {
+function bookingStatusColor(status: BookingRow["status"]): string {
   if (status === "ny") return "text-amber-deep";
   if (status === "avbokad") return "text-slate";
   return "text-forest";
@@ -207,7 +207,13 @@ export function CustomerCasesTab({
                 </div>
               </div>
               <div className="flex items-center gap-2 flex-none">
-                <span className={`text-xs font-semibold ${statusColor(row.status)}`}>{statusLabel(row.status)}</span>
+                {kind === "booking" ? (
+                  <span className={`text-xs font-semibold ${bookingStatusColor(row.status)}`}>{bookingStatusLabel(row.status)}</span>
+                ) : (
+                  <span className={`text-xs font-semibold ${claimStatusColor(row.status)}`}>
+                    ● {CLAIM_STATUS_LABELS[row.status]}
+                  </span>
+                )}
                 {expanded ? <ChevronUp size={15} className="text-slate" /> : <ChevronDown size={15} className="text-slate" />}
               </div>
             </button>
@@ -306,13 +312,38 @@ export function CustomerCasesTab({
                   </div>
                 )}
 
+                <div className="pt-2 border-t border-line">
+                  <div className="text-xs mb-2 text-slate uppercase tracking-wide">Status</div>
+                  <div className="flex flex-wrap gap-2">
+                    {CLAIM_STATUS_STEPS.map((s) => (
+                      <button
+                        key={s}
+                        onClick={() => setClaimStatus(row, s)}
+                        className="px-3 py-1.5 rounded-full border text-xs font-medium"
+                        style={{
+                          borderColor: row.status === s ? "var(--color-forest)" : "var(--color-line)",
+                          background: row.status === s ? "var(--color-frost-2)" : "white",
+                          color: row.status === s ? "var(--color-forest)" : "var(--color-ink)",
+                        }}
+                      >
+                        {CLAIM_STATUS_LABELS[s]}
+                      </button>
+                    ))}
+                    <button
+                      onClick={() => setClaimStatus(row, "nekad")}
+                      className="px-3 py-1.5 rounded-full border text-xs font-medium"
+                      style={{
+                        borderColor: row.status === "nekad" ? "#dc2626" : "var(--color-line)",
+                        background: row.status === "nekad" ? "#fef2f2" : "white",
+                        color: row.status === "nekad" ? "#dc2626" : "var(--color-ink)",
+                      }}
+                    >
+                      Nekad
+                    </button>
+                  </div>
+                </div>
+
                 <div className="flex flex-wrap gap-2 pt-2 border-t border-line">
-                  <button
-                    onClick={() => setClaimStatus(row, row.status === "hanterad" ? "ny" : "hanterad")}
-                    className="flex items-center gap-1.5 text-xs font-semibold px-3 py-2 rounded-full text-forest border border-line"
-                  >
-                    <Check size={13} /> Markera som {row.status === "hanterad" ? "ny" : "hanterad"}
-                  </button>
                   <button
                     onClick={() => setConfirmDelete({ kind: "claim", id: row.id })}
                     className="flex items-center gap-1.5 text-xs font-semibold px-3 py-2 rounded-full text-red-600 border border-line ml-auto"

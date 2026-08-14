@@ -4,9 +4,11 @@
 // Saknas API-nyckeln loggas mejlet bara bort server-side, resten av flödet
 // (bokning/skadeanmälan/uppsägning) påverkas inte.
 
+import type { ClaimStatus } from "@/lib/claim";
+
 export type EmailPayload =
   | { type: "booking_confirmation"; to: string; day: string; time: string; meetingType: "video" | "phone" }
-  | { type: "claim_status_changed"; to: string; status: "hanterad" | "ny" }
+  | { type: "claim_status_changed"; to: string; status: ClaimStatus }
   | { type: "cancellation_confirmation"; to: string; bolag: string; forfallodatum?: string }
   | { type: "savings_summary"; to: string; itemTitle: string; bolag: string; oldPrice: number; newPrice: number };
 

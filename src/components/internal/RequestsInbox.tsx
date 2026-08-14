@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { Calendar, Check, ShieldAlert, ShieldCheck } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { itemTitle, type InsuranceItem } from "@/lib/items";
-import type { ChatMessage } from "@/lib/claim";
+import { CLAIM_STATUS_LABELS, claimStatusColor, type ChatMessage, type ClaimStatus } from "@/lib/claim";
 
 type BookingRow = {
   id: string;
@@ -27,7 +27,7 @@ type ClaimRow = {
   receipt_count: number;
   skadetyp: string | null;
   allvarlighetsgrad: string | null;
-  status: "ny" | "hanterad";
+  status: ClaimStatus;
   created_at: string;
 };
 
@@ -103,8 +103,11 @@ export function RequestsInbox() {
     setBookings((prev) => prev.map((b) => (b.id === row.id ? { ...b, status: nextStatus } : b)));
   };
 
+  // Snabb-triage här flyttar bara mellan "mottagen" (obehandlad) och
+  // "under_utredning" (uppmärksammad) — hela statusspåret (godkänd/nekad/
+  // utbetald) sätts i den kund-specifika vyn, se CustomerCasesTab.tsx.
   const toggleClaimStatus = async (row: ClaimRow) => {
-    const nextStatus = row.status === "ny" ? "hanterad" : "ny";
+    const nextStatus: ClaimStatus = row.status === "mottagen" ? "under_utredning" : "mottagen";
     const supabase = createClient();
     await supabase.from("claims").update({ status: nextStatus }).eq("id", row.id);
     setClaims((prev) => prev.map((c) => (c.id === row.id ? { ...c, status: nextStatus } : c)));
@@ -140,13 +143,19 @@ export function RequestsInbox() {
                   </div>
                 </div>
               </div>
-              <span
-                className={`text-xs font-semibold flex-none ${
-                  row.status === "ny" ? "text-amber-deep" : row.status === "avbokad" ? "text-slate" : "text-forest"
-                }`}
-              >
-                {row.status === "ny" ? "● Ny" : row.status === "avbokad" ? "● Avbokad" : "● Hanterad"}
-              </span>
+              {kind === "booking" ? (
+                <span
+                  className={`text-xs font-semibold flex-none ${
+                    row.status === "ny" ? "text-amber-deep" : row.status === "avbokad" ? "text-slate" : "text-forest"
+                  }`}
+                >
+                  {row.status === "ny" ? "● Ny" : row.status === "avbokad" ? "● Avbokad" : "● Hanterad"}
+                </span>
+              ) : (
+                <span className={`text-xs font-semibold flex-none ${claimStatusColor(row.status)}`}>
+                  ● {CLAIM_STATUS_LABELS[row.status]}
+                </span>
+              )}
             </div>
 
             {kind === "booking" ? (
@@ -185,7 +194,10 @@ export function RequestsInbox() {
                 onClick={() => (kind === "booking" ? toggleBookingStatus(row) : toggleClaimStatus(row))}
                 className="text-sm font-semibold flex items-center gap-1 text-forest"
               >
-                <Check size={14} /> Markera som {row.status === "ny" ? "hanterad" : "ny"}
+                <Check size={14} />{" "}
+                {kind === "booking"
+                  ? `Markera som ${row.status === "ny" ? "hanterad" : "ny"}`
+                  : `Markera som ${row.status === "mottagen" ? "under utredning" : "mottagen"}`}
               </button>
             )}
           </div>

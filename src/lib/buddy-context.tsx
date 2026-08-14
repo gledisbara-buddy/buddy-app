@@ -5,7 +5,7 @@ import { createClient } from "@/lib/supabase/client";
 import type { UserType } from "@/lib/types";
 import type { Quote } from "@/lib/quote";
 import type { InsuranceItem, ItemKind } from "@/lib/items";
-import type { ChatMessage } from "@/lib/claim";
+import type { ChatMessage, ClaimStatus } from "@/lib/claim";
 import { generateHouseholdCode, type HouseholdRelation } from "@/lib/household";
 import { sendTransactionalEmail } from "@/lib/email";
 import { generateCode } from "@/lib/referral";
@@ -122,7 +122,7 @@ export type ClaimRecord = {
   receiptCount: number;
   skadetyp: string | null;
   allvarlighetsgrad: string | null;
-  status: "ny" | "hanterad";
+  status: ClaimStatus;
   createdAt: string;
 };
 
@@ -234,7 +234,7 @@ type ClaimRow = {
   receipt_count: number;
   skadetyp: string | null;
   allvarlighetsgrad: string | null;
-  status: "ny" | "hanterad";
+  status: ClaimStatus;
   created_at: string;
 };
 

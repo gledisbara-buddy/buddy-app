@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { Resend } from "resend";
+import type { ClaimStatus } from "@/lib/claim";
 
 // Skickar bara ett fast antal fördefinierade mall-typer (aldrig fritt
 // subject/body från klienten) — annars vore routen en öppen relä som
@@ -8,9 +9,32 @@ import { Resend } from "resend";
 // godtyckliga adresser via Buddys Resend-konto.
 type EmailBody =
   | { type: "booking_confirmation"; to: string; day: string; time: string; meetingType: "video" | "phone" }
-  | { type: "claim_status_changed"; to: string; status: "hanterad" | "ny" }
+  | { type: "claim_status_changed"; to: string; status: ClaimStatus }
   | { type: "cancellation_confirmation"; to: string; bolag: string; forfallodatum?: string }
   | { type: "savings_summary"; to: string; itemTitle: string; bolag: string; oldPrice: number; newPrice: number };
+
+const CLAIM_STATUS_EMAIL: Record<ClaimStatus, { subject: string; html: string }> = {
+  mottagen: {
+    subject: "Din skadeanmälan är mottagen",
+    html: `<p>Hej!</p><p>Buddy har tagit emot din skadeanmälan. Vi hör av oss så fort den granskats.</p><p>/ Buddy</p>`,
+  },
+  under_utredning: {
+    subject: "Din skadeanmälan är under utredning",
+    html: `<p>Hej!</p><p>Din skadeanmälan hos Buddy tittas nu på av en handläggare. Logga in för att se detaljer.</p><p>/ Buddy</p>`,
+  },
+  godkand: {
+    subject: "Din skadeanmälan är godkänd",
+    html: `<p>Hej!</p><p>Bra nyheter — din skadeanmälan hos Buddy är godkänd. Ersättning betalas ut inom kort.</p><p>/ Buddy</p>`,
+  },
+  nekad: {
+    subject: "Din skadeanmälan har nekats",
+    html: `<p>Hej!</p><p>Din skadeanmälan hos Buddy har tyvärr nekats. Logga in för att se motiveringen, eller kontakta oss om du har frågor.</p><p>/ Buddy</p>`,
+  },
+  utbetald: {
+    subject: "Din ersättning är utbetald",
+    html: `<p>Hej!</p><p>Ersättningen för din skadeanmälan hos Buddy är nu utbetald.</p><p>/ Buddy</p>`,
+  },
+};
 
 function buildEmail(body: EmailBody): { subject: string; html: string } {
   switch (body.type) {
@@ -20,13 +44,7 @@ function buildEmail(body: EmailBody): { subject: string; html: string } {
         html: `<p>Hej!</p><p>Ditt ${body.meetingType === "video" ? "videosamtal" : "telefonsamtal"} med en rådgivare från Buddy är bokat till <strong>${body.day} kl. ${body.time}</strong>.</p><p>Se detaljer eller avboka under "Mina ärenden" i din översikt.</p><p>/ Buddy</p>`,
       };
     case "claim_status_changed":
-      return {
-        subject: body.status === "hanterad" ? "Din skadeanmälan är hanterad" : "Din skadeanmälan har öppnats igen",
-        html:
-          body.status === "hanterad"
-            ? `<p>Hej!</p><p>Din skadeanmälan hos Buddy har nu markerats som hanterad. Logga in för att se detaljer.</p><p>/ Buddy</p>`
-            : `<p>Hej!</p><p>Din skadeanmälan hos Buddy är öppnad igen och tittas på av en handläggare.</p><p>/ Buddy</p>`,
-      };
+      return CLAIM_STATUS_EMAIL[body.status];
     case "cancellation_confirmation":
       return {
         subject: "Buddy säger upp ditt avtal",
