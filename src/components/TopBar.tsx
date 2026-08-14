@@ -2,6 +2,7 @@ import { ArrowLeft } from "lucide-react";
 import type { ReactNode } from "react";
 import { Logo } from "./Logo";
 import { TabBar } from "./TabBar";
+import { NotificationBell } from "./NotificationBell";
 
 export function TopBar({
   onBack,
@@ -32,7 +33,10 @@ export function TopBar({
           )}
           <Logo />
         </div>
-        {right}
+        <div className="flex items-center gap-2">
+          {showTabs && <NotificationBell />}
+          {right}
+        </div>
       </div>
       {showTabs && <TabBar />}
     </div>
