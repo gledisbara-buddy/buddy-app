@@ -7,7 +7,8 @@
 export type EmailPayload =
   | { type: "booking_confirmation"; to: string; day: string; time: string; meetingType: "video" | "phone" }
   | { type: "claim_status_changed"; to: string; status: "hanterad" | "ny" }
-  | { type: "cancellation_confirmation"; to: string; bolag: string; forfallodatum?: string };
+  | { type: "cancellation_confirmation"; to: string; bolag: string; forfallodatum?: string }
+  | { type: "savings_summary"; to: string; itemTitle: string; bolag: string; oldPrice: number; newPrice: number };
 
 export async function sendTransactionalEmail(accessToken: string, payload: EmailPayload): Promise<boolean> {
   try {

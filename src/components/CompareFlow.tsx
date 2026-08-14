@@ -10,6 +10,8 @@ import { FullmaktSigning } from "@/components/FullmaktSigning";
 import { AutoFetchStep } from "@/components/onboarding/AutoFetchStep";
 import { BoolPill, Field, PillGroup, inputClass } from "@/components/onboarding/shared";
 import { useBuddy, type CheckoutInfo } from "@/lib/buddy-context";
+import { createClient } from "@/lib/supabase/client";
+import { sendTransactionalEmail } from "@/lib/email";
 import { computeItemQuotes } from "@/lib/item-quotes";
 import { isComparableItem, itemSummary, itemTitle } from "@/lib/items";
 import { getAvailableNeedIds, NEED_LABELS, type NeedsKind } from "@/lib/needs";
@@ -365,6 +367,28 @@ export function CompareFlow({ itemId }: { itemId: string }) {
     setWantsCancellationHelp(cancellationHelp);
     setSignedQuote(pendingQuote);
     setPhase("signed");
+
+    // Spara-sammanfattningsmejl (Del i 21-sektionsplanen) — bara när det
+    // faktiskt är en besparing mot ett tidigare auto-hämtat pris, annars
+    // vore "du sparar" mejlet missvisande.
+    if (current && profile?.email && pendingQuote.price < current.price) {
+      const oldPrice = current.price;
+      const newPrice = pendingQuote.price;
+      (async () => {
+        const supabase = createClient();
+        const { data } = await supabase.auth.getSession();
+        const token = data.session?.access_token;
+        if (!token) return;
+        sendTransactionalEmail(token, {
+          type: "savings_summary",
+          to: profile.email!,
+          itemTitle: label,
+          bolag: pendingQuote.name,
+          oldPrice,
+          newPrice,
+        });
+      })();
+    }
   };
 
   const handleCheckoutSubmit = () => {

@@ -9,7 +9,8 @@ import { Resend } from "resend";
 type EmailBody =
   | { type: "booking_confirmation"; to: string; day: string; time: string; meetingType: "video" | "phone" }
   | { type: "claim_status_changed"; to: string; status: "hanterad" | "ny" }
-  | { type: "cancellation_confirmation"; to: string; bolag: string; forfallodatum?: string };
+  | { type: "cancellation_confirmation"; to: string; bolag: string; forfallodatum?: string }
+  | { type: "savings_summary"; to: string; itemTitle: string; bolag: string; oldPrice: number; newPrice: number };
 
 function buildEmail(body: EmailBody): { subject: string; html: string } {
   switch (body.type) {
@@ -31,6 +32,14 @@ function buildEmail(body: EmailBody): { subject: string; html: string } {
         subject: "Buddy säger upp ditt avtal",
         html: `<p>Hej!</p><p>Buddy hör av sig till <strong>${body.bolag}</strong> för att säga upp ditt avtal${body.forfallodatum ? ` till förfallodagen ${body.forfallodatum}` : ""}.</p><p>Avtalet gäller som vanligt tills dess. Du kan se status under din översikt.</p><p>/ Buddy</p>`,
       };
+    case "savings_summary": {
+      const savedPerMonth = body.oldPrice - body.newPrice;
+      const savedPerYear = savedPerMonth * 12;
+      return {
+        subject: `Du sparar ${savedPerMonth} kr/mån på ${body.itemTitle.toLowerCase()}`,
+        html: `<p>Hej!</p><p>Du har precis bytt till <strong>${body.bolag}</strong> för din ${body.itemTitle.toLowerCase()} — från ${body.oldPrice} kr/mån till <strong>${body.newPrice} kr/mån</strong>.</p><p>Det blir <strong>${savedPerMonth} kr/mån</strong>, ungefär ${savedPerYear} kr/år.</p><p>/ Buddy</p>`,
+      };
+    }
   }
 }
 
