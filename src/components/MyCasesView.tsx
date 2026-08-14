@@ -1,20 +1,19 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { CalendarPlus, Phone, ShieldAlert, Video } from "lucide-react";
 import { TopBar } from "@/components/TopBar";
 import { ProfileMenu } from "@/components/ProfileMenu";
+import { ConfirmDialog } from "@/components/Overlay";
 import { useBuddy, type BookingRecord, type ClaimRecord } from "@/lib/buddy-context";
 import { FIXED_TOPICS, formatBookingDay } from "@/lib/booking";
 import { itemTitle } from "@/lib/items";
 
-function StatusPill({ status }: { status: "ny" | "hanterad" }) {
-  return (
-    <span className={`text-xs font-semibold flex-none ${status === "ny" ? "text-amber-deep" : "text-forest"}`}>
-      {status === "ny" ? "● Ny" : "● Hanterad"}
-    </span>
-  );
+function StatusPill({ status }: { status: "ny" | "hanterad" | "avbokad" }) {
+  const label = status === "ny" ? "● Ny" : status === "hanterad" ? "● Hanterad" : "● Avbokad";
+  const color = status === "ny" ? "text-amber-deep" : status === "hanterad" ? "text-forest" : "text-slate";
+  return <span className={`text-xs font-semibold flex-none ${color}`}>{label}</span>;
 }
 
 function formatCreatedAt(iso: string): string {
@@ -23,13 +22,16 @@ function formatCreatedAt(iso: string): string {
 
 export function MyCasesView() {
   const router = useRouter();
-  const { userType, loading, items, bookings, claims } = useBuddy();
+  const { userType, loading, items, bookings, claims, cancelBooking } = useBuddy();
+  const [confirmCancelId, setConfirmCancelId] = useState<string | null>(null);
 
   useEffect(() => {
     if (!loading && !userType) router.replace("/kom-igang");
   }, [loading, userType, router]);
 
   if (loading || !userType) return null;
+
+  const today = new Date().toISOString().slice(0, 10);
 
   const topicLabel = (id: string) => {
     const fixed = FIXED_TOPICS.find((f) => f.id === id);
@@ -47,6 +49,18 @@ export function MyCasesView() {
 
   return (
     <div className="min-h-screen w-full">
+      {confirmCancelId && (
+        <ConfirmDialog
+          title="Avboka mötet?"
+          body="Du kan alltid boka ett nytt möte igen senare om du ändrar dig."
+          confirmLabel="Avboka mötet"
+          onConfirm={() => {
+            cancelBooking(confirmCancelId);
+            setConfirmCancelId(null);
+          }}
+          onCancel={() => setConfirmCancelId(null)}
+        />
+      )}
       <TopBar onBack={() => router.push("/dashboard")} right={<ProfileMenu />} showTabs />
       <div className="max-w-2xl mx-auto px-5 md:px-10 py-10 bd-fade">
         <span className="bd-eyebrow">Mina ärenden</span>
@@ -87,10 +101,18 @@ export function MyCasesView() {
                     <StatusPill status={b.status} />
                   </div>
                   {(b.topics.length > 0 || b.extraNote) && (
-                    <div className="text-sm text-slate">
+                    <div className="text-sm text-slate mb-2">
                       {b.topics.length > 0 && <div>Gäller: {b.topics.map(topicLabel).join(", ")}</div>}
                       {b.extraNote && <div>{`"${b.extraNote}"`}</div>}
                     </div>
+                  )}
+                  {b.status === "ny" && b.day >= today && (
+                    <button
+                      onClick={() => setConfirmCancelId(b.id)}
+                      className="text-sm font-semibold text-slate hover:text-ink"
+                    >
+                      Avboka
+                    </button>
                   )}
                 </div>
               ))}

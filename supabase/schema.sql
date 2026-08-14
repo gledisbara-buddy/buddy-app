@@ -101,7 +101,7 @@ create table if not exists public.bookings (
   day date not null,
   time text not null,
   contact text not null,
-  status text not null default 'ny' check (status in ('ny', 'hanterad')),
+  status text not null default 'ny' check (status in ('ny', 'hanterad', 'avbokad')),
   created_at timestamptz not null default now()
 );
 
@@ -121,6 +121,14 @@ create policy "bookings_select_own_or_employee" on public.bookings
 drop policy if exists "bookings_update_employee" on public.bookings;
 create policy "bookings_update_employee" on public.bookings
   for update using (exists (select 1 from public.employees where email = auth.jwt() ->> 'email'));
+
+-- Kunden kan själv avboka sitt eget möte (status -> 'avbokad'), se
+-- cancelBooking() i buddy-context.tsx. Samma "egen rad"-mönster som övriga
+-- kundskrivbara tabeller, ingen kolumnbegränsning på RLS-nivå — klienten
+-- litar redan på att bara skriva rätt fält, precis som items/policies.
+drop policy if exists "bookings_update_own" on public.bookings;
+create policy "bookings_update_own" on public.bookings
+  for update using (auth.uid() = user_id);
 
 -- claims: en rad per skadeanmälan från ClaimFlow.tsx. Foton/kvitton sparas
 -- inte som filer i den här omgången, bara antal — se PROJECT.md.

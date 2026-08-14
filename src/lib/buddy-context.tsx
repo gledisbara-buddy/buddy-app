@@ -112,7 +112,7 @@ export type BookingRecord = {
   meetingType: "video" | "phone";
   day: string;
   time: string;
-  status: "ny" | "hanterad";
+  status: "ny" | "hanterad" | "avbokad";
   createdAt: string;
 };
 
@@ -189,6 +189,7 @@ type BuddyState = {
   bookings: BookingRecord[];
   claims: ClaimRecord[];
   submitBooking: (input: BookingInput) => void;
+  cancelBooking: (id: string) => void;
   submitClaim: (input: ClaimInput) => void;
   missingInsuranceRequests: MissingInsuranceRequestRecord[];
   submitMissingInsuranceRequest: (kind: ItemKind, note: string) => void;
@@ -223,7 +224,7 @@ type BookingRow = {
   meeting_type: "video" | "phone";
   day: string;
   time: string;
-  status: "ny" | "hanterad";
+  status: "ny" | "hanterad" | "avbokad";
   created_at: string;
 };
 
@@ -744,6 +745,15 @@ export function BuddyProvider({ children }: { children: ReactNode }) {
     [supabase, userId, profile]
   );
 
+  const cancelBooking = useCallback(
+    (id: string) => {
+      setBookings((prev) => prev.map((b) => (b.id === id ? { ...b, status: "avbokad" } : b)));
+      if (!userId) return;
+      supabase.from("bookings").update({ status: "avbokad" }).eq("id", id).then(logWriteError("avbokning"));
+    },
+    [supabase, userId]
+  );
+
   const submitClaim = useCallback(
     (input: ClaimInput) => {
       if (!userId) return;
@@ -832,6 +842,7 @@ export function BuddyProvider({ children }: { children: ReactNode }) {
       bookings,
       claims,
       submitBooking,
+      cancelBooking,
       submitClaim,
       missingInsuranceRequests,
       submitMissingInsuranceRequest,
@@ -868,6 +879,7 @@ export function BuddyProvider({ children }: { children: ReactNode }) {
       bookings,
       claims,
       submitBooking,
+      cancelBooking,
       submitClaim,
       missingInsuranceRequests,
       submitMissingInsuranceRequest,
