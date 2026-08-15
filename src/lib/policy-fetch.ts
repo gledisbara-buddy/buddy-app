@@ -1,5 +1,5 @@
 import { createItemId, FORSAKRINGSBOLAG, type ComparableItem } from "@/lib/items";
-import { MONTHS } from "@/lib/booking";
+import { formatSwedishDate } from "@/lib/dates";
 import type { Quote } from "@/lib/quote";
 import { VEHICLE_BOOK } from "@/lib/vehicle-lookup";
 
@@ -32,7 +32,7 @@ function randomFutureDate(): string {
   const now = new Date();
   const monthsAhead = 1 + Math.floor(Math.random() * 12);
   const d = new Date(now.getFullYear(), now.getMonth() + monthsAhead, 1 + Math.floor(Math.random() * 27));
-  return `${d.getDate()} ${MONTHS[d.getMonth()]} ${d.getFullYear()}`;
+  return formatSwedishDate(d);
 }
 
 // Exporterad så internverktyget (MissingInsuranceQueue.tsx) kan generera en

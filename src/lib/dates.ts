@@ -1,5 +1,13 @@
 import { MONTHS } from "@/lib/booking";
 
+// Motsatsen till parseSwedishDate nedan — formaterar ett Date-objekt till
+// samma "D MMM YYYY"-sträng ("12 mar 2027") som resten av appen förväntar
+// sig. Delas av policy-fetch.ts (randomFutureDate) och CompareFlow.tsx
+// (nytecknade offerter som saknar ett eget forfallodatum).
+export function formatSwedishDate(date: Date): string {
+  return `${date.getDate()} ${MONTHS[date.getMonth()]} ${date.getFullYear()}`;
+}
+
 // Parsar det svenska datumformatet från policy-fetch.ts ("12 mar 2027",
 // byggt med MONTHS) till ett Date-objekt. Delas av daysUntilSwedishDate
 // nedan och kalenderpåminnelsen i ItemDetail.tsx — samma tolkning på båda

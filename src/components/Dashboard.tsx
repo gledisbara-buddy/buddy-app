@@ -46,7 +46,7 @@ import {
   type InsuranceItem,
   type ItemGroupId,
 } from "@/lib/items";
-import type { Quote } from "@/lib/quote";
+import { computeMoveStatus, effectiveQuote, MOVE_STATUS_LABELS, type Quote } from "@/lib/quote";
 
 type ItemStatus = "saved" | "added" | "uncompared" | "compared" | "fetched" | "pending";
 
@@ -702,6 +702,9 @@ export function Dashboard({ showIntro: initialShowIntro }: { showIntro?: boolean
                 )}
                 {filteredItems.map((item) => {
                   const signed = policies[item.id];
+                  const effective = signed ? effectiveQuote(signed) : undefined;
+                  const moveStatus =
+                    signed?.pendingQuote && signed.forfallodatum ? computeMoveStatus(signed.forfallodatum) : undefined;
                   const cancelTarget = getCancelTarget(item, signed);
                   const canCompare = isComparableItem(item) && readyToCompare;
                   const canClaim = groupForKind(item.kind) === "forsakring";
@@ -735,7 +738,16 @@ export function Dashboard({ showIntro: initialShowIntro }: { showIntro?: boolean
                         </div>
                       ) : signed?.source === "compared" ? (
                         <div className="mb-3">
-                          <ItemStatusBadge status="compared" /> <span className="text-xs text-ink">hos {signed.name} — {signed.price} kr/mån</span>
+                          <ItemStatusBadge status="compared" />{" "}
+                          <span className="text-xs text-ink">
+                            hos {effective!.name} — {effective!.price} kr/mån
+                          </span>
+                          {moveStatus && moveStatus !== "flytt-genomford" && (
+                            <div className="text-xs font-semibold mt-1 text-amber-deep">
+                              {MOVE_STATUS_LABELS[moveStatus]} — {signed.pendingQuote!.name} tar över{" "}
+                              {signed.forfallodatum}
+                            </div>
+                          )}
                         </div>
                       ) : signed?.source === "fetched" ? (
                         <div className="mb-3">

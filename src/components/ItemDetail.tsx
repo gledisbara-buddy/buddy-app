@@ -11,7 +11,7 @@ import { buildIcsFile } from "@/lib/booking";
 import { buildItemSummaryPdf } from "@/lib/item-pdf";
 import { parseSwedishDate } from "@/lib/dates";
 import { createClient } from "@/lib/supabase/client";
-import type { Quote } from "@/lib/quote";
+import { computeMoveStatus, effectiveQuote, MOVE_STATUS_LABELS, type Quote } from "@/lib/quote";
 
 type HistoryRow = { data: Quote; created_at: string };
 
@@ -49,7 +49,10 @@ export function ItemDetail({ itemId }: { itemId: string }) {
 
   if (!item) return null;
 
-  const quote = policies[item.id];
+  const rawQuote = policies[item.id];
+  const quote = rawQuote ? effectiveQuote(rawQuote) : undefined;
+  const moveStatus =
+    rawQuote?.pendingQuote && rawQuote.forfallodatum ? computeMoveStatus(rawQuote.forfallodatum) : undefined;
   const Icon = ITEM_CATEGORIES.find((c) => c.kind === item.kind)!.icon;
   const forfallodatum = quote?.forfallodatum ?? ("forfallodatum" in item ? item.forfallodatum : undefined);
 
@@ -135,6 +138,14 @@ export function ItemDetail({ itemId }: { itemId: string }) {
               </button>
             </div>
           </div>
+
+          {moveStatus && moveStatus !== "flytt-genomford" && (
+            <div className="rounded-2xl p-4 mb-6 text-sm bg-frost-2 text-ink">
+              <span className="font-semibold">{MOVE_STATUS_LABELS[moveStatus]}.</span>{" "}
+              {rawQuote!.pendingQuote!.name} tar över {rawQuote!.forfallodatum} — fram tills dess gäller villkoren
+              nedan som vanligt.
+            </div>
+          )}
 
           <div className="bg-white rounded-2xl border border-line mb-6 overflow-hidden">
             <div className="px-5 pt-4 pb-2 text-sm font-semibold">

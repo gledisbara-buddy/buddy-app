@@ -12,11 +12,12 @@ import { BoolPill, Field, PillGroup, inputClass } from "@/components/onboarding/
 import { useBuddy, type CheckoutInfo } from "@/lib/buddy-context";
 import { createClient } from "@/lib/supabase/client";
 import { sendTransactionalEmail } from "@/lib/email";
+import { formatSwedishDate } from "@/lib/dates";
 import { computeItemQuotes } from "@/lib/item-quotes";
 import { isComparableItem, itemSummary, itemTitle } from "@/lib/items";
 import { getAvailableNeedIds, NEED_LABELS, type NeedsKind } from "@/lib/needs";
 import type { FetchableKind } from "@/lib/policy-fetch";
-import { pickWinner, type Quote } from "@/lib/quote";
+import { effectiveQuote, pickWinner, type Quote } from "@/lib/quote";
 
 type Betalningsmetod = CheckoutInfo["betalningsmetod"];
 
@@ -355,7 +356,27 @@ export function CompareFlow({ itemId }: { itemId: string }) {
 
   const finalizeSign = (cancellationHelp?: boolean) => {
     if (!pendingQuote || !betalningsmetod) return;
-    setPolicy(item.id, { ...pendingQuote, source: "compared" }, {
+    // item-quotes.ts:s jämförelseerbjudanden har inget eget forfallodatum
+    // (bara auto-hämtade offerter från policy-fetch.ts har det) — utan ett
+    // eget datum skulle den här nytecknade offerten aldrig kunna framdateras
+    // om kunden jämför igen senare. 12 månader är samma standardlängd som
+    // ett vanligt svenskt försäkringsår.
+    const oneYearOut = new Date();
+    oneYearOut.setFullYear(oneYearOut.getFullYear() + 1);
+    const newQuote: Quote = {
+      ...pendingQuote,
+      source: "compared",
+      forfallodatum: pendingQuote.forfallodatum ?? formatSwedishDate(oneYearOut),
+    };
+    // Har saken redan en spårad policy med känt forfallodatum (auto-hämtad
+    // eller tidigare tecknad via Buddy) framdateras den nya offerten till
+    // dess istället för att aktiveras direkt — se computeMoveStatus i
+    // quote.ts. effectiveQuote hanterar fallet att en flytt redan pågår.
+    const oldQuote = currentPolicy ? effectiveQuote(currentPolicy) : undefined;
+    const quoteToSave: Quote = oldQuote?.forfallodatum
+      ? { ...oldQuote, source: "compared", pendingQuote: newQuote }
+      : newQuote;
+    setPolicy(item.id, quoteToSave, {
       name: checkoutName.trim(),
       personnummer: checkoutPersonnummer.trim(),
       betalningsmetod,
@@ -836,6 +857,13 @@ export function CompareFlow({ itemId }: { itemId: string }) {
                   <div className="text-xs text-slate">{label}</div>
                 </div>
               </div>
+              {currentPolicy?.forfallodatum && (
+                <div className="rounded-2xl p-4 mb-6 text-sm bg-frost-2 text-ink">
+                  <span className="font-semibold">Framdaterad.</span> {signedQuote.name} börjar gälla{" "}
+                  {currentPolicy.forfallodatum}, när din nuvarande försäkring hos {currentPolicy.name} löper ut. Fram
+                  tills dess gäller ditt befintliga avtal som vanligt.
+                </div>
+              )}
               <div className="bg-white rounded-2xl border border-line p-6 mb-6">
                 {(
                   [

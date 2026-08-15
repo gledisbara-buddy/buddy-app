@@ -10,7 +10,7 @@ import { createClient } from "@/lib/supabase/client";
 import { buildTodoList } from "@/lib/todo";
 import { computeTrustScore } from "@/lib/trust-score";
 import { ITEM_GROUPS, type InsuranceItem } from "@/lib/items";
-import type { Quote } from "@/lib/quote";
+import { effectiveQuote, type Quote } from "@/lib/quote";
 
 type HistoryRow = { item_id: string; data: Quote; created_at: string };
 
@@ -89,7 +89,10 @@ export function AnnualReportView() {
   const hasUrgentRenewal = todoList.some((row) => row.id.startsWith("renewal-") && row.urgent);
   const trustScore = computeTrustScore({ items, policies, profile, hasUrgentRenewal });
 
-  const monthlyCost = items.reduce((sum, item) => sum + monthlyPriceOf(item, policies[item.id]), 0);
+  const monthlyCost = items.reduce((sum, item) => {
+    const quote = policies[item.id];
+    return sum + monthlyPriceOf(item, quote ? effectiveQuote(quote) : undefined);
+  }, 0);
   const monthlySavings = computeMonthlySavings(history);
 
   const groupCounts = ITEM_GROUPS.map((g) => ({ label: g.label, count: items.filter(g.matchesItem).length })).filter((g) => g.count > 0);
