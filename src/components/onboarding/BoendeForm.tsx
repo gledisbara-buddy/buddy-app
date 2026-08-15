@@ -4,6 +4,7 @@ import { useState } from "react";
 import { ArrowLeft, Trash2 } from "lucide-react";
 import { AddressField, type AddressValue } from "@/components/onboarding/AddressField";
 import { BoolPill, Field, FormActions, inputClass } from "@/components/onboarding/shared";
+import { useBuddy } from "@/lib/buddy-context";
 import { BOENDE_TYP_LABELS, createItemId } from "@/lib/items";
 import type { BoendeItem, BoendeTyp, ForvaringsTyp, InsuranceItem, OvrigByggnad } from "@/lib/items";
 import { FORVARINGS_TYP_LABELS } from "@/lib/items";
@@ -23,6 +24,7 @@ export function BoendeForm({
   onCancel: () => void;
   initialItem?: BoendeItem;
 }) {
+  const { household } = useBuddy();
   const [typ, setTyp] = useState<BoendeTyp | null>(initialItem?.typ ?? null);
 
   // Apartment-like fields (hyresrätt / bostadsrätt / fritidsbostadsrätt)
@@ -35,8 +37,12 @@ export function BoendeForm({
   const [biarea, setBiarea] = useState(
     initialItem && "biarea" in initialItem && initialItem.biarea ? String(initialItem.biarea) : ""
   );
+  // Föreslår hushållets kända storlek (medlemmar + en själv) som default
+  // istället för en bar "1" — kunden kan fortfarande ändra den fritt.
   const [hushallsstorlek, setHushallsstorlek] = useState(
-    initialItem && "hushallsstorlek" in initialItem ? String(initialItem.hushallsstorlek) : "1"
+    initialItem && "hushallsstorlek" in initialItem
+      ? String(initialItem.hushallsstorlek)
+      : String((household?.members.length ?? 0) + 1)
   );
   const [sakerhetsdorr, setSakerhetsdorr] = useState<boolean | null>(
     initialItem && "sakerhetsdorr" in initialItem ? initialItem.sakerhetsdorr : null
