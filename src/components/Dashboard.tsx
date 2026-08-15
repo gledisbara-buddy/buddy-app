@@ -18,6 +18,7 @@ import {
   LayoutGrid,
   Loader2,
   MessageCircle,
+  PiggyBank,
   Plus,
   Search,
   ShieldAlert,
@@ -35,6 +36,7 @@ import { useBuddy } from "@/lib/buddy-context";
 import { formatBookingDay } from "@/lib/booking";
 import { buildTodoList } from "@/lib/todo";
 import { computeTrustScore } from "@/lib/trust-score";
+import { buildHealthCheck } from "@/lib/health-check";
 import {
   createItemId,
   groupForKind,
@@ -196,6 +198,10 @@ export function Dashboard({ showIntro: initialShowIntro }: { showIntro?: boolean
   const todoList = buildTodoList({ items, policies, profile, missingInsuranceRequests, pendingMobilNumber, householdRequests });
   const hasUrgentRenewal = todoList.some((row) => row.id.startsWith("renewal-") && row.urgent);
   const trustScore = computeTrustScore({ items, policies, profile, hasUrgentRenewal });
+  // Redan beräknat för /halsokoll, men syntes bara där bakom "Fler
+  // genvägar" — lyfts fram direkt på Trygghetspoäng-kortet så den konkreta
+  // besparingen syns utan att kunden behöver leta efter den.
+  const healthCheck = buildHealthCheck(items, policies);
 
   // Bara nästa kommande bokning visas som banner — ISO-datum (YYYY-MM-DD)
   // går att jämföra direkt som strängar, ingen datumparsning behövs här.
@@ -334,6 +340,20 @@ export function Dashboard({ showIntro: initialShowIntro }: { showIntro?: boolean
                 />
               </div>
             </button>
+            {(healthCheck.potentialSavings > 0 || healthCheck.upcomingRenewals > 0) && (
+              <button
+                onClick={() => router.push("/halsokoll")}
+                className="w-full flex items-center gap-2 mt-3 pt-3 border-t border-line text-left text-sm"
+              >
+                <PiggyBank size={15} className="text-forest flex-none" />
+                <span className="flex-1 text-ink">
+                  {healthCheck.potentialSavings > 0 && `Spara ca ${healthCheck.potentialSavings} kr/mån`}
+                  {healthCheck.potentialSavings > 0 && healthCheck.upcomingRenewals > 0 && " · "}
+                  {healthCheck.upcomingRenewals > 0 && `${healthCheck.upcomingRenewals} avtal förnyas snart`}
+                </span>
+                <ArrowRight size={14} className="text-forest flex-none" />
+              </button>
+            )}
             {showTrustChecklist && (
               <div className="mt-4 pt-4 border-t border-line space-y-1">
                 {trustScore.score === 100 ? (
