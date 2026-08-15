@@ -2,9 +2,9 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, ArrowRight, Check, Loader2, PhoneCall, Trash2 } from "lucide-react";
+import { ArrowLeft, Loader2, PhoneCall } from "lucide-react";
 import { Logo } from "@/components/Logo";
-import { ConfirmDialog, Overlay } from "@/components/Overlay";
+import { Overlay } from "@/components/Overlay";
 import { AutoFetchStep } from "@/components/onboarding/AutoFetchStep";
 import { BoendeForm } from "@/components/onboarding/BoendeForm";
 import { TelekomForm } from "@/components/onboarding/TelekomForm";
@@ -29,8 +29,6 @@ import {
   SYSSELSATTNING_LABELS,
   createItemId,
   groupForKind,
-  itemSummary,
-  itemTitle,
   type Avtalstyp,
   type BatMotorTyp,
   type BilItem,
@@ -601,7 +599,7 @@ export function Onboarding({
   editItemId?: string;
 }) {
   const router = useRouter();
-  const { userType, loading, items, profile, addItem, updateItem, removeItem, setPolicy } = useBuddy();
+  const { userType, loading, items, profile, addItem, updateItem, setPolicy } = useBuddy();
   const editItem = editItemId ? items.find((i) => i.id === editItemId) : undefined;
   const [activeCategory, setActiveCategory] = useState<ItemKind | null>(editItem?.kind ?? initialKind ?? null);
   const [addMode, setAddMode] = useState<"choice" | "auto" | "manual" | null>(
@@ -610,18 +608,20 @@ export function Onboarding({
   const [addModeFor, setAddModeFor] = useState<ItemKind | null>(activeCategory);
   const [showBundlePopup, setShowBundlePopup] = useState(false);
   const bundlePopupShownRef = useRef(false);
-  const [toastMessage, setToastMessage] = useState<string | null>(null);
-  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
 
   useEffect(() => {
     if (!loading && !userType) router.replace("/kom-igang");
   }, [loading, userType, router]);
 
+  // Ingen generell "vad vill du lägga till"-kategorigrid längre — varje
+  // ingång till den här sidan anger numera alltid en kind (Livshandelser,
+  // gruppernas egna Lägg till-knappar, eller redigera). Saknas kind är det
+  // en trasig/gammal länk, inte ett giltigt läge att visa UI för. Väntar
+  // med redirecten medan samlingsrabatt-popupen visas, annars försvinner
+  // den under fötterna på kunden.
   useEffect(() => {
-    if (!toastMessage) return;
-    const t = setTimeout(() => setToastMessage(null), 2500);
-    return () => clearTimeout(t);
-  }, [toastMessage]);
+    if (!loading && userType && !activeCategory && !editItemId && !showBundlePopup) router.replace("/dashboard");
+  }, [loading, userType, activeCategory, editItemId, showBundlePopup, router]);
 
   // Reset addMode whenever a new category is opened — adjusted during render
   // (not an effect) so the choice screen shows before the first paint.
@@ -638,12 +638,9 @@ export function Onboarding({
     return null;
   }
 
-  const goToDashboard = () => router.push("/dashboard");
-
   const handleItemAdded = async (item: InsuranceItem, quote?: Quote) => {
     await addItem(item);
     if (quote) setPolicy(item.id, quote);
-    setToastMessage(`${itemTitle(item)} inlagd`);
     if (!bundlePopupShownRef.current && groupForKind(item.kind) === "forsakring") {
       const newCount = items.filter((i) => groupForKind(i.kind) === "forsakring").length + 1;
       if (newCount > 3) {
@@ -730,110 +727,29 @@ export function Onboarding({
     );
   }
 
-  return (
-    <div className="min-h-screen w-full flex flex-col">
-      {showBundlePopup && (
-        <Overlay onClose={() => setShowBundlePopup(false)}>
-          <span className="bd-eyebrow">Samlingsrabatt</span>
-          <h2 className="bd-display text-2xl mt-2 mb-3">Du har lagt in flera försäkringar</h2>
-          <p className="text-sm mb-6 text-slate">
-            Vi ser ofta att samlingsrabatter kan sänka priset på dina försäkringar ytterligare.
-            Boka in ett samtal så går vi igenom det tillsammans.
-          </p>
-          <button
-            onClick={() => router.push("/book")}
-            className="bd-btn w-full mb-3 flex items-center justify-center gap-2 py-3.5 rounded-full font-semibold text-white text-[15px] bg-forest"
-          >
-            <PhoneCall size={16} /> Boka in samtal
-          </button>
-          <button
-            onClick={() => setShowBundlePopup(false)}
-            className="w-full text-sm font-semibold py-2 text-slate"
-          >
-            Fortsätt lägga till
-          </button>
-        </Overlay>
-      )}
-      {toastMessage && (
-        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 bd-fade">
-          <div className="flex items-center gap-2 px-4 py-3 rounded-full text-sm font-semibold text-white shadow-lg bg-ink-deep">
-            <Check size={15} className="text-forest-light" /> {toastMessage}
-          </div>
-        </div>
-      )}
-      <div className="w-full flex items-center justify-between px-6 py-5">
-        <Logo />
-        <div className="w-6" />
-      </div>
-      <div className="flex-1 flex items-start justify-center px-5 pt-2 pb-16">
-        <div className="w-full max-w-lg bd-fade">
-          <span className="bd-eyebrow">Lägg till en sak</span>
-          <h1 className="bd-display text-2xl mt-3 mb-2">Vad vill du lägga till?</h1>
-          <p className="text-sm mb-6 text-slate">
-            Lägg till en sak i taget — du kan alltid lägga till fler senare.
-          </p>
-
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-3 mb-8">
-            {ITEM_CATEGORIES.map((cat) => {
-              const Icon = cat.icon;
-              const itemsInCategory = items.filter((i) => i.kind === cat.kind);
-              return (
-                <button
-                  key={cat.kind}
-                  onClick={() => setActiveCategory(cat.kind)}
-                  className="bd-card p-4 rounded-2xl border text-left flex flex-col gap-3 bg-white border-line"
-                >
-                  <div className="w-9 h-9 rounded-lg flex items-center justify-center bg-frost">
-                    <Icon size={17} className="text-forest" />
-                  </div>
-                  <div>
-                    <div className="text-sm font-medium leading-tight">{cat.label}</div>
-                    {itemsInCategory.length > 0 && (
-                      <div className="text-xs mt-0.5 text-forest">{itemsInCategory.length} tillagd(a)</div>
-                    )}
-                  </div>
-                </button>
-              );
-            })}
-          </div>
-
-          {items.length > 0 && (
-            <div className="flex flex-col gap-2 mb-8">
-              {items.map((item) => (
-                <div
-                  key={item.id}
-                  className="flex items-center justify-between px-4 py-3 rounded-xl bg-white border border-line"
-                >
-                  <div className="text-sm">{itemSummary(item)}</div>
-                  <button onClick={() => setConfirmDeleteId(item.id)} className="opacity-50 hover:opacity-100">
-                    <Trash2 size={15} />
-                  </button>
-                </div>
-              ))}
-            </div>
-          )}
-
-          {confirmDeleteId && (
-            <ConfirmDialog
-              title="Ta bort den här saken?"
-              body="Den försvinner från din översikt och tas bort permanent."
-              confirmLabel="Ta bort"
-              onConfirm={() => {
-                removeItem(confirmDeleteId);
-                setConfirmDeleteId(null);
-              }}
-              onCancel={() => setConfirmDeleteId(null)}
-            />
-          )}
-
-          <button
-            onClick={goToDashboard}
-            className="bd-btn w-full flex items-center justify-center gap-2 py-3.5 rounded-full font-semibold text-white text-[15px] bg-forest"
-          >
-            Klar, tillbaka till översikten <ArrowRight size={16} />
-          </button>
-        </div>
-      </div>
-    </div>
-  );
+  // Ingen kategori och ingen redigering — omdirigeringen ovan tar över.
+  // Samlingsrabatt-popupen (kan trigga precis innan redirecten) är det
+  // enda som fortfarande behöver renderas här under tiden.
+  if (showBundlePopup) {
+    return (
+      <Overlay onClose={() => setShowBundlePopup(false)}>
+        <span className="bd-eyebrow">Samlingsrabatt</span>
+        <h2 className="bd-display text-2xl mt-2 mb-3">Du har lagt in flera försäkringar</h2>
+        <p className="text-sm mb-6 text-slate">
+          Vi ser ofta att samlingsrabatter kan sänka priset på dina försäkringar ytterligare.
+          Boka in ett samtal så går vi igenom det tillsammans.
+        </p>
+        <button
+          onClick={() => router.push("/book")}
+          className="bd-btn w-full mb-3 flex items-center justify-center gap-2 py-3.5 rounded-full font-semibold text-white text-[15px] bg-forest"
+        >
+          <PhoneCall size={16} /> Boka in samtal
+        </button>
+        <button onClick={() => setShowBundlePopup(false)} className="w-full text-sm font-semibold py-2 text-slate">
+          Nej tack
+        </button>
+      </Overlay>
+    );
+  }
+  return null;
 }

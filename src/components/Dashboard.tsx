@@ -389,7 +389,7 @@ export function Dashboard({ showIntro: initialShowIntro }: { showIntro?: boolean
           )}
           {!active && (
             <button
-              onClick={() => router.push("/onboarding?mode=add")}
+              onClick={() => router.push("/livshandelser")}
               className="bd-btn flex items-center gap-1.5 text-sm font-semibold px-3.5 py-2 rounded-full text-white bg-forest"
             >
               <Plus size={14} /> Lägg till en sak
@@ -776,24 +776,42 @@ export function Dashboard({ showIntro: initialShowIntro }: { showIntro?: boolean
               </div>
             )}
 
-            <div className="grid md:grid-cols-3 gap-4">
-              {active.addTargets.map((target) => {
-                const Icon = target.icon;
-                const href = `/onboarding?mode=add&kind=${target.kind}${target.typ ? `&typ=${target.typ}` : ""}`;
-                return (
-                  <button
-                    key={`${target.kind}-${target.typ ?? ""}`}
-                    onClick={() => router.push(href)}
-                    className="bd-card rounded-2xl border border-dashed border-line p-5 flex items-center gap-3 text-left bg-transparent"
-                  >
-                    <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-none bg-frost">
-                      <Icon size={18} className="text-forest" />
-                    </div>
-                    <div className="text-sm font-medium text-slate">Lägg till {target.label.toLowerCase()}</div>
-                  </button>
-                );
-              })}
-            </div>
+            {active.addTargets.length > 0 ? (
+              <div className="grid md:grid-cols-3 gap-4">
+                {active.addTargets.map((target) => {
+                  const Icon = target.icon;
+                  const href = `/onboarding?mode=add&kind=${target.kind}${target.typ ? `&typ=${target.typ}` : ""}`;
+                  return (
+                    <button
+                      key={`${target.kind}-${target.typ ?? ""}`}
+                      onClick={() => router.push(href)}
+                      className="bd-card rounded-2xl border border-dashed border-line p-5 flex items-center gap-3 text-left bg-transparent"
+                    >
+                      <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-none bg-frost">
+                        <Icon size={18} className="text-forest" />
+                      </div>
+                      <div className="text-sm font-medium text-slate">Lägg till {target.label.toLowerCase()}</div>
+                    </button>
+                  );
+                })}
+              </div>
+            ) : (
+              // Försäkringar läggs till via BankID (import/rescan), inte
+              // manuellt längre — se items.ts. Nya, ej ännu tecknade saker
+              // (ny bil, nytt husdjur osv) går via Livshandelser istället.
+              <button
+                onClick={() => router.push("/livshandelser")}
+                className="bd-card w-full rounded-2xl border border-dashed border-line p-5 flex items-center gap-3 text-left bg-transparent"
+              >
+                <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-none bg-frost">
+                  <Sparkles size={18} className="text-forest" />
+                </div>
+                <div>
+                  <div className="text-sm font-medium">Ny sak på gång?</div>
+                  <div className="text-xs text-slate">Ska du köpa, flytta eller skaffa nåt nytt? Vi hjälper dig komma igång.</div>
+                </div>
+              </button>
+            )}
           </div>
         )}
 

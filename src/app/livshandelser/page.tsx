@@ -7,6 +7,7 @@ export default async function LivshandelserPage({
   searchParams: Promise<{ event?: string }>;
 }) {
   const { event } = await searchParams;
-  const initialEvent: LifeEventId | undefined = event === "flytt" || event === "barn" ? event : undefined;
+  const VALID_EVENTS: LifeEventId[] = ["flytt", "barn", "fordon", "djur"];
+  const initialEvent = VALID_EVENTS.includes(event as LifeEventId) ? (event as LifeEventId) : undefined;
   return <LifeEventsView initialEvent={initialEvent} />;
 }

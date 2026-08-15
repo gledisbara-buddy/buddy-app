@@ -76,7 +76,10 @@ test.describe("Konto och inloggning", () => {
     const email = uniqueEmail("smoke.signup");
     await page.goto("/login?type=privat");
     await page.locator('input[type="email"]').fill(email);
-    await page.locator('input[type="password"]').fill(PASSWORD);
+    await page.locator('input[placeholder="Minst 6 tecken"]').fill(PASSWORD);
+    await page.locator('input[placeholder="Upprepa lösenordet"]').fill(PASSWORD);
+    await page.locator('input[placeholder="T.ex. Andersson"]').fill("Andersson");
+    await page.locator('input[placeholder="ÅÅÅÅMMDD-XXXX"]').fill("19900101-1234");
 
     const submit = page.getByRole("button", { name: "Skapa konto" });
     await expect(submit).toBeDisabled();

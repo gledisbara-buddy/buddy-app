@@ -2,13 +2,13 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowRight, Baby, Briefcase, Check, Plus, Truck } from "lucide-react";
+import { ArrowRight, Baby, Briefcase, Car, Check, PawPrint, Plus, Truck } from "lucide-react";
 import { TopBar } from "@/components/TopBar";
 import { ProfileMenu } from "@/components/ProfileMenu";
 import { useBuddy } from "@/lib/buddy-context";
 import { getSysselsattningTips, LIFE_EVENTS, type LifeEventId } from "@/lib/life-events";
 
-const EVENT_ICONS: Record<LifeEventId, typeof Truck> = { flytt: Truck, barn: Baby };
+const EVENT_ICONS: Record<LifeEventId, typeof Truck> = { flytt: Truck, barn: Baby, fordon: Car, djur: PawPrint };
 
 export function LifeEventsView({ initialEvent }: { initialEvent?: LifeEventId }) {
   const router = useRouter();
@@ -60,10 +60,13 @@ export function LifeEventsView({ initialEvent }: { initialEvent?: LifeEventId })
               ))}
             </div>
             <button
-              onClick={() => selectEvent(event === "flytt" ? "barn" : "flytt")}
+              onClick={() => {
+                setEvent(null);
+                router.replace("/livshandelser");
+              }}
               className="text-sm font-semibold text-forest mb-8"
             >
-              {event === "flytt" ? "Väntar du barn istället?" : "Ska du flytta istället?"}
+              Något annat på gång istället?
             </button>
           </div>
         ) : (

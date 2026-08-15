@@ -1,6 +1,6 @@
 import { SYSSELSATTNING_LABELS, type InsuranceItem, type Sysselsattning } from "@/lib/items";
 
-export type LifeEventId = "flytt" | "barn";
+export type LifeEventId = "flytt" | "barn" | "fordon" | "djur";
 
 export type LifeEventStep = { text: string; cta?: { label: string; href: string } };
 
@@ -47,6 +47,38 @@ export const LIFE_EVENTS: Record<LifeEventId, { title: string; intro: string; st
       {
         text: "Kolla vad som redan ingår i föräldraförsäkringen och ditt kollektivavtal innan du köper mer.",
         cta: { label: "Fråga Buddy", href: "/chat" },
+      },
+    ],
+  },
+  fordon: {
+    title: "Jag ska köpa ett fordon",
+    intro: "Bra att ha koll på försäkringen innan du skriver på hos säljaren.",
+    steps: [
+      {
+        text: "Lägg till bilen så snart du har registreringsnumret — även innan den är påställd, så hinner du jämföra i lugn och ro.",
+        cta: { label: "Lägg till bil", href: "/onboarding?mode=add&kind=bil" },
+      },
+      {
+        text: "Är det istället en husvagn, mc, båt eller släp? Samma sak gäller där.",
+        cta: { label: "Lägg till övrigt fordon", href: "/onboarding?mode=add&kind=ovrigt_fordon" },
+      },
+      {
+        text: "Jämför innan du tecknar via säljaren eller mäklaren — det tar bara en minut och du binder dig inte till något.",
+        cta: { label: "Till översikten", href: "/dashboard" },
+      },
+    ],
+  },
+  djur: {
+    title: "Vi skaffade husdjur",
+    intro: "Ju tidigare du tecknar, desto bättre — många djurförsäkringar har karenstid.",
+    steps: [
+      {
+        text: "Lägg till djuret så kan du jämföra djurförsäkring direkt.",
+        cta: { label: "Lägg till djur", href: "/onboarding?mode=add&kind=djur" },
+      },
+      {
+        text: "Karenstid betyder att skador de första dagarna/veckorna oftast inte täcks — vänta inte för länge med att teckna.",
+        cta: { label: "Till översikten", href: "/dashboard" },
       },
     ],
   },

@@ -303,7 +303,11 @@ export const ITEM_GROUPS: {
     icon: ShieldCheck,
     kinds: FORSAKRING_KINDS,
     matchesItem: (item) => FORSAKRING_KINDS.includes(item.kind),
-    addTargets: addTargetsFromKinds(FORSAKRING_KINDS),
+    // Ingen manuell kategorigrid längre — försäkringar läggs till via
+    // BankID-import/rescan (BankIdImport.tsx). Nya, ännu inte tecknade
+    // saker (ny bil, nytt husdjur osv) går via Livshandelser istället,
+    // se Dashboard.tsx:s rendering när addTargets är tom.
+    addTargets: [],
   },
   {
     id: "mobil",
