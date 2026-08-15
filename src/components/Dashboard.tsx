@@ -70,6 +70,16 @@ function getCancelTarget(item: InsuranceItem, signed?: Quote): { name: string; p
   return null;
 }
 
+// Kategorinamnet syns redan som rubrik på kortet, men "Inget tillagt än"
+// under den var ändå för generiskt för att kunden skulle koppla ihop det
+// direkt — nämner nu vad det faktiskt är kategorin saknar.
+const EMPTY_GROUP_LABEL: Record<ItemGroupId, string> = {
+  forsakring: "Ingen försäkring tillagd än",
+  mobil: "Inget mobilabonnemang tillagt än",
+  prenumeration: "Ingen prenumeration tillagd än",
+  ekonomi: "Inget ekonomiavtal tillagt än",
+};
+
 const STATUS_CONFIG: Record<ItemStatus, { label: string; color: string }> = {
   saved: { label: "Sparad — jämförelse kommer snart", color: "var(--color-slate)" },
   added: { label: "Tillagd", color: "var(--color-slate)" },
@@ -642,7 +652,7 @@ export function Dashboard({ showIntro: initialShowIntro }: { showIntro?: boolean
                     {g.items.length === 0
                       ? g.id === "mobil" && pendingMobilNumber
                         ? "1 väntar på uppgifter"
-                        : "Inget tillagt än"
+                        : EMPTY_GROUP_LABEL[g.id]
                       : `${g.items.length} ${g.items.length === 1 ? "sak" : "saker"} tillagda`}
                   </div>
                   {g.items.length > 0 && readyToCompare && (

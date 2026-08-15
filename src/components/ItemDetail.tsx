@@ -149,7 +149,7 @@ export function ItemDetail({ itemId }: { itemId: string }) {
 
           <div className="bg-white rounded-2xl border border-line mb-6 overflow-hidden">
             <div className="px-5 pt-4 pb-2 text-sm font-semibold">
-              {quote ? "Nuvarande villkor" : "Inga villkor sparade ännu"}
+              {quote ? "Nuvarande villkor" : `Inga villkor sparade för ${itemTitle(item)} ännu`}
             </div>
             {detailRows.length > 0 ? (
               <div className="divide-y divide-line">
