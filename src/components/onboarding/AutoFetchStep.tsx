@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { ArrowLeft, Check, Loader2, Smartphone } from "lucide-react";
 import { inputClass } from "@/components/onboarding/shared";
+import { useBuddy } from "@/lib/buddy-context";
 import type { ComparableItem } from "@/lib/items";
 import { EL_BOLAG, FORSAKRINGSBOLAG, itemSummary, itemTitle, KREDITKORT_UTGIVARE } from "@/lib/items";
 import { fetchExistingPolicy, type FetchableKind } from "@/lib/policy-fetch";
@@ -34,9 +35,21 @@ export function AutoFetchStep({
   onBack: () => void;
   displayItem?: ComparableItem;
 }) {
+  const { profile } = useBuddy();
   const [phase, setPhase] = useState<Phase>("bolag");
   const [bolag, setBolag] = useState<string | null>(null);
-  const [personnummer, setPersonnummer] = useState("");
+  // Föreslår personnumret vi redan har sparat, men skriver aldrig över om
+  // kunden själv har börjat fylla i något. Läses direkt vid mount (täcker
+  // klientsidesnavigering där profilen redan laddat klart) och synkas om
+  // profilen dyker upp först efter mount (färsk sidladdning).
+  const [personnummer, setPersonnummer] = useState(profile?.personnummer ?? "");
+  const [syncedPersonnummer, setSyncedPersonnummer] = useState(profile?.personnummer);
+  if (profile?.personnummer !== syncedPersonnummer) {
+    setSyncedPersonnummer(profile?.personnummer);
+    if (profile?.personnummer && !personnummer.trim()) {
+      setPersonnummer(profile.personnummer);
+    }
+  }
   const [result, setResult] = useState<{ item: ComparableItem; quote: Quote } | null>(null);
 
   const startBankId = () => {
