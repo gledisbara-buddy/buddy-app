@@ -12,18 +12,34 @@ import { randomDelay } from "@/lib/chat";
 type Phase = "chat" | "upload" | "submitting" | "confirmed";
 type UploadedFile = { name: string; dataUrl: string };
 
+// Förnamnet är inte känt förrän profilen laddat klart, så första repliken
+// byggs om en gång när det händer (se syncedProfileLoading nedan) istället
+// för att alltid säga "Hej" rakt av.
+function openingMessage(itemTitle?: string, firstName?: string): string {
+  const greeting = firstName ? `Hej ${firstName}` : "Hej";
+  return itemTitle
+    ? `${greeting}. Tråkigt att höra att något har hänt med din ${itemTitle.toLowerCase()} — vad är det som har hänt?`
+    : `${greeting}. Tråkigt att höra att något har hänt — vad är det som har hänt?`;
+}
+
 export function ClaimFlow({ initialItemTitle }: { initialItemTitle?: string } = {}) {
   const router = useRouter();
-  const { submitClaim, hasClaimPerk } = useBuddy();
+  const { submitClaim, hasClaimPerk, profile } = useBuddy();
   const [phase, setPhase] = useState<Phase>("chat");
-  const [messages, setMessages] = useState<ChatMessage[]>([
-    {
-      role: "assistant",
-      content: initialItemTitle
-        ? `Hej. Tråkigt att höra att något har hänt med din ${initialItemTitle.toLowerCase()} — vad är det som har hänt?`
-        : "Hej. Tråkigt att höra att något har hänt — vad är det som har hänt?",
-    },
+  // Lazy initializer täcker fallet att profile redan är laddad vid mount
+  // (t.ex. en klientsidesnavigering från en redan inloggad dashboard).
+  // personalizedRef täcker det andra fallet — en färsk sidladdning där
+  // profile fortfarande är null vid mount och dyker upp först lite senare.
+  const [messages, setMessages] = useState<ChatMessage[]>(() => [
+    { role: "assistant", content: openingMessage(initialItemTitle, profile?.name?.split(" ")[0]) },
   ]);
+  const [syncedName, setSyncedName] = useState(profile?.name);
+  if (profile?.name !== syncedName) {
+    setSyncedName(profile?.name);
+    if (profile?.name && messages.length === 1) {
+      setMessages([{ role: "assistant", content: openingMessage(initialItemTitle, profile.name.split(" ")[0]) }]);
+    }
+  }
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
   const [photos, setPhotos] = useState<UploadedFile[]>([]);

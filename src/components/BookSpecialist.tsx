@@ -17,7 +17,7 @@ type MeetingType = "video" | "phone";
 
 export function BookSpecialist({ initialTopic }: { initialTopic?: string } = {}) {
   const router = useRouter();
-  const { items, submitBooking } = useBuddy();
+  const { items, profile, submitBooking } = useBuddy();
   const [step, setStep] = useState(0);
   // Del H i docs/kundresa-v2-steg2-plan.md: jämförelse-forkens "Hela
   // lösningen" leder hit med ett förifyllt ämne (samma FIXED_TOPICS-id som
@@ -30,6 +30,18 @@ export function BookSpecialist({ initialTopic }: { initialTopic?: string } = {})
   const [contact, setContact] = useState("");
   const days = useMemo(() => nextWeekdays(6), []);
   const day = days[dayIdx];
+
+  // Föreslår kundens sparade telefon/mejl beroende på vald samtalstyp — men
+  // bara om fältet fortfarande är tomt, så vi aldrig skriver över något
+  // kunden redan fyllt i själv. Justerat under rendering (samma mönster
+  // som syncedGroup i Dashboard.tsx) istället för i en effekt.
+  const [syncedMeetingType, setSyncedMeetingType] = useState(meetingType);
+  if (meetingType !== syncedMeetingType) {
+    setSyncedMeetingType(meetingType);
+    if (!contact.trim()) {
+      setContact((meetingType === "phone" ? profile?.phone : profile?.email) ?? "");
+    }
+  }
 
   const toggleTopic = (id: string) =>
     setTopics((prev) => (prev.includes(id) ? prev.filter((t) => t !== id) : [...prev, id]));
