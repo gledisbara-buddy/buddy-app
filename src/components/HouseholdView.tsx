@@ -21,6 +21,14 @@ const SENT_STATUS_LABELS: Record<"pending" | "approved" | "declined", string> = 
 type HouseholdSummary = { memberCount: number; totalMonthlyCost: number; kindCounts: Record<string, number> };
 type MemberItem = { memberUserId: string; memberName: string; item: InsuranceItem; price: number | null };
 
+// "Gledis", "Gledis och Blondina", "Gledis, Blondina och Sam" — används i
+// hushållssammanfattningen istället för en bar personantal-siffra.
+function joinNames(names: string[]): string {
+  if (names.length <= 1) return names[0] ?? "";
+  if (names.length === 2) return `${names[0]} och ${names[1]}`;
+  return `${names.slice(0, -1).join(", ")} och ${names[names.length - 1]}`;
+}
+
 export function HouseholdView() {
   const router = useRouter();
   const {
@@ -227,7 +235,8 @@ export function HouseholdView() {
                     <div className="text-xs text-slate">tillsammans per månad</div>
                   </div>
                   <div className="text-sm text-slate text-right">
-                    {Object.values(summary.kindCounts).reduce((sum, n) => sum + n, 0)} saker · {summary.memberCount} personer
+                    {Object.values(summary.kindCounts).reduce((sum, n) => sum + n, 0)} saker ·{" "}
+                    {joinNames([profile?.name, ...household.members.map((m) => m.name)].filter((n): n is string => !!n).map((n) => n.split(" ")[0]))}
                   </div>
                 </div>
                 <div className="flex flex-col gap-2">
