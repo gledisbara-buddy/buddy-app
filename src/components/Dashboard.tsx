@@ -518,6 +518,16 @@ export function Dashboard({ showIntro: initialShowIntro }: { showIntro?: boolean
           <div className="rounded-2xl border border-line bg-white mt-3 overflow-hidden">
             <div className="divide-y divide-line">
               <button
+                onClick={() => router.push("/identifiera-igen")}
+                className="w-full flex items-center gap-3 px-5 py-3 text-left hover:bg-frost"
+              >
+                <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-none bg-frost-2">
+                  <Smartphone size={15} className="text-forest" />
+                </div>
+                <span className="flex-1 text-sm font-medium">Identifiera dig igen</span>
+                <ArrowRight size={14} className="text-slate flex-none" />
+              </button>
+              <button
                 onClick={() => router.push("/halsokoll")}
                 className="w-full flex items-center gap-3 px-5 py-3 text-left hover:bg-frost"
               >

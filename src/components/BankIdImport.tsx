@@ -5,23 +5,19 @@ import { useRouter } from "next/navigation";
 import { ArrowRight, Check, Loader2, Smartphone } from "lucide-react";
 import { Logo } from "@/components/Logo";
 import { FullmaktSigning } from "@/components/FullmaktSigning";
-import { ITEM_CATEGORIES, itemSummary, itemTitle, type ComparableItem } from "@/lib/items";
-import { fetchMultiplePolicies, type FetchableKind } from "@/lib/policy-fetch";
+import { MissingInsuranceFlagger } from "@/components/onboarding/MissingInsuranceFlagger";
+import { itemSummary, itemTitle, type ComparableItem } from "@/lib/items";
+import { fetchMultiplePolicies } from "@/lib/policy-fetch";
 import type { Quote } from "@/lib/quote";
 import { useBuddy } from "@/lib/buddy-context";
 
 type Phase = "idle" | "waiting" | "fetching" | "result" | "flag-missing" | "fullmakt";
 
-const FLAGGABLE_KINDS: FetchableKind[] = ["boende", "bil", "ovrigt_fordon", "person", "djur"];
-
 export function BankIdImport() {
   const router = useRouter();
-  const { addItems, setPolicy, submitMissingInsuranceRequest } = useBuddy();
+  const { addItems, setPolicy } = useBuddy();
   const [phase, setPhase] = useState<Phase>("idle");
   const [found, setFound] = useState<{ item: ComparableItem; quote: Quote }[]>([]);
-  const [flaggedKind, setFlaggedKind] = useState<FetchableKind | null>(null);
-  const [flaggedNote, setFlaggedNote] = useState("");
-  const [flagged, setFlagged] = useState<FetchableKind[]>([]);
 
   const finish = () => router.push("/dashboard?imported=1");
 
@@ -42,14 +38,6 @@ export function BankIdImport() {
     await addItems(found.map((f) => f.item));
     found.forEach((f) => setPolicy(f.item.id, f.quote));
     setPhase("flag-missing");
-  };
-
-  const submitFlag = () => {
-    if (!flaggedKind) return;
-    submitMissingInsuranceRequest(flaggedKind, flaggedNote.trim());
-    setFlagged((prev) => [...prev, flaggedKind]);
-    setFlaggedKind(null);
-    setFlaggedNote("");
   };
 
   if (phase === "idle") {
@@ -176,61 +164,12 @@ export function BankIdImport() {
         <div className="flex-1 flex items-start justify-center px-5 pb-16">
           <div className="w-full max-w-md bd-fade">
             <span className="bd-eyebrow">Steg 2 av 3</span>
-            <h1 className="bd-display text-2xl mt-3 mb-2">Är det något som saknas?</h1>
-            <p className="text-sm mb-6 text-slate">
-              Har du fler försäkringar som inte dök upp? Berätta vilken typ så hämtar Buddy in den åt dig.
-            </p>
-
-            {flagged.length > 0 && (
-              <div className="flex flex-col gap-2 mb-5">
-                {flagged.map((k, i) => (
-                  <div key={`${k}-${i}`} className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-frost-2 text-sm">
-                    <Check size={14} className="text-forest" />
-                    {ITEM_CATEGORIES.find((c) => c.kind === k)!.label} — skickad till Buddy
-                  </div>
-                ))}
-              </div>
-            )}
-
-            <div className="bg-white rounded-2xl border border-line p-5 mb-6">
-              <div className="grid grid-cols-2 gap-2 mb-4">
-                {FLAGGABLE_KINDS.map((k) => {
-                  const cat = ITEM_CATEGORIES.find((c) => c.kind === k)!;
-                  const active = flaggedKind === k;
-                  return (
-                    <button
-                      key={k}
-                      onClick={() => setFlaggedKind(k)}
-                      className={`px-3 py-2.5 rounded-xl border text-sm font-medium text-left ${
-                        active ? "border-forest bg-frost-2 text-forest" : "border-line bg-white"
-                      }`}
-                    >
-                      {cat.label}
-                    </button>
-                  );
-                })}
-              </div>
-              <input
-                value={flaggedNote}
-                onChange={(e) => setFlaggedNote(e.target.value)}
-                placeholder="T.ex. bolag, om du vet det (valfritt)"
-                className="w-full px-4 py-3 rounded-xl border border-line text-[15px] mb-4"
-              />
-              <button
-                onClick={submitFlag}
-                disabled={!flaggedKind}
-                className="w-full py-2.5 rounded-full font-semibold text-sm border border-forest text-forest disabled:opacity-40"
-              >
-                Lägg till i listan
-              </button>
-            </div>
-
-            <button
-              onClick={() => setPhase("fullmakt")}
-              className="bd-btn w-full flex items-center justify-center gap-2 py-3.5 rounded-full font-semibold text-white text-[15px] bg-forest"
-            >
-              {flagged.length > 0 ? "Klar, fortsätt" : "Nej, allt är med"} <ArrowRight size={16} />
-            </button>
+            <MissingInsuranceFlagger
+              title="Är det något som saknas?"
+              intro="Har du fler försäkringar som inte dök upp? Berätta vilken typ så hämtar Buddy in den åt dig."
+              doneLabel="Nej, allt är med"
+              onDone={() => setPhase("fullmakt")}
+            />
           </div>
         </div>
       </div>

@@ -153,11 +153,28 @@ export function fetchExistingPolicy(kind: FetchableKind, bolagNamn: string): Pro
 // batchen (inte N × 1400ms som att loopa fetchExistingPolicy skulle ge).
 const IMPORT_ALWAYS: readonly FetchableKind[] = ["boende", "bil"];
 const IMPORT_MAYBE: readonly FetchableKind[] = ["person", "djur", "ovrigt_fordon"];
+export const ALL_FETCHABLE_KINDS: readonly FetchableKind[] = [...IMPORT_ALWAYS, ...IMPORT_MAYBE];
 
 export function fetchMultiplePolicies(): Promise<{ item: ComparableItem; quote: Quote }[]> {
   return new Promise((resolve) => {
     setTimeout(() => {
       const kinds = [...IMPORT_ALWAYS, ...IMPORT_MAYBE.filter(() => Math.random() < 0.5)];
+      resolve(kinds.map((kind) => ({ item: synthesizeItem(kind), quote: buildQuote(kind, pick(FORSAKRINGSBOLAG)) })));
+    }, 2200);
+  });
+}
+
+// Identifiera dig igen-flödet (BankIdRescan.tsx): kunden har redan gjort
+// en initial import, det här letar bara efter kinds som INTE redan finns
+// bland items — annars skulle en rescan duplicera boende/bilen som redan
+// lades till första gången. 40% chans per saknad kind, kan alltså bli
+// tomt (då går kunden till "flagga saknat" precis som vid första
+// importen om inget nytt hittas).
+export function fetchNewPolicies(excludeKinds: readonly FetchableKind[]): Promise<{ item: ComparableItem; quote: Quote }[]> {
+  return new Promise((resolve) => {
+    setTimeout(() => {
+      const candidates = ALL_FETCHABLE_KINDS.filter((k) => !excludeKinds.includes(k));
+      const kinds = candidates.filter(() => Math.random() < 0.4);
       resolve(kinds.map((kind) => ({ item: synthesizeItem(kind), quote: buildQuote(kind, pick(FORSAKRINGSBOLAG)) })));
     }, 2200);
   });
