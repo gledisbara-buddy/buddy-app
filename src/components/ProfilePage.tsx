@@ -21,6 +21,7 @@ export function ProfilePage() {
   const [personnummer, setPersonnummer] = useState(profile?.personnummer ?? "");
   const [phone, setPhone] = useState(profile?.phone ?? "");
   const [saved, setSaved] = useState(false);
+  const [savedLabel, setSavedLabel] = useState("Sparat");
   const [syncedLoading, setSyncedLoading] = useState(loading);
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -46,6 +47,13 @@ export function ProfilePage() {
   const idLabel = userType === "foretag" ? "Organisationsnummer" : "Personnummer";
 
   const handleSave = () => {
+    // Berättar vad som faktiskt ändrades istället för ett generiskt "Sparat"
+    // — jämför mot profile (kontextens senast sparade värden).
+    const changed: string[] = [];
+    if (name.trim() !== (profile?.name ?? "")) changed.push("Namnet");
+    if ((personnummer.trim() || null) !== (profile?.personnummer ?? null)) changed.push(idLabel.replace(/nummer$/, "numret"));
+    if ((phone.trim() || null) !== (profile?.phone ?? null)) changed.push("Telefonnumret");
+    setSavedLabel(changed.length === 1 ? `${changed[0]} sparat` : changed.length > 1 ? "Uppgifterna sparade" : "Sparat");
     updateProfile({
       name: name.trim(),
       personnummer: personnummer.trim() || null,
@@ -136,7 +144,7 @@ export function ProfilePage() {
           >
             {saved ? (
               <>
-                Sparat <Check size={16} />
+                {savedLabel} <Check size={16} />
               </>
             ) : (
               "Spara ändringar"

@@ -37,6 +37,15 @@ export function SettingsPage() {
   const [smsNotis, setSmsNotis] = useState<"ja" | "nej" | null>("nej");
   const [sprak, setSprak] = useState<"sv" | "en" | null>("sv");
   const [saved, setSaved] = useState(false);
+  const [savedLabel, setSavedLabel] = useState("Sparat");
+  // Senast sparade värden — jämförs mot vid nästa sparning så bekräftelsen
+  // kan säga vad som faktiskt ändrades. Måste hållas lokalt (inte via
+  // profile) eftersom notifieringsfälten hämtas separat, se effekten nedan.
+  const [savedValues, setSavedValues] = useState<{
+    emailNotis: "ja" | "nej" | null;
+    smsNotis: "ja" | "nej" | null;
+    sprak: "sv" | "en" | null;
+  }>({ emailNotis: "ja", smsNotis: "nej", sprak: "sv" });
 
   // Hämtas separat från huvudkontexten (istället för via profile) så att
   // sidan fortfarande fungerar innan notify_email/notify_sms/language-
@@ -53,15 +62,29 @@ export function SettingsPage() {
       .then(({ data }) => {
         if (!data) return;
         const row = data as { notify_email: boolean | null; notify_sms: boolean | null; language: string | null };
-        setEmailNotis(row.notify_email === false ? "nej" : "ja");
-        setSmsNotis(row.notify_sms ? "ja" : "nej");
-        setSprak(row.language === "en" ? "en" : "sv");
+        const loaded: typeof savedValues = {
+          emailNotis: row.notify_email === false ? "nej" : "ja",
+          smsNotis: row.notify_sms ? "ja" : "nej",
+          sprak: row.language === "en" ? "en" : "sv",
+        };
+        setEmailNotis(loaded.emailNotis);
+        setSmsNotis(loaded.smsNotis);
+        setSprak(loaded.sprak);
+        setSavedValues(loaded);
       });
   }, [userId]);
 
   if (loading || !userType) return null;
 
   const handleSave = () => {
+    const changed: string[] = [];
+    if (emailNotis !== savedValues.emailNotis) changed.push("E-postnotiser");
+    if (smsNotis !== savedValues.smsNotis) changed.push("SMS-notiser");
+    if (sprak !== savedValues.sprak) changed.push("Språket");
+    setSavedLabel(
+      changed.length === 1 ? `${changed[0]} sparat` : changed.length > 1 ? "Inställningarna sparade" : "Sparat"
+    );
+    setSavedValues({ emailNotis, smsNotis, sprak });
     updateProfile({
       notifyEmail: emailNotis !== "nej",
       notifySms: smsNotis === "ja",
@@ -116,7 +139,7 @@ export function SettingsPage() {
           >
             {saved ? (
               <>
-                Sparat <Check size={16} />
+                {savedLabel} <Check size={16} />
               </>
             ) : (
               "Spara ändringar"
