@@ -7,6 +7,8 @@ type GeoapifyFeature = {
     postcode?: string;
     city?: string;
     name?: string;
+    lat?: number;
+    lon?: number;
   };
 };
 
@@ -41,6 +43,8 @@ export async function GET(request: NextRequest) {
         adress,
         postnummer: f.properties.postcode ?? "",
         ort: f.properties.city ?? "",
+        lat: f.properties.lat,
+        lon: f.properties.lon,
       };
     })
     .filter((r) => r.adress);

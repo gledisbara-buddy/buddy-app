@@ -8,6 +8,7 @@ import { NeedsAnalysis } from "@/components/NeedsAnalysis";
 import { Overlay } from "@/components/Overlay";
 import { FullmaktSigning } from "@/components/FullmaktSigning";
 import { AutoFetchStep } from "@/components/onboarding/AutoFetchStep";
+import { CoverageMap } from "@/components/CoverageMap";
 import { BoolPill, Field, PillGroup, inputClass } from "@/components/onboarding/shared";
 import { useBuddy, type CheckoutInfo } from "@/lib/buddy-context";
 import { createClient } from "@/lib/supabase/client";
@@ -348,6 +349,10 @@ export function CompareFlow({ itemId }: { itemId: string }) {
   const label = itemTitle(item);
   const currentPolicy = policies[item.id];
   const current = currentPolicy?.source === "fetched" ? currentPolicy : undefined;
+  // Genväg för täckningskartan (CoverageMap) — slipper skriva in adressen
+  // igen om kunden redan lagt in sitt boende.
+  const homeItem = items.find((i) => i.kind === "boende");
+  const homeAddress = homeItem && "adress" in homeItem ? `${homeItem.adress}, ${homeItem.ort}` : undefined;
 
   const handleSign = (quote: Quote) => {
     setPendingQuote(quote);
@@ -742,6 +747,12 @@ export function CompareFlow({ itemId }: { itemId: string }) {
                   Teckna {winner.name} →
                 </button>
               </div>
+
+              {item.kind === "telekom" && item.typ === "mobil" && (
+                <div className="mb-5">
+                  <CoverageMap operatorName={winner.name} defaultAddress={homeAddress} />
+                </div>
+              )}
 
               <div>
                 <button
