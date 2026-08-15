@@ -586,6 +586,16 @@ const CATEGORY_FORMS: Record<ItemKind, React.ComponentType<ItemFormProps>> = {
   prenumeration: PrenumerationForm as unknown as React.ComponentType<ItemFormProps>,
 };
 
+// Vilka kategorier som visar "Hämta automatiskt från mitt bolag"-valet
+// först — försäkringsgruppen (BankID mot försäkringsbolag) och numera
+// även ekonomigruppen (BankID mot bank/elbolag, se AutoFetchStep.tsx).
+// Mobil har sitt eget operatörsuppslag inbyggt i TelekomForm och
+// prenumerationer sin egna bankkoppling-demo — de går rakt till manual.
+function hasAutoFetch(kind: ItemKind): boolean {
+  const group = groupForKind(kind);
+  return group === "forsakring" || group === "ekonomi";
+}
+
 export function Onboarding({
   initialKind,
   initialTyp,
@@ -603,7 +613,7 @@ export function Onboarding({
   const editItem = editItemId ? items.find((i) => i.id === editItemId) : undefined;
   const [activeCategory, setActiveCategory] = useState<ItemKind | null>(editItem?.kind ?? initialKind ?? null);
   const [addMode, setAddMode] = useState<"choice" | "auto" | "manual" | null>(
-    editItem ? "manual" : activeCategory ? (groupForKind(activeCategory) === "forsakring" ? "choice" : "manual") : null
+    editItem ? "manual" : activeCategory ? (hasAutoFetch(activeCategory) ? "choice" : "manual") : null
   );
   const [addModeFor, setAddModeFor] = useState<ItemKind | null>(activeCategory);
   const [showBundlePopup, setShowBundlePopup] = useState(false);
@@ -627,9 +637,7 @@ export function Onboarding({
   // (not an effect) so the choice screen shows before the first paint.
   if (activeCategory !== addModeFor) {
     setAddModeFor(activeCategory);
-    setAddMode(
-      editItem ? "manual" : activeCategory ? (groupForKind(activeCategory) === "forsakring" ? "choice" : "manual") : null
-    );
+    setAddMode(editItem ? "manual" : activeCategory ? (hasAutoFetch(activeCategory) ? "choice" : "manual") : null);
   }
 
   if (loading || !userType) return null;

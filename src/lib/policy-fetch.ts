@@ -3,9 +3,22 @@ import { MONTHS } from "@/lib/booking";
 import type { Quote } from "@/lib/quote";
 import { VEHICLE_BOOK } from "@/lib/vehicle-lookup";
 
-// Auto-hämtning gäller bara Försäkring-gruppens fem kategorier — inte
-// telekom/kreditkort/el, trots att de numera också är ComparableItem.
-export type FetchableKind = Extract<ComparableItem["kind"], "boende" | "bil" | "ovrigt_fordon" | "person" | "djur">;
+// Auto-hämtning via simulerad BankID-identifiering. telekom är undantaget
+// — det har sitt eget operatörsuppslag på telefonnummer (TelekomForm.tsx),
+// ett annat sorts uppslag som inte passar detta mönster.
+export type FetchableKind = Extract<
+  ComparableItem["kind"],
+  "boende" | "bil" | "ovrigt_fordon" | "person" | "djur" | "kreditkort" | "el"
+>;
+
+// De fem försäkringskategorierna som kan ingå i en batch-import
+// (BankIdImport.tsx/BankIdRescan.tsx). Kreditkort/el hämtas alltid var för
+// sig via fetchExistingPolicy, aldrig i en gemensam batch — se
+// buddy_customer_journey_v2-svaret om "varsin BankID, inte en för allt".
+export type ForsakringFetchableKind = Extract<
+  FetchableKind,
+  "boende" | "bil" | "ovrigt_fordon" | "person" | "djur"
+>;
 
 function pick<T>(pool: readonly T[]): T {
   return pool[Math.floor(Math.random() * pool.length)];
@@ -81,6 +94,20 @@ export function synthesizeItem(kind: FetchableKind): ComparableItem {
       ]);
       return { id: createItemId(), kind: "djur", ...djur };
     }
+    case "kreditkort": {
+      const kort = pick([
+        { kortnamn: "Guldkort", arsavgift: 495, ranta: 19.9, kreditgrans: 30000, bonusprogram: true },
+        { kortnamn: "Basickort", arsavgift: 0, ranta: 22.9, kreditgrans: 15000, bonusprogram: false },
+      ]);
+      return { id: createItemId(), kind: "kreditkort", harReddan: true, ...kort };
+    }
+    case "el": {
+      const el = pick([
+        { avtalstyp: "rorligt" as const, elomrade: "SE3" as const, arsforbrukningKwh: 4500 },
+        { avtalstyp: "fast" as const, elomrade: "SE2" as const, arsforbrukningKwh: 6000, bindningstidManader: 12 },
+      ]);
+      return { id: createItemId(), kind: "el", elbolag: "", ...el };
+    }
   }
 }
 
@@ -90,6 +117,8 @@ const PRICE_RANGES: Record<FetchableKind, readonly [number, number]> = {
   ovrigt_fordon: [70, 140],
   person: [50, 90],
   djur: [100, 180],
+  kreditkort: [0, 50],
+  el: [400, 900],
 };
 
 const OMFATTNING_POOL: Record<FetchableKind, readonly string[]> = {
@@ -98,6 +127,8 @@ const OMFATTNING_POOL: Record<FetchableKind, readonly string[]> = {
   ovrigt_fordon: ["Trafikförsäkring", "Halvförsäkring", "Helförsäkring"],
   person: ["Grundskydd", "Utökat skydd"],
   djur: ["Veterinärvårdsförsäkring", "Livförsäkring + Veterinärvård"],
+  kreditkort: ["Standardkort", "Guldkort", "Platinumkort"],
+  el: ["Rörligt avtal", "Fast avtal"],
 };
 
 const SELF_RISK_POOL = [1000, 1200, 1500, 2000, 2500] as const;
@@ -143,7 +174,13 @@ function buildQuote(kind: FetchableKind, bolagNamn: string): Quote {
 export function fetchExistingPolicy(kind: FetchableKind, bolagNamn: string): Promise<{ item: ComparableItem; quote: Quote }> {
   return new Promise((resolve) => {
     setTimeout(() => {
-      resolve({ item: synthesizeItem(kind), quote: buildQuote(kind, bolagNamn) });
+      const item = synthesizeItem(kind);
+      // el/kreditkort har bolagsnamnet på själva posten (till skillnad från
+      // t.ex. boende, där bolaget bara finns på quoten) — patcha in det
+      // kunden faktiskt valde istället för ett tomt/påhittat namn.
+      if (item.kind === "el") item.elbolag = bolagNamn;
+      if (item.kind === "kreditkort") item.utgivare = bolagNamn;
+      resolve({ item, quote: buildQuote(kind, bolagNamn) });
     }, 1400);
   });
 }

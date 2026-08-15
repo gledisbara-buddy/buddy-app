@@ -4,11 +4,24 @@ import { useState } from "react";
 import { ArrowLeft, Check, Loader2, Smartphone } from "lucide-react";
 import { inputClass } from "@/components/onboarding/shared";
 import type { ComparableItem } from "@/lib/items";
-import { FORSAKRINGSBOLAG, itemSummary, itemTitle } from "@/lib/items";
+import { EL_BOLAG, FORSAKRINGSBOLAG, itemSummary, itemTitle, KREDITKORT_UTGIVARE } from "@/lib/items";
 import { fetchExistingPolicy, type FetchableKind } from "@/lib/policy-fetch";
 import type { Quote } from "@/lib/quote";
 
 type Phase = "bolag" | "bankid-idle" | "bankid-waiting" | "fetching" | "result";
+
+// Vilken lista av bolag som visas beror på vad som hämtas — en elräkning
+// kommer inte från ett försäkringsbolag. Se KREDITKORT_UTGIVARE/EL_BOLAG
+// i items.ts (samma listor som de manuella formulären använder).
+const BOLAG_LIST_BY_KIND: Record<FetchableKind, readonly string[]> = {
+  boende: FORSAKRINGSBOLAG,
+  bil: FORSAKRINGSBOLAG,
+  ovrigt_fordon: FORSAKRINGSBOLAG,
+  person: FORSAKRINGSBOLAG,
+  djur: FORSAKRINGSBOLAG,
+  kreditkort: KREDITKORT_UTGIVARE,
+  el: EL_BOLAG,
+};
 
 export function AutoFetchStep({
   kind,
@@ -46,7 +59,7 @@ export function AutoFetchStep({
         </button>
         <p className="text-sm mb-4 text-slate">Vilket bolag har du den här hos idag?</p>
         <div className="bd-scroll flex flex-col gap-1.5 max-h-[420px] overflow-y-auto pr-1">
-          {FORSAKRINGSBOLAG.map((b) => (
+          {BOLAG_LIST_BY_KIND[kind].map((b) => (
             <button
               key={b}
               onClick={() => {
