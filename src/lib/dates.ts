@@ -44,3 +44,15 @@ export function isoToSwedishDate(iso: string): string | undefined {
   }
   return `${day} ${MONTHS[month - 1]} ${year}`;
 }
+
+// Motsatt håll av isoToSwedishDate ovan — för att förifylla ett
+// <input type="date"> med ett redan sparat "D MMM YYYY"-värde när en sak
+// redigeras (se Onboarding.tsx/TelekomForm.tsx).
+export function swedishDateToIso(dateStr: string): string | undefined {
+  const date = parseSwedishDate(dateStr);
+  if (!date) return undefined;
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, "0");
+  const d = String(date.getDate()).padStart(2, "0");
+  return `${y}-${m}-${d}`;
+}

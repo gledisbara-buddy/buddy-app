@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, ArrowRight, CalendarPlus, Download, Trash2 } from "lucide-react";
+import { ArrowLeft, ArrowRight, CalendarPlus, Download, Pencil, Trash2 } from "lucide-react";
 import { Logo } from "@/components/Logo";
 import { ConfirmDialog } from "@/components/Overlay";
 import { useBuddy } from "@/lib/buddy-context";
@@ -122,9 +122,18 @@ export function ItemDetail({ itemId }: { itemId: string }) {
                 <div className="text-sm text-slate">{itemSummary(item)}</div>
               </div>
             </div>
-            <button onClick={() => setConfirmDelete(true)} className="opacity-40 hover:opacity-100 mt-1">
-              <Trash2 size={16} />
-            </button>
+            <div className="flex items-center gap-3 mt-1 flex-none">
+              <button
+                onClick={() => router.push(`/onboarding?itemId=${item.id}`)}
+                className="opacity-40 hover:opacity-100"
+                aria-label="Redigera"
+              >
+                <Pencil size={16} />
+              </button>
+              <button onClick={() => setConfirmDelete(true)} className="opacity-40 hover:opacity-100" aria-label="Ta bort">
+                <Trash2 size={16} />
+              </button>
+            </div>
           </div>
 
           <div className="bg-white rounded-2xl border border-line mb-6 overflow-hidden">

@@ -17,36 +17,68 @@ const emptyAddress: AddressValue = { adress: "", postnummer: "", ort: "" };
 export function BoendeForm({
   onSave,
   onCancel,
+  initialItem,
 }: {
   onSave: (item: InsuranceItem) => void;
   onCancel: () => void;
+  initialItem?: BoendeItem;
 }) {
-  const [typ, setTyp] = useState<BoendeTyp | null>(null);
+  const [typ, setTyp] = useState<BoendeTyp | null>(initialItem?.typ ?? null);
 
   // Apartment-like fields (hyresrätt / bostadsrätt / fritidsbostadsrätt)
-  const [address, setAddress] = useState<AddressValue>(emptyAddress);
-  const [boyta, setBoyta] = useState("");
-  const [biarea, setBiarea] = useState("");
-  const [hushallsstorlek, setHushallsstorlek] = useState("1");
-  const [sakerhetsdorr, setSakerhetsdorr] = useState<boolean | null>(null);
-  const [larm, setLarm] = useState<boolean | null>(null);
-  const [bostadsrattstillagg, setBostadsrattstillagg] = useState<boolean | null>(null);
+  const [address, setAddress] = useState<AddressValue>(
+    initialItem
+      ? { adress: initialItem.adress, postnummer: initialItem.postnummer, ort: initialItem.ort }
+      : emptyAddress
+  );
+  const [boyta, setBoyta] = useState(initialItem && "boyta" in initialItem ? String(initialItem.boyta) : "");
+  const [biarea, setBiarea] = useState(
+    initialItem && "biarea" in initialItem && initialItem.biarea ? String(initialItem.biarea) : ""
+  );
+  const [hushallsstorlek, setHushallsstorlek] = useState(
+    initialItem && "hushallsstorlek" in initialItem ? String(initialItem.hushallsstorlek) : "1"
+  );
+  const [sakerhetsdorr, setSakerhetsdorr] = useState<boolean | null>(
+    initialItem && "sakerhetsdorr" in initialItem ? initialItem.sakerhetsdorr : null
+  );
+  const [larm, setLarm] = useState<boolean | null>(initialItem && "larm" in initialItem ? initialItem.larm : null);
+  const [bostadsrattstillagg, setBostadsrattstillagg] = useState<boolean | null>(
+    initialItem && "bostadsrattstillagg" in initialItem ? initialItem.bostadsrattstillagg : null
+  );
 
   // House fields (villa / fritidshus)
-  const [antalBadDusch, setAntalBadDusch] = useState("1");
-  const [skorsten, setSkorsten] = useState<boolean | null>(null);
-  const [ovrigaByggnader, setOvrigaByggnader] = useState<OvrigByggnad[]>([]);
+  const [antalBadDusch, setAntalBadDusch] = useState(
+    initialItem && "antalBadDusch" in initialItem ? String(initialItem.antalBadDusch) : "1"
+  );
+  const [skorsten, setSkorsten] = useState<boolean | null>(
+    initialItem && "skorsten" in initialItem ? initialItem.skorsten : null
+  );
+  const [ovrigaByggnader, setOvrigaByggnader] = useState<OvrigByggnad[]>(
+    initialItem && "ovrigaByggnader" in initialItem ? initialItem.ovrigaByggnader : []
+  );
   const [nyByggnadTyp, setNyByggnadTyp] = useState("");
   const [nyByggnadYta, setNyByggnadYta] = useState("");
-  const [indragetVatten, setIndragetVatten] = useState<boolean | null>(null);
-  const [antalPlan, setAntalPlan] = useState("1");
-  const [kallare, setKallare] = useState<boolean | null>(null);
+  const [indragetVatten, setIndragetVatten] = useState<boolean | null>(
+    initialItem && "indragetVatten" in initialItem ? initialItem.indragetVatten : null
+  );
+  const [antalPlan, setAntalPlan] = useState(
+    initialItem && "antalPlan" in initialItem ? String(initialItem.antalPlan) : "1"
+  );
+  const [kallare, setKallare] = useState<boolean | null>(
+    initialItem && "kallare" in initialItem ? initialItem.kallare : null
+  );
 
   // Magasinering fields
-  const [forvaringstyp, setForvaringstyp] = useState<ForvaringsTyp | null>(null);
-  const [storlekM2, setStorlekM2] = useState("");
-  const [innehall, setInnehall] = useState("");
-  const [uppskattatVarde, setUppskattatVarde] = useState("");
+  const [forvaringstyp, setForvaringstyp] = useState<ForvaringsTyp | null>(
+    initialItem && "forvaringstyp" in initialItem ? initialItem.forvaringstyp : null
+  );
+  const [storlekM2, setStorlekM2] = useState(
+    initialItem && "storlekM2" in initialItem ? String(initialItem.storlekM2) : ""
+  );
+  const [innehall, setInnehall] = useState(initialItem && "innehall" in initialItem ? initialItem.innehall : "");
+  const [uppskattatVarde, setUppskattatVarde] = useState(
+    initialItem && "uppskattatVarde" in initialItem ? String(initialItem.uppskattatVarde) : ""
+  );
 
   const addByggnad = () => {
     if (!nyByggnadTyp.trim() || !Number(nyByggnadYta)) return;
@@ -107,7 +139,7 @@ export function BoendeForm({
           onCancel={onCancel}
           onSave={() =>
             onSave({
-              id: createItemId(),
+              id: initialItem?.id ?? createItemId(),
               kind: "boende",
               typ: "magasinering",
               adress: address.adress.trim(),
@@ -209,7 +241,7 @@ export function BoendeForm({
           onCancel={onCancel}
           onSave={() =>
             onSave({
-              id: createItemId(),
+              id: initialItem?.id ?? createItemId(),
               kind: "boende",
               typ: typ as "villa" | "fritidshus",
               adress: address.adress.trim(),
@@ -238,7 +270,7 @@ export function BoendeForm({
     const item: BoendeItem =
       typ === "hyresratt"
         ? {
-            id: createItemId(),
+            id: initialItem?.id ?? createItemId(),
             kind: "boende",
             typ: "hyresratt",
             adress: address.adress.trim(),
@@ -251,7 +283,7 @@ export function BoendeForm({
             larm: !!larm,
           }
         : {
-            id: createItemId(),
+            id: initialItem?.id ?? createItemId(),
             kind: "boende",
             typ: typ as "bostadsratt" | "fritidsbostadsratt",
             adress: address.adress.trim(),

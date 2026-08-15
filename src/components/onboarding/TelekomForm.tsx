@@ -11,8 +11,8 @@ import {
   TELEKOM_TYP_LABELS,
   TV_STREAMING_TJANSTER,
 } from "@/lib/items";
-import type { AnslutningTyp, InsuranceItem, TelekomTyp } from "@/lib/items";
-import { isoToSwedishDate } from "@/lib/dates";
+import type { AnslutningTyp, InsuranceItem, TelekomItem, TelekomTyp } from "@/lib/items";
+import { isoToSwedishDate, swedishDateToIso } from "@/lib/dates";
 import { lookupOperator, type OperatorMatch, type OperatorPackage } from "@/lib/operator-lookup";
 
 // Uppskattad nätverkstäckning (andel av Sveriges befolkning) per operatör —
@@ -33,6 +33,7 @@ export function TelekomForm({
   onCancel,
   initialTyp,
   defaultTelefonnummer,
+  initialItem,
 }: {
   onSave: (item: InsuranceItem) => void;
   onCancel: () => void;
@@ -41,21 +42,31 @@ export function TelekomForm({
   // första mobilposten som läggs till (se Onboarding.tsx) — Del D i
   // docs/kundresa-v2-steg2-plan.md.
   defaultTelefonnummer?: string;
+  initialItem?: TelekomItem;
 }) {
-  const [typ, setTyp] = useState<TelekomTyp | null>(initialTyp ?? null);
+  const [typ, setTyp] = useState<TelekomTyp | null>(initialItem?.typ ?? initialTyp ?? null);
+
+  const initialMobil = initialItem?.typ === "mobil" ? initialItem : undefined;
 
   // mobil
-  const [telefonnummer, setTelefonnummer] = useState(defaultTelefonnummer ?? "");
+  const [telefonnummer, setTelefonnummer] = useState(initialMobil?.telefonnummer ?? defaultTelefonnummer ?? "");
   const [lookupState, setLookupState] = useState<"idle" | "loading" | "done">("idle");
   const [match, setMatch] = useState<OperatorMatch | null>(null);
   const [selectedPaket, setSelectedPaket] = useState<OperatorPackage | null>(null);
-  const [manualOperator, setManualOperator] = useState(false);
-  const [operatorMobil, setOperatorMobil] = useState("");
-  const [dataGb, setDataGb] = useState("");
-  const [obegransatData, setObegransatData] = useState<boolean | null>(null);
-  const [prisMobil, setPrisMobil] = useState("");
-  const [bindningMobil, setBindningMobil] = useState("");
-  const [forfallodagMobil, setForfallodagMobil] = useState("");
+  // Redan känd operatör vid redigering — hoppa direkt till det manuella,
+  // redigerbara läget istället för att köra uppslagningsanimationen igen
+  // för en sak som redan är bekräftad.
+  const [manualOperator, setManualOperator] = useState(!!initialMobil);
+  const [operatorMobil, setOperatorMobil] = useState(initialMobil?.operator ?? "");
+  const [dataGb, setDataGb] = useState(initialMobil?.dataGb ? String(initialMobil.dataGb) : "");
+  const [obegransatData, setObegransatData] = useState<boolean | null>(initialMobil?.obegransatData ?? null);
+  const [prisMobil, setPrisMobil] = useState(initialMobil?.prisPerManad ? String(initialMobil.prisPerManad) : "");
+  const [bindningMobil, setBindningMobil] = useState(
+    initialMobil?.bindningstidManader ? String(initialMobil.bindningstidManader) : ""
+  );
+  const [forfallodagMobil, setForfallodagMobil] = useState(
+    initialMobil?.forfallodatum ? (swedishDateToIso(initialMobil.forfallodatum) ?? "") : ""
+  );
 
   const lookupTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const lookupToken = useRef(0);
@@ -109,17 +120,22 @@ export function TelekomForm({
     setPrisMobil("");
   };
 
+  const initialBredband = initialItem?.typ === "bredband" ? initialItem : undefined;
+  const initialTv = initialItem?.typ === "tv_streaming" ? initialItem : undefined;
+
   // bredband
-  const [operatorBredband, setOperatorBredband] = useState("");
-  const [hastighetMbit, setHastighetMbit] = useState("");
-  const [anslutning, setAnslutning] = useState<AnslutningTyp | null>(null);
-  const [prisBredband, setPrisBredband] = useState("");
-  const [bindningBredband, setBindningBredband] = useState("");
+  const [operatorBredband, setOperatorBredband] = useState(initialBredband?.operator ?? "");
+  const [hastighetMbit, setHastighetMbit] = useState(initialBredband?.hastighetMbit ? String(initialBredband.hastighetMbit) : "");
+  const [anslutning, setAnslutning] = useState<AnslutningTyp | null>(initialBredband?.anslutning ?? null);
+  const [prisBredband, setPrisBredband] = useState(initialBredband?.prisPerManad ? String(initialBredband.prisPerManad) : "");
+  const [bindningBredband, setBindningBredband] = useState(
+    initialBredband?.bindningstidManader ? String(initialBredband.bindningstidManader) : ""
+  );
 
   // tv/streaming
-  const [tjanst, setTjanst] = useState("");
-  const [prisTv, setPrisTv] = useState("");
-  const [delatKonto, setDelatKonto] = useState<boolean | null>(null);
+  const [tjanst, setTjanst] = useState(initialTv?.tjanst ?? "");
+  const [prisTv, setPrisTv] = useState(initialTv?.prisPerManad ? String(initialTv.prisPerManad) : "");
+  const [delatKonto, setDelatKonto] = useState<boolean | null>(initialTv?.delatKonto ?? null);
 
   const backToTypePicker = () => setTyp(null);
 
@@ -285,7 +301,7 @@ export function TelekomForm({
           onCancel={onCancel}
           onSave={() =>
             onSave({
-              id: createItemId(),
+              id: initialItem?.id ?? createItemId(),
               kind: "telekom",
               typ: "mobil",
               operator: operatorMobil.trim(),
@@ -336,7 +352,7 @@ export function TelekomForm({
           onCancel={onCancel}
           onSave={() =>
             onSave({
-              id: createItemId(),
+              id: initialItem?.id ?? createItemId(),
               kind: "telekom",
               typ: "bredband",
               operator: operatorBredband.trim(),
@@ -372,7 +388,7 @@ export function TelekomForm({
         onCancel={onCancel}
         onSave={() =>
           onSave({
-            id: createItemId(),
+            id: initialItem?.id ?? createItemId(),
             kind: "telekom",
             typ: "tv_streaming",
             tjanst: tjanst.trim(),

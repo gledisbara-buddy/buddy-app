@@ -14,7 +14,7 @@ import { useBuddy } from "@/lib/buddy-context";
 import type { Quote } from "@/lib/quote";
 import type { FetchableKind } from "@/lib/policy-fetch";
 import { lookupVehicle } from "@/lib/vehicle-lookup";
-import { isoToSwedishDate } from "@/lib/dates";
+import { isoToSwedishDate, swedishDateToIso } from "@/lib/dates";
 import {
   AVTALSTYP_LABELS,
   BAT_MOTOR_LABELS,
@@ -33,24 +33,38 @@ import {
   itemTitle,
   type Avtalstyp,
   type BatMotorTyp,
+  type BilItem,
+  type DjurItem,
   type DjurTyp,
+  type ElItem,
   type Elomrade,
   type FordonTyp,
   type InneUte,
   type InsuranceItem,
   type ItemKind,
   type OnskatSkydd,
+  type OvrigtFordonItem,
+  type PersonItem,
   type PersonRelation,
+  type PrenumerationItem,
   type Sysselsattning,
   type TelekomTyp,
 } from "@/lib/items";
 
-function BilForm({ onSave, onCancel }: { onSave: (item: InsuranceItem) => void; onCancel: () => void }) {
-  const [regnummer, setRegnummer] = useState("");
-  const [markeModell, setMarkeModell] = useState("");
-  const [arsmodell, setArsmodell] = useState("");
-  const [arligKorstracka, setArligKorstracka] = useState("");
-  const [forvaring, setForvaring] = useState<"garage" | "uppfart" | "gata" | null>(null);
+function BilForm({
+  onSave,
+  onCancel,
+  initialItem,
+}: {
+  onSave: (item: InsuranceItem) => void;
+  onCancel: () => void;
+  initialItem?: BilItem;
+}) {
+  const [regnummer, setRegnummer] = useState(initialItem?.regnummer ?? "");
+  const [markeModell, setMarkeModell] = useState(initialItem?.markeModell ?? "");
+  const [arsmodell, setArsmodell] = useState(initialItem?.arsmodell ? String(initialItem.arsmodell) : "");
+  const [arligKorstracka, setArligKorstracka] = useState(initialItem?.arligKorstracka ? String(initialItem.arligKorstracka) : "");
+  const [forvaring, setForvaring] = useState<"garage" | "uppfart" | "gata" | null>(initialItem?.forvaring ?? null);
   const [lookingUp, setLookingUp] = useState(false);
   const lookupToken = useRef(0);
 
@@ -116,7 +130,7 @@ function BilForm({ onSave, onCancel }: { onSave: (item: InsuranceItem) => void; 
         onCancel={onCancel}
         onSave={() =>
           onSave({
-            id: createItemId(),
+            id: initialItem?.id ?? createItemId(),
             kind: "bil",
             regnummer: regnummer.trim(),
             markeModell: markeModell.trim() || undefined,
@@ -130,24 +144,32 @@ function BilForm({ onSave, onCancel }: { onSave: (item: InsuranceItem) => void; 
   );
 }
 
-function OvrigtFordonForm({ onSave, onCancel }: { onSave: (item: InsuranceItem) => void; onCancel: () => void }) {
-  const [fordonstyp, setFordonstyp] = useState<FordonTyp | null>(null);
-  const [regnummer, setRegnummer] = useState("");
-  const [markeModell, setMarkeModell] = useState("");
-  const [arsmodell, setArsmodell] = useState("");
+function OvrigtFordonForm({
+  onSave,
+  onCancel,
+  initialItem,
+}: {
+  onSave: (item: InsuranceItem) => void;
+  onCancel: () => void;
+  initialItem?: OvrigtFordonItem;
+}) {
+  const [fordonstyp, setFordonstyp] = useState<FordonTyp | null>(initialItem?.fordonstyp ?? null);
+  const [regnummer, setRegnummer] = useState(initialItem?.regnummer ?? "");
+  const [markeModell, setMarkeModell] = useState(initialItem?.markeModell ?? "");
+  const [arsmodell, setArsmodell] = useState(initialItem?.arsmodell ? String(initialItem.arsmodell) : "");
   const [lookingUp, setLookingUp] = useState(false);
   const lookupToken = useRef(0);
 
   // mc
-  const [cylindervolymCc, setCylindervolymCc] = useState("");
-  const [effektHk, setEffektHk] = useState("");
+  const [cylindervolymCc, setCylindervolymCc] = useState(initialItem?.cylindervolymCc ? String(initialItem.cylindervolymCc) : "");
+  const [effektHk, setEffektHk] = useState(initialItem?.effektHk ? String(initialItem.effektHk) : "");
   // husvagn
-  const [totalviktKg, setTotalviktKg] = useState("");
-  const [langdM, setLangdM] = useState("");
+  const [totalviktKg, setTotalviktKg] = useState(initialItem?.totalviktKg ? String(initialItem.totalviktKg) : "");
+  const [langdM, setLangdM] = useState(initialItem?.langdM ? String(initialItem.langdM) : "");
   // bat
-  const [motortyp, setMotortyp] = useState<BatMotorTyp | null>(null);
+  const [motortyp, setMotortyp] = useState<BatMotorTyp | null>(initialItem?.motortyp ?? null);
   // slap
-  const [maxlastKg, setMaxlastKg] = useState("");
+  const [maxlastKg, setMaxlastKg] = useState(initialItem?.maxlastKg ? String(initialItem.maxlastKg) : "");
 
   const valid = !!fordonstyp;
 
@@ -246,7 +268,7 @@ function OvrigtFordonForm({ onSave, onCancel }: { onSave: (item: InsuranceItem) 
         onCancel={onCancel}
         onSave={() =>
           onSave({
-            id: createItemId(),
+            id: initialItem?.id ?? createItemId(),
             kind: "ovrigt_fordon",
             fordonstyp: fordonstyp!,
             regnummer: regnummer.trim() || undefined,
@@ -265,13 +287,21 @@ function OvrigtFordonForm({ onSave, onCancel }: { onSave: (item: InsuranceItem) 
   );
 }
 
-function PersonForm({ onSave, onCancel }: { onSave: (item: InsuranceItem) => void; onCancel: () => void }) {
-  const [namn, setNamn] = useState("");
-  const [personnummer, setPersonnummer] = useState("");
-  const [relation, setRelation] = useState<PersonRelation | null>(null);
+function PersonForm({
+  onSave,
+  onCancel,
+  initialItem,
+}: {
+  onSave: (item: InsuranceItem) => void;
+  onCancel: () => void;
+  initialItem?: PersonItem;
+}) {
+  const [namn, setNamn] = useState(initialItem?.namn ?? "");
+  const [personnummer, setPersonnummer] = useState(initialItem?.personnummer ?? "");
+  const [relation, setRelation] = useState<PersonRelation | null>(initialItem?.relation ?? null);
 
-  const [sysselsattning, setSysselsattning] = useState<Sysselsattning | null>(null);
-  const [onskatSkydd, setOnskatSkydd] = useState<OnskatSkydd[]>([]);
+  const [sysselsattning, setSysselsattning] = useState<Sysselsattning | null>(initialItem?.sysselsattning ?? null);
+  const [onskatSkydd, setOnskatSkydd] = useState<OnskatSkydd[]>(initialItem?.onskatSkydd ?? []);
 
   const valid = namn.trim().length > 0 && personnummer.trim().length >= 10 && relation;
   const skyddOptions: OnskatSkydd[] =
@@ -314,7 +344,7 @@ function PersonForm({ onSave, onCancel }: { onSave: (item: InsuranceItem) => voi
         onCancel={onCancel}
         onSave={() =>
           onSave({
-            id: createItemId(),
+            id: initialItem?.id ?? createItemId(),
             kind: "person",
             namn: namn.trim(),
             personnummer: personnummer.trim(),
@@ -328,15 +358,23 @@ function PersonForm({ onSave, onCancel }: { onSave: (item: InsuranceItem) => voi
   );
 }
 
-function DjurForm({ onSave, onCancel }: { onSave: (item: InsuranceItem) => void; onCancel: () => void }) {
-  const [djurtyp, setDjurtyp] = useState<DjurTyp | null>(null);
-  const [namn, setNamn] = useState("");
-  const [ras, setRas] = useState("");
-  const [fodelsear, setFodelsear] = useState("");
-  const [viktKg, setViktKg] = useState("");
-  const [kastrerad, setKastrerad] = useState<boolean | null>(null);
-  const [inneUte, setInneUte] = useState<InneUte | null>(null);
-  const [reserUtomlands, setReserUtomlands] = useState<boolean | null>(null);
+function DjurForm({
+  onSave,
+  onCancel,
+  initialItem,
+}: {
+  onSave: (item: InsuranceItem) => void;
+  onCancel: () => void;
+  initialItem?: DjurItem;
+}) {
+  const [djurtyp, setDjurtyp] = useState<DjurTyp | null>(initialItem?.djurtyp ?? null);
+  const [namn, setNamn] = useState(initialItem?.namn ?? "");
+  const [ras, setRas] = useState(initialItem?.ras ?? "");
+  const [fodelsear, setFodelsear] = useState(initialItem?.fodelsear ? String(initialItem.fodelsear) : "");
+  const [viktKg, setViktKg] = useState(initialItem?.viktKg ? String(initialItem.viktKg) : "");
+  const [kastrerad, setKastrerad] = useState<boolean | null>(initialItem?.kastrerad ?? null);
+  const [inneUte, setInneUte] = useState<InneUte | null>(initialItem?.inneUte ?? null);
+  const [reserUtomlands, setReserUtomlands] = useState<boolean | null>(initialItem?.reserUtomlands ?? null);
 
   const valid = !!djurtyp && namn.trim().length > 0;
 
@@ -375,7 +413,7 @@ function DjurForm({ onSave, onCancel }: { onSave: (item: InsuranceItem) => void;
         onCancel={onCancel}
         onSave={() =>
           onSave({
-            id: createItemId(),
+            id: initialItem?.id ?? createItemId(),
             kind: "djur",
             djurtyp: djurtyp!,
             namn: namn.trim(),
@@ -392,12 +430,22 @@ function DjurForm({ onSave, onCancel }: { onSave: (item: InsuranceItem) => void;
   );
 }
 
-function ElForm({ onSave, onCancel }: { onSave: (item: InsuranceItem) => void; onCancel: () => void }) {
-  const [elbolag, setElbolag] = useState("");
-  const [avtalstyp, setAvtalstyp] = useState<Avtalstyp | null>(null);
-  const [elomrade, setElomrade] = useState<Elomrade | null>(null);
-  const [arsforbrukningKwh, setArsforbrukningKwh] = useState("");
-  const [bindningstidManader, setBindningstidManader] = useState("");
+function ElForm({
+  onSave,
+  onCancel,
+  initialItem,
+}: {
+  onSave: (item: InsuranceItem) => void;
+  onCancel: () => void;
+  initialItem?: ElItem;
+}) {
+  const [elbolag, setElbolag] = useState(initialItem?.elbolag ?? "");
+  const [avtalstyp, setAvtalstyp] = useState<Avtalstyp | null>(initialItem?.avtalstyp ?? null);
+  const [elomrade, setElomrade] = useState<Elomrade | null>(initialItem?.elomrade ?? null);
+  const [arsforbrukningKwh, setArsforbrukningKwh] = useState(initialItem?.arsforbrukningKwh ? String(initialItem.arsforbrukningKwh) : "");
+  const [bindningstidManader, setBindningstidManader] = useState(
+    initialItem?.bindningstidManader ? String(initialItem.bindningstidManader) : ""
+  );
 
   const valid = elbolag.trim().length > 0 && !!avtalstyp && !!elomrade;
 
@@ -442,7 +490,7 @@ function ElForm({ onSave, onCancel }: { onSave: (item: InsuranceItem) => void; o
         onCancel={onCancel}
         onSave={() =>
           onSave({
-            id: createItemId(),
+            id: initialItem?.id ?? createItemId(),
             kind: "el",
             elbolag: elbolag.trim(),
             avtalstyp: avtalstyp!,
@@ -456,12 +504,24 @@ function ElForm({ onSave, onCancel }: { onSave: (item: InsuranceItem) => void; o
   );
 }
 
-function PrenumerationForm({ onSave, onCancel }: { onSave: (item: InsuranceItem) => void; onCancel: () => void }) {
-  const [namn, setNamn] = useState("");
-  const [leverantor, setLeverantor] = useState("");
-  const [prisPerManad, setPrisPerManad] = useState("");
-  const [bindningstidManader, setBindningstidManader] = useState("");
-  const [forfallodag, setForfallodag] = useState("");
+function PrenumerationForm({
+  onSave,
+  onCancel,
+  initialItem,
+}: {
+  onSave: (item: InsuranceItem) => void;
+  onCancel: () => void;
+  initialItem?: PrenumerationItem;
+}) {
+  const [namn, setNamn] = useState(initialItem?.namn ?? "");
+  const [leverantor, setLeverantor] = useState(initialItem?.leverantor ?? "");
+  const [prisPerManad, setPrisPerManad] = useState(initialItem?.prisPerManad ? String(initialItem.prisPerManad) : "");
+  const [bindningstidManader, setBindningstidManader] = useState(
+    initialItem?.bindningstidManader ? String(initialItem.bindningstidManader) : ""
+  );
+  const [forfallodag, setForfallodag] = useState(
+    initialItem?.forfallodatum ? (swedishDateToIso(initialItem.forfallodatum) ?? "") : ""
+  );
 
   const valid = namn.trim().length > 0 && Number(prisPerManad) > 0;
 
@@ -495,7 +555,7 @@ function PrenumerationForm({ onSave, onCancel }: { onSave: (item: InsuranceItem)
         onCancel={onCancel}
         onSave={() =>
           onSave({
-            id: createItemId(),
+            id: initialItem?.id ?? createItemId(),
             kind: "prenumeration",
             namn: namn.trim(),
             leverantor: leverantor.trim() || undefined,
@@ -509,30 +569,43 @@ function PrenumerationForm({ onSave, onCancel }: { onSave: (item: InsuranceItem)
   );
 }
 
-const CATEGORY_FORMS: Record<ItemKind, React.ComponentType<{ onSave: (item: InsuranceItem) => void; onCancel: () => void }>> = {
-  boende: BoendeForm,
-  bil: BilForm,
-  ovrigt_fordon: OvrigtFordonForm,
-  person: PersonForm,
-  djur: DjurForm,
-  telekom: TelekomForm,
-  kreditkort: KreditkortForm,
-  el: ElForm,
-  prenumeration: PrenumerationForm,
+type ItemFormProps = { onSave: (item: InsuranceItem) => void; onCancel: () => void; initialItem?: InsuranceItem };
+
+// Varje formulär tar egentligen en SNÄVARE initialItem-typ (t.ex. BilForm
+// vill ha BilItem, inte hela InsuranceItem-unionen) — den skillnaden går
+// inte att uttrycka i en gemensam Record utan att typa bort den, men det
+// är runtime-säkert: den här komponenten väljs alltid via activeCategory,
+// och editItem har alltid samma kind som activeCategory (se render nedan).
+const CATEGORY_FORMS: Record<ItemKind, React.ComponentType<ItemFormProps>> = {
+  boende: BoendeForm as unknown as React.ComponentType<ItemFormProps>,
+  bil: BilForm as unknown as React.ComponentType<ItemFormProps>,
+  ovrigt_fordon: OvrigtFordonForm as unknown as React.ComponentType<ItemFormProps>,
+  person: PersonForm as unknown as React.ComponentType<ItemFormProps>,
+  djur: DjurForm as unknown as React.ComponentType<ItemFormProps>,
+  telekom: TelekomForm as unknown as React.ComponentType<ItemFormProps>,
+  kreditkort: KreditkortForm as unknown as React.ComponentType<ItemFormProps>,
+  el: ElForm as unknown as React.ComponentType<ItemFormProps>,
+  prenumeration: PrenumerationForm as unknown as React.ComponentType<ItemFormProps>,
 };
 
 export function Onboarding({
   initialKind,
   initialTyp,
+  editItemId,
 }: {
   initialKind?: ItemKind;
   initialTyp?: TelekomTyp;
+  // Sak som redan finns — hoppar förbi kategori-/hämta-automatiskt-val och
+  // går rakt till rätt formulär, förifyllt. Se ItemDetail.tsx:s
+  // "Redigera"-knapp.
+  editItemId?: string;
 }) {
   const router = useRouter();
-  const { userType, loading, items, profile, addItem, removeItem, setPolicy } = useBuddy();
-  const [activeCategory, setActiveCategory] = useState<ItemKind | null>(initialKind ?? null);
+  const { userType, loading, items, profile, addItem, updateItem, removeItem, setPolicy } = useBuddy();
+  const editItem = editItemId ? items.find((i) => i.id === editItemId) : undefined;
+  const [activeCategory, setActiveCategory] = useState<ItemKind | null>(editItem?.kind ?? initialKind ?? null);
   const [addMode, setAddMode] = useState<"choice" | "auto" | "manual" | null>(
-    activeCategory ? (groupForKind(activeCategory) === "forsakring" ? "choice" : "manual") : null
+    editItem ? "manual" : activeCategory ? (groupForKind(activeCategory) === "forsakring" ? "choice" : "manual") : null
   );
   const [addModeFor, setAddModeFor] = useState<ItemKind | null>(activeCategory);
   const [showBundlePopup, setShowBundlePopup] = useState(false);
@@ -554,10 +627,16 @@ export function Onboarding({
   // (not an effect) so the choice screen shows before the first paint.
   if (activeCategory !== addModeFor) {
     setAddModeFor(activeCategory);
-    setAddMode(activeCategory ? (groupForKind(activeCategory) === "forsakring" ? "choice" : "manual") : null);
+    setAddMode(
+      editItem ? "manual" : activeCategory ? (groupForKind(activeCategory) === "forsakring" ? "choice" : "manual") : null
+    );
   }
 
   if (loading || !userType) return null;
+  if (editItemId && !editItem) {
+    router.replace("/dashboard");
+    return null;
+  }
 
   const goToDashboard = () => router.push("/dashboard");
 
@@ -575,10 +654,16 @@ export function Onboarding({
     setActiveCategory(null);
   };
 
+  const handleItemEdited = (item: InsuranceItem) => {
+    updateItem(item);
+    router.push(`/objekt/${item.id}`);
+  };
+
   if (activeCategory) {
     const meta = ITEM_CATEGORIES.find((c) => c.kind === activeCategory)!;
     const FormComponent = CATEGORY_FORMS[activeCategory];
-    const close = () => setActiveCategory(null);
+    const close = editItem ? () => router.push(`/objekt/${editItem.id}`) : () => setActiveCategory(null);
+    const handleSaved = editItem ? handleItemEdited : (item: InsuranceItem) => handleItemAdded(item);
 
     return (
       <div className="min-h-screen w-full flex flex-col">
@@ -592,7 +677,7 @@ export function Onboarding({
                 <ArrowLeft size={15} /> Tillbaka
               </button>
             )}
-            <span className="bd-eyebrow">Lägg till</span>
+            <span className="bd-eyebrow">{editItem ? "Redigera" : "Lägg till"}</span>
             <h1 className="bd-display text-2xl mt-3 mb-6">{meta.label}</h1>
 
             {addMode === "choice" && (
@@ -627,16 +712,17 @@ export function Onboarding({
 
             {addMode === "manual" && activeCategory === "telekom" && (
               <TelekomForm
-                onSave={(item) => handleItemAdded(item)}
+                onSave={handleSaved}
                 onCancel={close}
                 initialTyp={initialTyp}
+                initialItem={editItem?.kind === "telekom" ? editItem : undefined}
                 defaultTelefonnummer={
-                  items.some((i) => i.kind === "telekom" && i.typ === "mobil") ? undefined : profile?.phone
+                  editItem || items.some((i) => i.kind === "telekom" && i.typ === "mobil") ? undefined : profile?.phone
                 }
               />
             )}
             {addMode === "manual" && activeCategory !== "telekom" && (
-              <FormComponent onSave={(item) => handleItemAdded(item)} onCancel={close} />
+              <FormComponent onSave={handleSaved} onCancel={close} initialItem={editItem} />
             )}
           </div>
         </div>

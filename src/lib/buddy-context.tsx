@@ -167,6 +167,7 @@ type BuddyState = {
   respondToHouseholdRequest: (requestId: string, approve: boolean) => Promise<boolean>;
   items: InsuranceItem[];
   addItem: (item: InsuranceItem) => Promise<void>;
+  updateItem: (item: InsuranceItem) => void;
   addItems: (items: InsuranceItem[]) => Promise<void>;
   removeItem: (id: string) => void;
   policies: Record<string, Quote>;
@@ -658,6 +659,19 @@ export function BuddyProvider({ children }: { children: ReactNode }) {
     [supabase, userId]
   );
 
+  // Redigerar en befintlig sak på plats (samma id) istället för att ta
+  // bort och lägga till på nytt — så att policy_history, policies och
+  // Historik-sektionen i ItemDetail.tsx fortfarande hör ihop med samma
+  // item_id efteråt.
+  const updateItem = useCallback(
+    (item: InsuranceItem) => {
+      setItems((prev) => prev.map((i) => (i.id === item.id ? item : i)));
+      if (!userId) return;
+      supabase.from("items").update({ kind: item.kind, data: item }).eq("id", item.id).then(logWriteError("sak"));
+    },
+    [supabase, userId]
+  );
+
   // Bulk-variant för BankID-importen (BankIdImport.tsx) — en state-uppdatering
   // och ETT batchat insert istället för att loopa addItem N gånger.
   const addItems = useCallback(
@@ -849,6 +863,7 @@ export function BuddyProvider({ children }: { children: ReactNode }) {
       respondToHouseholdRequest,
       items,
       addItem,
+      updateItem,
       addItems,
       removeItem,
       policies,
@@ -888,6 +903,7 @@ export function BuddyProvider({ children }: { children: ReactNode }) {
       respondToHouseholdRequest,
       items,
       addItem,
+      updateItem,
       addItems,
       removeItem,
       policies,

@@ -4,27 +4,31 @@ import { useState } from "react";
 import { ArrowLeft } from "lucide-react";
 import { BoolPill, Field, FormActions, inputClass, PillGroup, PillGroupWithOther } from "@/components/onboarding/shared";
 import { createItemId, KREDITKORT_UTGIVARE, ONSKAD_KREDITKORT_LABELS } from "@/lib/items";
-import type { InsuranceItem, OnskadKreditkortPrioritet } from "@/lib/items";
+import type { InsuranceItem, KreditkortItem, OnskadKreditkortPrioritet } from "@/lib/items";
 
 export function KreditkortForm({
   onSave,
   onCancel,
+  initialItem,
 }: {
   onSave: (item: InsuranceItem) => void;
   onCancel: () => void;
+  initialItem?: KreditkortItem;
 }) {
-  const [harReddan, setHarReddan] = useState<boolean | null>(null);
+  const [harReddan, setHarReddan] = useState<boolean | null>(initialItem?.harReddan ?? null);
 
   // harReddan = true
-  const [utgivare, setUtgivare] = useState("");
-  const [kortnamn, setKortnamn] = useState("");
-  const [arsavgift, setArsavgift] = useState("");
-  const [ranta, setRanta] = useState("");
-  const [kreditgrans, setKreditgrans] = useState("");
-  const [bonusprogram, setBonusprogram] = useState<boolean | null>(null);
+  const [utgivare, setUtgivare] = useState(initialItem?.utgivare ?? "");
+  const [kortnamn, setKortnamn] = useState(initialItem?.kortnamn ?? "");
+  const [arsavgift, setArsavgift] = useState(initialItem?.arsavgift ? String(initialItem.arsavgift) : "");
+  const [ranta, setRanta] = useState(initialItem?.ranta ? String(initialItem.ranta) : "");
+  const [kreditgrans, setKreditgrans] = useState(initialItem?.kreditgrans ? String(initialItem.kreditgrans) : "");
+  const [bonusprogram, setBonusprogram] = useState<boolean | null>(initialItem?.bonusprogram ?? null);
 
   // harReddan = false
-  const [onskadPrioritet, setOnskadPrioritet] = useState<OnskadKreditkortPrioritet | null>(null);
+  const [onskadPrioritet, setOnskadPrioritet] = useState<OnskadKreditkortPrioritet | null>(
+    initialItem?.onskadPrioritet ?? null
+  );
 
   if (harReddan === null) {
     return (
@@ -86,7 +90,7 @@ export function KreditkortForm({
           onCancel={onCancel}
           onSave={() =>
             onSave({
-              id: createItemId(),
+              id: initialItem?.id ?? createItemId(),
               kind: "kreditkort",
               harReddan: true,
               utgivare: utgivare.trim(),
@@ -121,7 +125,7 @@ export function KreditkortForm({
         onCancel={onCancel}
         onSave={() =>
           onSave({
-            id: createItemId(),
+            id: initialItem?.id ?? createItemId(),
             kind: "kreditkort",
             harReddan: false,
             onskadPrioritet: onskadPrioritet!,
