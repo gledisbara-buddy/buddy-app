@@ -8,6 +8,7 @@ import { Logo } from "@/components/Logo";
 import { Field, inputClass } from "@/components/onboarding/shared";
 import { createClient } from "@/lib/supabase/client";
 import { isValidSwedishMobile } from "@/lib/phone";
+import { isValidPersonnummer } from "@/lib/personnummer";
 import type { UserType } from "@/lib/types";
 
 type Mode = "login" | "signup";
@@ -16,9 +17,12 @@ export function AuthForm({ userType }: { userType: UserType }) {
   const router = useRouter();
   const [mode, setMode] = useState<Mode>("signup");
   const [name, setName] = useState("");
+  const [lastName, setLastName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
   const [phone, setPhone] = useState("");
+  const [personnummer, setPersonnummer] = useState("");
   const [referralCode, setReferralCode] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -30,7 +34,12 @@ export function AuthForm({ userType }: { userType: UserType }) {
   const valid =
     email.trim().length > 3 &&
     password.length >= 6 &&
-    (mode === "login" || (isValidSwedishMobile(phone) && name.trim().length >= 2));
+    (mode === "login" ||
+      (isValidSwedishMobile(phone) &&
+        name.trim().length >= 2 &&
+        lastName.trim().length >= 2 &&
+        isValidPersonnummer(personnummer) &&
+        confirmPassword === password));
 
   const handleSubmit = async () => {
     if (!valid || loading) return;
@@ -47,7 +56,8 @@ export function AuthForm({ userType }: { userType: UserType }) {
             user_type: userType,
             referral_code_used: referralCode.trim() || null,
             phone: phone.trim(),
-            name: name.trim(),
+            name: `${name.trim()} ${lastName.trim()}`.trim(),
+            personnummer: personnummer.trim(),
           },
         },
       });
@@ -171,14 +181,24 @@ export function AuthForm({ userType }: { userType: UserType }) {
           </div>
           <div className="bg-white rounded-2xl border border-line p-6">
             {mode === "signup" && (
-              <Field label="Förnamn">
-                <input
-                  className={inputClass}
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  placeholder="T.ex. Sam"
-                />
-              </Field>
+              <div className="grid grid-cols-2 gap-3">
+                <Field label="Förnamn">
+                  <input
+                    className={inputClass}
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    placeholder="T.ex. Sam"
+                  />
+                </Field>
+                <Field label="Efternamn">
+                  <input
+                    className={inputClass}
+                    value={lastName}
+                    onChange={(e) => setLastName(e.target.value)}
+                    placeholder="T.ex. Andersson"
+                  />
+                </Field>
+              </div>
             )}
             <Field label="E-post">
               <input
@@ -199,6 +219,17 @@ export function AuthForm({ userType }: { userType: UserType }) {
               />
             </Field>
             {mode === "signup" && (
+              <Field label="Bekräfta lösenord">
+                <input
+                  type="password"
+                  className={inputClass}
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  placeholder="Upprepa lösenordet"
+                />
+              </Field>
+            )}
+            {mode === "signup" && (
               <Field label="Mobilnummer">
                 <input
                   type="tel"
@@ -207,6 +238,16 @@ export function AuthForm({ userType }: { userType: UserType }) {
                   value={phone}
                   onChange={(e) => setPhone(e.target.value)}
                   placeholder="070-123 45 67"
+                />
+              </Field>
+            )}
+            {mode === "signup" && (
+              <Field label="Personnummer">
+                <input
+                  className={inputClass}
+                  value={personnummer}
+                  onChange={(e) => setPersonnummer(e.target.value)}
+                  placeholder="ÅÅÅÅMMDD-XXXX"
                 />
               </Field>
             )}

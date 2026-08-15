@@ -190,9 +190,11 @@ alter table public.profiles add column if not exists fullmakt_signed_at timestam
 alter table public.profiles add column if not exists fullmakt_pdf_path text;
 
 -- Skapar automatiskt en profiles-rad när någon registrerar sig.
--- user_type och name skickas med som user-metadata vid signup, liksom en
--- ev. angiven värvningskod (referral_code_used) som slås upp till ett
--- riktigt användar-id här.
+-- user_type, name, phone och personnummer skickas med som user-metadata
+-- vid signup (obligatoriska fält sedan kundresa v2, se AuthForm.tsx),
+-- liksom en ev. angiven värvningskod (referral_code_used) som slås upp
+-- till ett riktigt användar-id här. phone/personnummer fanns redan som
+-- kolumner men kopierades tidigare aldrig in från raw_user_meta_data.
 create or replace function public.handle_new_user()
 returns trigger as $$
 declare
@@ -204,12 +206,14 @@ begin
     limit 1;
   end if;
 
-  insert into public.profiles (id, user_type, name, email, referred_by)
+  insert into public.profiles (id, user_type, name, email, phone, personnummer, referred_by)
   values (
     new.id,
     coalesce(new.raw_user_meta_data->>'user_type', 'privat'),
     coalesce(new.raw_user_meta_data->>'name', ''),
     new.email,
+    nullif(new.raw_user_meta_data->>'phone', ''),
+    nullif(new.raw_user_meta_data->>'personnummer', ''),
     v_referrer_id
   );
   return new;
