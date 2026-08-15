@@ -200,7 +200,7 @@ export function Dashboard({ showIntro: initialShowIntro }: { showIntro?: boolean
   const now = new Date();
   const todayIso = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
   const upcomingBooking = [...bookings]
-    .filter((b) => b.day >= todayIso)
+    .filter((b) => b.day >= todayIso && b.status !== "avbokad")
     .sort((a, b) => (a.day === b.day ? a.time.localeCompare(b.time) : a.day.localeCompare(b.day)))[0];
 
   return (
