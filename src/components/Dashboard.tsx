@@ -123,6 +123,7 @@ export function Dashboard({ showIntro: initialShowIntro }: { showIntro?: boolean
   const [activeGroup, setActiveGroup] = useState<ItemGroupId | null>(null);
   const [itemSearch, setItemSearch] = useState("");
   const [showIntro, setShowIntro] = useState(!!initialShowIntro);
+  const [introStep, setIntroStep] = useState(0);
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
   const [confirmCancelId, setConfirmCancelId] = useState<string | null>(null);
   const [switching, setSwitching] = useState(false);
@@ -143,6 +144,7 @@ export function Dashboard({ showIntro: initialShowIntro }: { showIntro?: boolean
 
   const closeIntro = () => {
     setShowIntro(false);
+    setIntroStep(0);
     router.replace("/dashboard");
   };
 
@@ -208,23 +210,53 @@ export function Dashboard({ showIntro: initialShowIntro }: { showIntro?: boolean
       {showIntro && (
         <Overlay onClose={closeIntro}>
           <span className="bd-eyebrow">Välkommen</span>
-          <h2 className="bd-display text-2xl mt-2 mb-4">Såhär funkar Buddy</h2>
-          <div className="flex flex-col gap-3 mb-6">
-            {INTRO_POINTS.map((p) => (
-              <div key={p.text} className="flex items-start gap-3">
-                <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-none bg-frost-2">
-                  <p.icon size={15} className="text-forest" />
-                </div>
-                <p className="text-sm text-ink">{p.text}</p>
-              </div>
+          <h2 className="bd-display text-2xl mt-2 mb-1">Såhär funkar Buddy</h2>
+          <div className="flex items-center gap-1.5 mb-5">
+            {INTRO_POINTS.map((_, i) => (
+              <div
+                key={i}
+                className={`h-1.5 rounded-full transition-all ${
+                  i === introStep ? "w-6 bg-forest" : "w-1.5 bg-frost-2"
+                }`}
+              />
             ))}
           </div>
-          <button
-            onClick={closeIntro}
-            className="bd-btn w-full py-3.5 rounded-full font-semibold text-white text-[15px] bg-forest"
-          >
-            Kom igång
-          </button>
+          {(() => {
+            const point = INTRO_POINTS[introStep];
+            return (
+              <div key={point.text} className="flex items-start gap-3 mb-8 bd-fade">
+                <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-none bg-frost-2">
+                  <point.icon size={18} className="text-forest" />
+                </div>
+                <p className="text-[15px] text-ink pt-1.5">{point.text}</p>
+              </div>
+            );
+          })()}
+          <div className="flex items-center gap-3">
+            {introStep > 0 && (
+              <button
+                onClick={() => setIntroStep((s) => s - 1)}
+                className="flex-none px-4 py-3.5 rounded-full font-semibold text-sm border border-line"
+              >
+                Tillbaka
+              </button>
+            )}
+            {introStep < INTRO_POINTS.length - 1 ? (
+              <button
+                onClick={() => setIntroStep((s) => s + 1)}
+                className="bd-btn flex-1 flex items-center justify-center gap-2 py-3.5 rounded-full font-semibold text-white text-[15px] bg-forest"
+              >
+                Nästa <ArrowRight size={16} />
+              </button>
+            ) : (
+              <button
+                onClick={closeIntro}
+                className="bd-btn flex-1 py-3.5 rounded-full font-semibold text-white text-[15px] bg-forest"
+              >
+                Kom igång
+              </button>
+            )}
+          </div>
         </Overlay>
       )}
       {confirmDeleteId && (
