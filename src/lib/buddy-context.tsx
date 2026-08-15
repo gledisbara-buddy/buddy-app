@@ -159,6 +159,7 @@ type BuddyState = {
   household: Household | null;
   createHousehold: (name: string) => Promise<boolean>;
   leaveHousehold: () => void;
+  removeHouseholdMember: (memberId: string) => Promise<boolean>;
   // Hushåll v2 — se HouseholdRequest/SentHouseholdRequest ovan.
   householdRequests: HouseholdRequest[];
   sentHouseholdRequests: SentHouseholdRequest[];
@@ -621,6 +622,25 @@ export function BuddyProvider({ children }: { children: ReactNode }) {
       .then(logWriteError("hushåll"));
   }, [supabase, userId]);
 
+  // Symmetriskt — vem som helst i hushållet kan koppla loss vem som helst
+  // annan, inget ägarbegrepp i den här modellen (medvetet val, se
+  // remove_household_member() i schema.sql). Optimistisk lokal borttagning
+  // + återhämtar den riktiga listan i bakgrunden ifall RPC:en skulle
+  // misslyckas (fel hushåll, redan borttagen av någon annan, etc.).
+  const removeHouseholdMember = useCallback(
+    async (memberId: string): Promise<boolean> => {
+      setHousehold((prev) => (prev ? { ...prev, members: prev.members.filter((m) => m.id !== memberId) } : prev));
+      const { data, error } = await supabase.rpc("remove_household_member", { member_id: memberId });
+      if (error || !data) {
+        const { data: hh } = await supabase.rpc("get_my_household").maybeSingle();
+        setHousehold(hh ? mapHouseholdRow(hh as HouseholdRpcRow) : null);
+        return false;
+      }
+      return true;
+    },
+    [supabase]
+  );
+
   // Returnerar ett Promise så anroparen kan vänta in att items-raden faktiskt
   // finns i databasen innan den sätter policy för den — policies.item_id har
   // en foreign key mot items.id, så en efterföljande setPolicy() som körs
@@ -822,6 +842,7 @@ export function BuddyProvider({ children }: { children: ReactNode }) {
       household,
       createHousehold,
       leaveHousehold,
+      removeHouseholdMember,
       householdRequests,
       sentHouseholdRequests,
       requestHouseholdJoin,
@@ -860,6 +881,7 @@ export function BuddyProvider({ children }: { children: ReactNode }) {
       household,
       createHousehold,
       leaveHousehold,
+      removeHouseholdMember,
       householdRequests,
       sentHouseholdRequests,
       requestHouseholdJoin,

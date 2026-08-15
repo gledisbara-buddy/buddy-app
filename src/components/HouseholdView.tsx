@@ -31,6 +31,7 @@ export function HouseholdView() {
     household,
     createHousehold,
     leaveHousehold,
+    removeHouseholdMember,
     householdRequests,
     sentHouseholdRequests,
     requestHouseholdJoin,
@@ -45,6 +46,8 @@ export function HouseholdView() {
   const [inviteSent, setInviteSent] = useState(false);
   const [respondingId, setRespondingId] = useState<string | null>(null);
   const [confirmLeave, setConfirmLeave] = useState(false);
+  const [confirmRemoveMember, setConfirmRemoveMember] = useState<{ id: string; name: string } | null>(null);
+  const [removingMember, setRemovingMember] = useState(false);
   const [summary, setSummary] = useState<HouseholdSummary | null>(null);
   const [memberItems, setMemberItems] = useState<MemberItem[] | null>(null);
 
@@ -201,7 +204,15 @@ export function HouseholdView() {
                 {household.members.map((m) => (
                   <div key={m.id} className="flex items-center justify-between">
                     <span className="text-sm font-medium">{m.name || "(Namn saknas)"}</span>
-                    <span className="text-xs text-slate">{m.relation ? HOUSEHOLD_RELATION_LABELS[m.relation] : "–"}</span>
+                    <div className="flex items-center gap-3">
+                      <span className="text-xs text-slate">{m.relation ? HOUSEHOLD_RELATION_LABELS[m.relation] : "–"}</span>
+                      <button
+                        onClick={() => setConfirmRemoveMember({ id: m.id, name: m.name || "medlemmen" })}
+                        className="text-xs font-semibold text-slate hover:text-red-600"
+                      >
+                        Ta bort
+                      </button>
+                    </div>
                   </div>
                 ))}
               </div>
@@ -353,6 +364,21 @@ export function HouseholdView() {
                   setConfirmLeave(false);
                 }}
                 onCancel={() => setConfirmLeave(false)}
+              />
+            )}
+
+            {confirmRemoveMember && (
+              <ConfirmDialog
+                title={`Ta bort ${confirmRemoveMember.name} från hushållet?`}
+                body="Personen kopplas bort men kan bli inbjuden igen senare. Deras egna saker och avtal påverkas inte."
+                confirmLabel={removingMember ? "Tar bort…" : "Ta bort"}
+                onConfirm={async () => {
+                  setRemovingMember(true);
+                  await removeHouseholdMember(confirmRemoveMember.id);
+                  setRemovingMember(false);
+                  setConfirmRemoveMember(null);
+                }}
+                onCancel={() => setConfirmRemoveMember(null)}
               />
             )}
           </>

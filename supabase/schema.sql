@@ -978,3 +978,39 @@ alter table public.claims alter column status set default 'mottagen';
 alter table public.claims drop constraint if exists claims_status_check;
 alter table public.claims add constraint claims_status_check
   check (status in ('mottagen', 'under_utredning', 'godkand', 'nekad', 'utbetald'));
+
+-- Låter en hushållsmedlem koppla loss en ANNAN medlem. Symmetriskt med
+-- avsikt — hushållsmodellen har inget ägar-/adminbegrepp, vem som helst
+-- av medlemmarna kan ta bort vem som helst annan (bekräftat val, se
+-- HouseholdView.tsx). SECURITY DEFINER eftersom en klient annars inte får
+-- skriva till en annan användares profiles-rad; verifierar att båda
+-- faktiskt delar samma hushåll innan något ändras, så en medlem aldrig
+-- kan koppla loss en godtycklig annan användare.
+create or replace function public.remove_household_member(member_id uuid)
+returns boolean
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  v_my_household_id uuid;
+  v_member_household_id uuid;
+begin
+  if member_id = auth.uid() then
+    return false;
+  end if;
+
+  select household_id into v_my_household_id from public.profiles where id = auth.uid();
+  select household_id into v_member_household_id from public.profiles where id = member_id;
+
+  if v_my_household_id is null or v_my_household_id <> v_member_household_id then
+    return false;
+  end if;
+
+  update public.profiles
+  set household_id = null, household_relation = null
+  where id = member_id;
+
+  return true;
+end;
+$$;
