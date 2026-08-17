@@ -136,7 +136,7 @@ export function TabBar() {
   return (
     <nav
       data-no-swipe-nav
-      className="flex items-center gap-1 overflow-x-auto px-3 md:px-8 border-b border-line"
+      className="flex items-center justify-center gap-1 overflow-x-auto px-3 md:px-8 border-b border-line"
       style={{ background: "var(--color-frost-90)" }}
     >
       {NAV_ITEMS.map((item) => {
@@ -146,21 +146,21 @@ export function TabBar() {
           <button
             key={item.href}
             onClick={() => router.push(item.href)}
-            className={`flex items-center gap-1.5 px-3 py-2.5 text-sm font-medium whitespace-nowrap border-b-2 flex-none ${
+            className={`flex items-center gap-2 px-4 py-3 text-base font-medium whitespace-nowrap border-b-2 flex-none ${
               active ? "border-forest text-forest" : "border-transparent text-slate hover:text-ink"
             }`}
           >
-            <Icon size={15} /> {item.label}
+            <Icon size={17} /> {item.label}
           </button>
         );
       })}
       <button
         onClick={() => setMoreOpen(true)}
-        className={`flex items-center gap-1.5 px-3 py-2.5 text-sm font-medium whitespace-nowrap border-b-2 flex-none ${
+        className={`flex items-center gap-2 px-4 py-3 text-base font-medium whitespace-nowrap border-b-2 flex-none ${
           moreActive ? "border-forest text-forest" : "border-transparent text-slate hover:text-ink"
         }`}
       >
-        <MoreHorizontal size={15} /> Mer
+        <MoreHorizontal size={17} /> Mer
       </button>
 
       {moreOpen && (
