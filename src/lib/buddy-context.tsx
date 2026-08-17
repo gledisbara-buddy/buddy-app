@@ -9,6 +9,7 @@ import type { ChatMessage, ClaimStatus } from "@/lib/claim";
 import { generateHouseholdCode, type HouseholdRelation } from "@/lib/household";
 import { sendTransactionalEmail } from "@/lib/email";
 import { generateCode } from "@/lib/referral";
+import { SyncErrorToast } from "@/components/SyncErrorToast";
 
 export type Profile = {
   name: string;
@@ -200,6 +201,12 @@ type BuddyState = {
   accountDeletionRequested: boolean;
   submitAccountDeletionRequest: () => void;
   logout: () => void;
+  // Sätts när ett bakgrundssparande (profil, sak, avtal, bokning, ...)
+  // misslyckas — de flesta skrivningar är optimistiska (UI:t uppdateras
+  // direkt), så utan det här syns ett misslyckat sparande ingenstans för
+  // kunden. Visas globalt via SyncErrorToast.tsx. Se dismissSyncError.
+  syncError: string | null;
+  dismissSyncError: () => void;
 };
 
 const BuddyContext = createContext<BuddyState | null>(null);
@@ -364,6 +371,27 @@ export function BuddyProvider({ children }: { children: ReactNode }) {
   const [claims, setClaims] = useState<ClaimRecord[]>([]);
   const [missingInsuranceRequests, setMissingInsuranceRequests] = useState<MissingInsuranceRequestRecord[]>([]);
   const [accountDeletionRequested, setAccountDeletionRequested] = useState(false);
+  const [syncError, setSyncError] = useState<string | null>(null);
+
+  const dismissSyncError = useCallback(() => setSyncError(null), []);
+
+  // Som logWriteError, men visar även ett Sparat-fel för kunden (via
+  // SyncErrorToast.tsx) och kör en valfri återställning av den optimistiska
+  // lokala ändringen. Används på skrivningar kunden själv initierat och
+  // förväntar sig se resultatet av — rent tillskrivande bakgrundsloggar
+  // (t.ex. fullmakt_history/policy_history) använder fortfarande den tysta
+  // logWriteError, se kommentarer vid respektive anrop.
+  const reportWriteError = useCallback(
+    (label: string, message: string, revert?: () => void) =>
+      (result: { error: { message: string } | null }) => {
+        if (result.error) {
+          console.error(`Buddy: kunde inte spara (${label})`, result.error.message);
+          revert?.();
+          setSyncError(message);
+        }
+      },
+    []
+  );
 
   const resetLocalState = () => {
     setUserId(null);
@@ -382,6 +410,7 @@ export function BuddyProvider({ children }: { children: ReactNode }) {
     setClaims([]);
     setMissingInsuranceRequests([]);
     setAccountDeletionRequested(false);
+    setSyncError(null);
   };
 
   const loadForUser = useCallback(
@@ -513,7 +542,9 @@ export function BuddyProvider({ children }: { children: ReactNode }) {
 
   const updateProfile = useCallback(
     (patch: ProfilePatch) => {
+      let prevProfile: Profile | null = null;
       setProfile((prev) => {
+        prevProfile = prev;
         const base = { name: "", ...prev, ...patch };
         return { ...base, personnummer: base.personnummer ?? undefined, phone: base.phone ?? undefined };
       });
@@ -527,30 +558,43 @@ export function BuddyProvider({ children }: { children: ReactNode }) {
       if (patch.notifySms !== undefined) dbPatch.notify_sms = patch.notifySms;
       if (patch.language !== undefined) dbPatch.language = patch.language;
       if (Object.keys(dbPatch).length > 0) {
-        supabase.from("profiles").update(dbPatch).eq("id", userId).then(logWriteError("profil"));
+        supabase
+          .from("profiles")
+          .update(dbPatch)
+          .eq("id", userId)
+          .then(reportWriteError("profil", "Kunde inte spara ändringarna. Försök igen.", () => setProfile(prevProfile)));
       }
     },
-    [supabase, userId]
+    [supabase, userId, reportWriteError]
   );
 
   const recordFullmaktSigned = useCallback(
     (pdfPath: string) => {
+      let prevProfile: Profile | null = null;
       const signedAt = new Date().toISOString();
-      setProfile((prev) => (prev ? { ...prev, fullmaktSignedAt: signedAt, fullmaktPdfPath: pdfPath } : prev));
+      setProfile((prev) => {
+        prevProfile = prev;
+        return prev ? { ...prev, fullmaktSignedAt: signedAt, fullmaktPdfPath: pdfPath } : prev;
+      });
       if (!userId) return;
       supabase
         .from("profiles")
         .update({ fullmakt_signed_at: signedAt, fullmakt_pdf_path: pdfPath })
         .eq("id", userId)
-        .then(logWriteError("fullmakt"));
+        .then(
+          reportWriteError("fullmakt", "Kunde inte spara att fullmakten signerades. Försök igen.", () =>
+            setProfile(prevProfile)
+          )
+        );
       // Tillskrivande logg, se fullmakt_history i schema.sql — får aldrig
-      // blockera huvudskrivningen ovan om den misslyckas.
+      // blockera huvudskrivningen ovan om den misslyckas, och behöver därför
+      // inte heller visas för kunden.
       supabase
         .from("fullmakt_history")
         .insert({ user_id: userId, pdf_path: pdfPath, signed_at: signedAt })
         .then(logWriteError("fullmaktshistorik"));
     },
-    [supabase, userId]
+    [supabase, userId, reportWriteError]
   );
 
   const createHousehold = useCallback(
@@ -614,14 +658,20 @@ export function BuddyProvider({ children }: { children: ReactNode }) {
   );
 
   const leaveHousehold = useCallback(() => {
-    setHousehold(null);
+    let prevHousehold: Household | null = null;
+    setHousehold((prev) => {
+      prevHousehold = prev;
+      return null;
+    });
     if (!userId) return;
     supabase
       .from("profiles")
       .update({ household_id: null, household_relation: null })
       .eq("id", userId)
-      .then(logWriteError("hushåll"));
-  }, [supabase, userId]);
+      .then(
+        reportWriteError("hushåll", "Kunde inte lämna hushållet just nu. Försök igen.", () => setHousehold(prevHousehold))
+      );
+  }, [supabase, userId, reportWriteError]);
 
   // Symmetriskt — vem som helst i hushållet kan koppla loss vem som helst
   // annan, inget ägarbegrepp i den här modellen (medvetet val, se
@@ -654,9 +704,11 @@ export function BuddyProvider({ children }: { children: ReactNode }) {
       const result = await supabase
         .from("items")
         .insert({ id: item.id, user_id: userId, kind: item.kind, data: item });
-      logWriteError("sak")(result);
+      reportWriteError("sak", "Kunde inte spara saken. Försök igen.", () =>
+        setItems((prev) => prev.filter((i) => i.id !== item.id))
+      )(result);
     },
-    [supabase, userId]
+    [supabase, userId, reportWriteError]
   );
 
   // Redigerar en befintlig sak på plats (samma id) istället för att ta
@@ -665,11 +717,26 @@ export function BuddyProvider({ children }: { children: ReactNode }) {
   // item_id efteråt.
   const updateItem = useCallback(
     (item: InsuranceItem) => {
-      setItems((prev) => prev.map((i) => (i.id === item.id ? item : i)));
+      let prevItem: InsuranceItem | undefined;
+      setItems((prev) =>
+        prev.map((i) => {
+          if (i.id !== item.id) return i;
+          prevItem = i;
+          return item;
+        })
+      );
       if (!userId) return;
-      supabase.from("items").update({ kind: item.kind, data: item }).eq("id", item.id).then(logWriteError("sak"));
+      supabase
+        .from("items")
+        .update({ kind: item.kind, data: item })
+        .eq("id", item.id)
+        .then(
+          reportWriteError("sak", "Kunde inte spara ändringarna på saken. Försök igen.", () => {
+            if (prevItem) setItems((prev) => prev.map((i) => (i.id === item.id ? prevItem! : i)));
+          })
+        );
     },
-    [supabase, userId]
+    [supabase, userId, reportWriteError]
   );
 
   // Bulk-variant för BankID-importen (BankIdImport.tsx) — en state-uppdatering
@@ -682,64 +749,135 @@ export function BuddyProvider({ children }: { children: ReactNode }) {
       const result = await supabase
         .from("items")
         .insert(newItems.map((item) => ({ id: item.id, user_id: userId, kind: item.kind, data: item })));
-      logWriteError("saker")(result);
+      const newIds = new Set(newItems.map((i) => i.id));
+      reportWriteError("saker", "Kunde inte spara alla saker. Försök igen.", () =>
+        setItems((prev) => prev.filter((i) => !newIds.has(i.id)))
+      )(result);
     },
-    [supabase, userId]
+    [supabase, userId, reportWriteError]
   );
 
   const removeItem = useCallback(
     (id: string) => {
-      setItems((prev) => prev.filter((i) => i.id !== id));
+      let prevItem: InsuranceItem | undefined;
+      let prevPolicy: Quote | undefined;
+      let prevNeeds: string[] | undefined;
+      setItems((prev) => {
+        prevItem = prev.find((i) => i.id === id);
+        return prev.filter((i) => i.id !== id);
+      });
       setPolicies((prev) => {
+        prevPolicy = prev[id];
         const rest = { ...prev };
         delete rest[id];
         return rest;
       });
       setItemNeeds((prev) => {
+        prevNeeds = prev[id];
         const rest = { ...prev };
         delete rest[id];
         return rest;
       });
       if (!userId) return;
-      supabase.from("items").delete().eq("id", id).then(logWriteError("borttagning"));
+      supabase
+        .from("items")
+        .delete()
+        .eq("id", id)
+        .then(
+          reportWriteError("borttagning", "Kunde inte ta bort saken. Försök igen.", () => {
+            if (prevItem) setItems((prev) => [...prev, prevItem!]);
+            if (prevPolicy !== undefined) setPolicies((prev) => ({ ...prev, [id]: prevPolicy! }));
+            if (prevNeeds !== undefined) setItemNeeds((prev) => ({ ...prev, [id]: prevNeeds! }));
+          })
+        );
     },
-    [supabase, userId]
+    [supabase, userId, reportWriteError]
   );
 
   const setPolicy = useCallback(
     (insuranceId: string, quote: Quote, checkout?: CheckoutInfo) => {
-      setPolicies((prev) => ({ ...prev, [insuranceId]: quote }));
+      let prevPolicy: Quote | undefined;
+      let hadPolicy = false;
+      setPolicies((prev) => {
+        hadPolicy = insuranceId in prev;
+        prevPolicy = prev[insuranceId];
+        return { ...prev, [insuranceId]: quote };
+      });
       if (!userId) return;
       const row: Record<string, unknown> = { item_id: insuranceId, user_id: userId, data: quote };
       if (checkout) row.checkout = checkout;
-      supabase.from("policies").upsert(row).then(logWriteError("offert"));
+      supabase
+        .from("policies")
+        .upsert(row)
+        .then(
+          reportWriteError("avtal", "Kunde inte spara avtalet. Försök igen.", () =>
+            setPolicies((prev) => {
+              const next = { ...prev };
+              if (hadPolicy) next[insuranceId] = prevPolicy!;
+              else delete next[insuranceId];
+              return next;
+            })
+          )
+        );
       // policies är ett upsert (bara senaste raden) — policy_history är en
       // separat, tillskrivande logg av samma händelse, se schema.sql. Får
-      // aldrig blockera huvudskrivningen ovan om den misslyckas.
+      // aldrig blockera huvudskrivningen ovan om den misslyckas, och behöver
+      // därför inte heller visas för kunden.
       supabase
         .from("policy_history")
         .insert({ item_id: insuranceId, user_id: userId, data: quote })
         .then(logWriteError("offerthistorik"));
     },
-    [supabase, userId]
+    [supabase, userId, reportWriteError]
   );
 
   const saveItemNeeds = useCallback(
     (itemId: string, needs: string[]) => {
-      setItemNeeds((prev) => ({ ...prev, [itemId]: needs }));
+      let prevNeeds: string[] | undefined;
+      let hadNeeds = false;
+      setItemNeeds((prev) => {
+        hadNeeds = itemId in prev;
+        prevNeeds = prev[itemId];
+        return { ...prev, [itemId]: needs };
+      });
       if (!userId) return;
-      supabase.from("items").update({ needs }).eq("id", itemId).then(logWriteError("behov"));
+      supabase
+        .from("items")
+        .update({ needs })
+        .eq("id", itemId)
+        .then(
+          reportWriteError("behov", "Kunde inte spara dina svar. Försök igen.", () =>
+            setItemNeeds((prev) => {
+              const next = { ...prev };
+              if (hadNeeds) next[itemId] = prevNeeds!;
+              else delete next[itemId];
+              return next;
+            })
+          )
+        );
     },
-    [supabase, userId]
+    [supabase, userId, reportWriteError]
   );
 
   const setReadyToCompare = useCallback(
     (ready: boolean) => {
-      setReadyToCompareState(ready);
+      let prevReady = false;
+      setReadyToCompareState((prev) => {
+        prevReady = prev;
+        return ready;
+      });
       if (!userId) return;
-      supabase.from("profiles").update({ ready_to_compare: ready }).eq("id", userId).then(logWriteError("jämförelseläge"));
+      supabase
+        .from("profiles")
+        .update({ ready_to_compare: ready })
+        .eq("id", userId)
+        .then(
+          reportWriteError("jämförelseläge", "Kunde inte spara ändringen. Försök igen.", () =>
+            setReadyToCompareState(prevReady)
+          )
+        );
     },
-    [supabase, userId]
+    [supabase, userId, reportWriteError]
   );
 
   const submitBooking = useCallback(
@@ -759,7 +897,7 @@ export function BuddyProvider({ children }: { children: ReactNode }) {
         .select("id, topics, extra_note, meeting_type, day, time, status, created_at")
         .single()
         .then(async (result) => {
-          logWriteError("bokning")(result);
+          reportWriteError("bokning", "Kunde inte skicka bokningen. Försök igen.")(result);
           if (result.data) setBookings((prev) => [...prev, mapBookingRow(result.data as BookingRow)]);
           if (result.data && profile?.email && profile.notifyEmail !== false) {
             const { data } = await supabase.auth.getSession();
@@ -776,16 +914,31 @@ export function BuddyProvider({ children }: { children: ReactNode }) {
           }
         });
     },
-    [supabase, userId, profile]
+    [supabase, userId, profile, reportWriteError]
   );
 
   const cancelBooking = useCallback(
     (id: string) => {
-      setBookings((prev) => prev.map((b) => (b.id === id ? { ...b, status: "avbokad" } : b)));
+      let prevStatus: BookingRecord["status"] | undefined;
+      setBookings((prev) =>
+        prev.map((b) => {
+          if (b.id !== id) return b;
+          prevStatus = b.status;
+          return { ...b, status: "avbokad" };
+        })
+      );
       if (!userId) return;
-      supabase.from("bookings").update({ status: "avbokad" }).eq("id", id).then(logWriteError("avbokning"));
+      supabase
+        .from("bookings")
+        .update({ status: "avbokad" })
+        .eq("id", id)
+        .then(
+          reportWriteError("avbokning", "Kunde inte avboka just nu. Försök igen.", () => {
+            if (prevStatus) setBookings((prev) => prev.map((b) => (b.id === id ? { ...b, status: prevStatus! } : b)));
+          })
+        );
     },
-    [supabase, userId]
+    [supabase, userId, reportWriteError]
   );
 
   const submitClaim = useCallback(
@@ -804,11 +957,11 @@ export function BuddyProvider({ children }: { children: ReactNode }) {
         .select("id, photo_count, receipt_count, skadetyp, allvarlighetsgrad, status, created_at")
         .single()
         .then((result) => {
-          logWriteError("skadeanmälan")(result);
+          reportWriteError("skadeanmälan", "Kunde inte skicka skadeanmälan. Försök igen.")(result);
           if (result.data) setClaims((prev) => [mapClaimRow(result.data as ClaimRow), ...prev]);
         });
     },
-    [supabase, userId]
+    [supabase, userId, reportWriteError]
   );
 
   const submitMissingInsuranceRequest = useCallback(
@@ -820,7 +973,7 @@ export function BuddyProvider({ children }: { children: ReactNode }) {
         .select("id, kind, note, status, created_at")
         .single()
         .then((result) => {
-          logWriteError("saknad försäkring")(result);
+          reportWriteError("saknad försäkring", "Kunde inte skicka anmälan. Försök igen.")(result);
           if (result.data) {
             setMissingInsuranceRequests((prev) => [
               mapMissingInsuranceRequestRow(result.data as MissingInsuranceRequestRow),
@@ -829,7 +982,7 @@ export function BuddyProvider({ children }: { children: ReactNode }) {
           }
         });
     },
-    [supabase, userId]
+    [supabase, userId, reportWriteError]
   );
 
   const submitAccountDeletionRequest = useCallback(() => {
@@ -838,8 +991,12 @@ export function BuddyProvider({ children }: { children: ReactNode }) {
     supabase
       .from("account_deletion_requests")
       .insert({ user_id: userId })
-      .then(logWriteError("raderingsbegäran"));
-  }, [supabase, userId]);
+      .then(
+        reportWriteError("raderingsbegäran", "Kunde inte skicka raderingsbegäran. Försök igen.", () =>
+          setAccountDeletionRequested(false)
+        )
+      );
+  }, [supabase, userId, reportWriteError]);
 
   const logout = useCallback(() => {
     supabase.auth.signOut();
@@ -885,6 +1042,8 @@ export function BuddyProvider({ children }: { children: ReactNode }) {
       accountDeletionRequested,
       submitAccountDeletionRequest,
       logout,
+      syncError,
+      dismissSyncError,
     }),
     [
       loading,
@@ -924,10 +1083,17 @@ export function BuddyProvider({ children }: { children: ReactNode }) {
       accountDeletionRequested,
       submitAccountDeletionRequest,
       logout,
+      syncError,
+      dismissSyncError,
     ]
   );
 
-  return <BuddyContext.Provider value={value}>{children}</BuddyContext.Provider>;
+  return (
+    <BuddyContext.Provider value={value}>
+      {children}
+      <SyncErrorToast />
+    </BuddyContext.Provider>
+  );
 }
 
 export function useBuddy() {
