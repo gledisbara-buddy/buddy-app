@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Check, Copy, ShieldCheck, Sparkles } from "lucide-react";
+import { Check, Copy, Link2, ShieldCheck, Sparkles } from "lucide-react";
 import { TopBar } from "@/components/TopBar";
 import { ProfileMenu } from "@/components/ProfileMenu";
 import { useBuddy } from "@/lib/buddy-context";
@@ -13,17 +13,24 @@ const GOAL = 5;
 export function ReferralView() {
   const router = useRouter();
   const { userType, loading, profile, updateProfile, referralStats, hasClaimPerk } = useBuddy();
-  const [copied, setCopied] = useState(false);
+  const [copiedLink, setCopiedLink] = useState(false);
+  const [copiedCode, setCopiedCode] = useState(false);
 
   useEffect(() => {
     if (!loading && !userType) router.replace("/kom-igang");
   }, [loading, userType, router]);
 
   useEffect(() => {
-    if (!copied) return;
-    const t = setTimeout(() => setCopied(false), 2000);
+    if (!copiedLink) return;
+    const t = setTimeout(() => setCopiedLink(false), 2000);
     return () => clearTimeout(t);
-  }, [copied]);
+  }, [copiedLink]);
+
+  useEffect(() => {
+    if (!copiedCode) return;
+    const t = setTimeout(() => setCopiedCode(false), 2000);
+    return () => clearTimeout(t);
+  }, [copiedCode]);
 
   if (loading || !userType) return null;
 
@@ -32,10 +39,20 @@ export function ReferralView() {
   const total = referralStats?.total ?? 0;
   const progress = Math.min(qualified / GOAL, 1);
 
-  const handleCopy = () => {
+  // Vännen landar direkt på registreringen med koden ifylld — se
+  // AuthForm.tsx:s initialReferralCode-prop. window.location.origin läses
+  // i klick-handlern (inte vid rendering) eftersom window inte finns
+  // under SSR-passet för den här klientkomponenten.
+  const handleCopyLink = () => {
+    if (!code) return;
+    navigator.clipboard.writeText(`${window.location.origin}/login?type=privat&ref=${code}`);
+    setCopiedLink(true);
+  };
+
+  const handleCopyCode = () => {
     if (!code) return;
     navigator.clipboard.writeText(code);
-    setCopied(true);
+    setCopiedCode(true);
   };
 
   return (
@@ -57,19 +74,27 @@ export function ReferralView() {
             <>
               <div className="bd-display text-4xl text-white mb-5 tracking-wide">{code}</div>
               <button
-                onClick={handleCopy}
+                onClick={handleCopyLink}
                 className="bd-btn inline-flex items-center justify-center gap-2 px-5 py-3 rounded-full font-semibold text-[15px] bg-white"
                 style={{ color: "var(--color-ink-deep)" }}
               >
-                {copied ? (
+                {copiedLink ? (
                   <>
-                    Kopierad! <Check size={16} />
+                    Länk kopierad! <Check size={16} />
                   </>
                 ) : (
                   <>
-                    Kopiera kod <Copy size={16} />
+                    Kopiera inbjudningslänk <Link2 size={16} />
                   </>
                 )}
+              </button>
+              <button
+                onClick={handleCopyCode}
+                className="block w-full text-center text-xs mt-3"
+                style={{ color: "rgba(255,255,255,.7)" }}
+              >
+                {copiedCode ? "Koden kopierad!" : "eller kopiera bara koden"}
+                <Copy size={11} className="inline ml-1.5 -mt-0.5" />
               </button>
             </>
           ) : (

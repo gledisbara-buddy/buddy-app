@@ -1018,3 +1018,45 @@ begin
   return true;
 end;
 $$;
+
+-- REGRESSION FIX: den senaste handle_new_user()-versionen som faktiskt
+-- kördes live (signup-telefon-personnummer.sql, för att spara
+-- telefonnummer/personnummer vid registrering) byggde på en ÄLDRE kopia av
+-- funktionen från innan referral_events-omskrivningen längre upp i den här
+-- filen — den skriver fortfarande profiles.referred_by, men saknar
+-- INSERT-satsen till referral_events. Eftersom count_referral_signups()/
+-- count_qualified_referrals() bara läser från referral_events numera (inte
+-- profiles.referred_by), gjorde det att värvningskoden "verkade" fungera
+-- (signupen gick igenom, referred_by sattes) men aldrig räknades någonstans
+-- — det bugreport gällde. Den här versionen är en sammanslagning: samma
+-- phone/personnummer-insert som fixen ovan, plus referral_events-raden som
+-- tappades bort.
+create or replace function public.handle_new_user()
+returns trigger as $$
+declare
+  v_referrer_id uuid;
+begin
+  if new.raw_user_meta_data->>'referral_code_used' is not null then
+    select id into v_referrer_id from public.profiles
+    where referral_code = upper(new.raw_user_meta_data->>'referral_code_used')
+    limit 1;
+  end if;
+
+  insert into public.profiles (id, user_type, name, email, phone, personnummer, referred_by)
+  values (
+    new.id,
+    coalesce(new.raw_user_meta_data->>'user_type', 'privat'),
+    coalesce(new.raw_user_meta_data->>'name', ''),
+    new.email,
+    nullif(new.raw_user_meta_data->>'phone', ''),
+    nullif(new.raw_user_meta_data->>'personnummer', ''),
+    v_referrer_id
+  );
+
+  if v_referrer_id is not null then
+    insert into public.referral_events (referrer_id, referred_id) values (v_referrer_id, new.id);
+  end if;
+
+  return new;
+end;
+$$ language plpgsql security definer set search_path = public;

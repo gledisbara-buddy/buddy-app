@@ -13,7 +13,7 @@ import type { UserType } from "@/lib/types";
 
 type Mode = "login" | "signup";
 
-export function AuthForm({ userType }: { userType: UserType }) {
+export function AuthForm({ userType, initialReferralCode }: { userType: UserType; initialReferralCode?: string }) {
   const router = useRouter();
   const [mode, setMode] = useState<Mode>("signup");
   const [name, setName] = useState("");
@@ -23,7 +23,10 @@ export function AuthForm({ userType }: { userType: UserType }) {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [phone, setPhone] = useState("");
   const [personnummer, setPersonnummer] = useState("");
-  const [referralCode, setReferralCode] = useState("");
+  // Förifylld från en delad värvningslänk (?ref=KOD), men går fortfarande
+  // att ändra eller tömma om vännen vill skriva in en annan kod själv.
+  const [referralCode, setReferralCode] = useState(initialReferralCode?.trim().toUpperCase() ?? "");
+  const cameFromReferralLink = !!initialReferralCode?.trim();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [checkInbox, setCheckInbox] = useState(false);
@@ -179,6 +182,11 @@ export function AuthForm({ userType }: { userType: UserType }) {
               {userType === "foretag" ? "Konto för ditt företag." : "Med e-post och lösenord."}
             </p>
           </div>
+          {mode === "signup" && cameFromReferralLink && (
+            <div className="rounded-2xl p-4 mb-4 text-sm text-center bg-frost-2 text-ink">
+              Du blev inbjuden med kod <b>{initialReferralCode?.trim().toUpperCase()}</b> — den är redan ifylld nedan.
+            </div>
+          )}
           <div className="bg-white rounded-2xl border border-line p-6">
             {mode === "signup" && (
               <div className="grid grid-cols-2 gap-3">
