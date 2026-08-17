@@ -5,16 +5,11 @@ import { useRouter } from "next/navigation";
 import {
   ArrowLeft,
   ArrowRight,
-  Baby,
   Building2,
   CalendarDays,
   ChevronDown,
   ChevronRight,
-  FileBarChart,
-  FolderOpen,
   Gift,
-  HeartPulse,
-  Home,
   LayoutGrid,
   Loader2,
   MessageCircle,
@@ -27,7 +22,6 @@ import {
   Sparkles,
   Star,
   Trash2,
-  Truck,
 } from "lucide-react";
 import { ConfirmDialog, Overlay } from "@/components/Overlay";
 import { TopBar } from "@/components/TopBar";
@@ -594,96 +588,6 @@ export function Dashboard({ showIntro: initialShowIntro }: { showIntro?: boolean
             </div>
           </div>
         )}
-
-        <details className="mb-6 group">
-          <summary className="flex items-center gap-1.5 text-sm font-semibold text-slate hover:text-ink cursor-pointer list-none w-fit">
-            Fler genvägar <ChevronDown size={15} className="transition-transform group-open:rotate-180" />
-          </summary>
-          <div className="rounded-2xl border border-line bg-white mt-3 overflow-hidden">
-            <div className="divide-y divide-line">
-              <button
-                onClick={() => router.push("/identifiera-igen")}
-                className="w-full flex items-center gap-3 px-5 py-3 text-left hover:bg-frost"
-              >
-                <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-none bg-frost-2">
-                  <Smartphone size={15} className="text-forest" />
-                </div>
-                <span className="flex-1 text-sm font-medium">Identifiera dig igen</span>
-                <ArrowRight size={14} className="text-slate flex-none" />
-              </button>
-              <button
-                onClick={() => router.push("/halsokoll")}
-                className="w-full flex items-center gap-3 px-5 py-3 text-left hover:bg-frost"
-              >
-                <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-none bg-frost-2">
-                  <HeartPulse size={15} className="text-forest" />
-                </div>
-                <span className="flex-1 text-sm font-medium">Årlig hälsokoll</span>
-                <ArrowRight size={14} className="text-slate flex-none" />
-              </button>
-              <button
-                onClick={() => router.push("/livshandelser?event=flytt")}
-                className="w-full flex items-center gap-3 px-5 py-3 text-left hover:bg-frost"
-              >
-                <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-none bg-frost-2">
-                  <Truck size={15} className="text-forest" />
-                </div>
-                <span className="flex-1 text-sm font-medium">Jag ska flytta</span>
-                <ArrowRight size={14} className="text-slate flex-none" />
-              </button>
-              <button
-                onClick={() => router.push("/livshandelser?event=barn")}
-                className="w-full flex items-center gap-3 px-5 py-3 text-left hover:bg-frost"
-              >
-                <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-none bg-frost-2">
-                  <Baby size={15} className="text-forest" />
-                </div>
-                <span className="flex-1 text-sm font-medium">Vi väntar barn</span>
-                <ArrowRight size={14} className="text-slate flex-none" />
-              </button>
-              <button
-                onClick={() => router.push("/varva-en-van")}
-                className="w-full flex items-center gap-3 px-5 py-3 text-left hover:bg-frost"
-              >
-                <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-none bg-frost-2">
-                  <Gift size={15} className="text-forest" />
-                </div>
-                <span className="flex-1 text-sm font-medium">Värva en vän</span>
-                <ArrowRight size={14} className="text-slate flex-none" />
-              </button>
-              <button
-                onClick={() => router.push("/hushall")}
-                className="w-full flex items-center gap-3 px-5 py-3 text-left hover:bg-frost"
-              >
-                <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-none bg-frost-2">
-                  <Home size={15} className="text-forest" />
-                </div>
-                <span className="flex-1 text-sm font-medium">Hushåll</span>
-                <ArrowRight size={14} className="text-slate flex-none" />
-              </button>
-              <button
-                onClick={() => router.push("/arkiv")}
-                className="w-full flex items-center gap-3 px-5 py-3 text-left hover:bg-frost"
-              >
-                <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-none bg-frost-2">
-                  <FolderOpen size={15} className="text-forest" />
-                </div>
-                <span className="flex-1 text-sm font-medium">Dokumentarkiv</span>
-                <ArrowRight size={14} className="text-slate flex-none" />
-              </button>
-              <button
-                onClick={() => router.push("/arsrapport")}
-                className="w-full flex items-center gap-3 px-5 py-3 text-left hover:bg-frost"
-              >
-                <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-none bg-frost-2">
-                  <FileBarChart size={15} className="text-forest" />
-                </div>
-                <span className="flex-1 text-sm font-medium">Din årsrapport</span>
-                <ArrowRight size={14} className="text-slate flex-none" />
-              </button>
-            </div>
-          </div>
-        </details>
 
         {!active ? (
           <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
