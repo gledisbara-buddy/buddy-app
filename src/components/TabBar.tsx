@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import {
   FileBarChart,
@@ -17,6 +17,7 @@ import {
   Smartphone,
   User,
   HelpCircle,
+  X,
   type LucideIcon,
 } from "lucide-react";
 import { useBuddy } from "@/lib/buddy-context";
@@ -61,7 +62,6 @@ export function TabBar() {
   const router = useRouter();
   const { isEmployee, logout } = useBuddy();
   const [moreOpen, setMoreOpen] = useState(false);
-  const moreRef = useRef<HTMLDivElement>(null);
 
   const moreItems = useMemo(
     () => (isEmployee ? [...MORE_ITEMS, { href: "/internt", label: "Internt", icon: Shield }] : MORE_ITEMS),
@@ -69,20 +69,20 @@ export function TabBar() {
   );
   const moreActive = moreItems.some((item) => isActive(pathname, item.href));
 
-  // mousedown-utanför istället för onBlur — onBlur visade sig stänga
-  // panelen omedelbart efter att den öppnats i vissa webbläsare (klick på
-  // en <button> ger den inte alltid fokus, t.ex. Safari på macOS som
-  // standard), så själva öppningsklicket kunde trigga en omedelbar
-  // stängning. mousedown-lyssnaren på hela dokumentet är oberoende av
-  // fokus/blur-beteende och är samma mönster de flesta dropdown-menyer
-  // använder.
+  // Riktig sidopanel (som Folksams "Mer"), inte en liten nedfälld meny —
+  // fast positionerad med en mörk bakgrund bakom, så stängs den via
+  // bakgrunden/X-knappen/Escape istället för klick-utanför-detektering.
   useEffect(() => {
     if (!moreOpen) return;
-    const onMouseDown = (e: MouseEvent) => {
-      if (!moreRef.current?.contains(e.target as Node)) setMoreOpen(false);
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setMoreOpen(false);
     };
-    document.addEventListener("mousedown", onMouseDown);
-    return () => document.removeEventListener("mousedown", onMouseDown);
+    document.addEventListener("keydown", onKey);
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.removeEventListener("keydown", onKey);
+      document.body.style.overflow = "";
+    };
   }, [moreOpen]);
 
   useEffect(() => {
@@ -154,43 +154,57 @@ export function TabBar() {
           </button>
         );
       })}
-      <div className="relative flex-none" ref={moreRef}>
-        <button
-          onClick={() => setMoreOpen((v) => !v)}
-          className={`flex items-center gap-1.5 px-3 py-2.5 text-sm font-medium whitespace-nowrap border-b-2 flex-none ${
-            moreActive ? "border-forest text-forest" : "border-transparent text-slate hover:text-ink"
-          }`}
-        >
-          <MoreHorizontal size={15} /> Mer
-        </button>
-        {moreOpen && (
-          <div className="absolute right-0 top-full mt-2 w-64 bg-white rounded-2xl border border-line shadow-lg overflow-hidden z-20 bd-fade">
-            <div className="divide-y divide-line">
+      <button
+        onClick={() => setMoreOpen(true)}
+        className={`flex items-center gap-1.5 px-3 py-2.5 text-sm font-medium whitespace-nowrap border-b-2 flex-none ${
+          moreActive ? "border-forest text-forest" : "border-transparent text-slate hover:text-ink"
+        }`}
+      >
+        <MoreHorizontal size={15} /> Mer
+      </button>
+
+      {moreOpen && (
+        <>
+          <div
+            className="bd-scrim fixed inset-0 z-40"
+            style={{ background: "var(--color-scrim)" }}
+            onClick={() => setMoreOpen(false)}
+          />
+          <div className="bd-slide-in-right fixed inset-y-0 right-0 z-50 w-full sm:w-96 bg-white shadow-lg flex flex-col">
+            <div className="flex items-center justify-between px-5 py-5 border-b border-line flex-none">
+              <span className="font-semibold text-[15px]">Mer</span>
+              <button onClick={() => setMoreOpen(false)} className="opacity-60 hover:opacity-100" aria-label="Stäng">
+                <X size={20} />
+              </button>
+            </div>
+            <div className="flex-1 overflow-y-auto divide-y divide-line">
               {moreItems.map((item) => {
                 const Icon = item.icon;
                 return (
                   <button
                     key={item.href}
                     onClick={() => goToMore(item.href)}
-                    className="w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-frost"
+                    className="w-full flex items-center gap-3 px-5 py-4 text-left hover:bg-frost"
                   >
-                    <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-none bg-frost-2">
-                      <Icon size={15} className="text-forest" />
+                    <div className="w-9 h-9 rounded-lg flex items-center justify-center flex-none bg-frost-2">
+                      <Icon size={16} className="text-forest" />
                     </div>
                     <span className="flex-1 text-sm font-medium">{item.label}</span>
                   </button>
                 );
               })}
             </div>
-            <button
-              onClick={handleLogout}
-              className="w-full flex items-center gap-3 px-4 py-3 text-left border-t border-line hover:bg-frost text-sm font-medium text-slate"
-            >
-              <LogOut size={15} /> Logga ut
-            </button>
+            <div className="flex-none border-t border-line p-4">
+              <button
+                onClick={handleLogout}
+                className="w-full flex items-center justify-center gap-2 py-3 rounded-full border border-line text-sm font-medium text-slate hover:text-ink"
+              >
+                <LogOut size={15} /> Logga ut
+              </button>
+            </div>
           </div>
-        )}
-      </div>
+        </>
+      )}
     </nav>
   );
 }

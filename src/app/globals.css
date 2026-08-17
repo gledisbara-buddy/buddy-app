@@ -85,6 +85,18 @@ body {
   }
 }
 
+.bd-slide-in-right {
+  animation: bdSlideInRight 0.25s ease both;
+}
+@keyframes bdSlideInRight {
+  from {
+    transform: translateX(100%);
+  }
+  to {
+    transform: translateX(0);
+  }
+}
+
 .bd-btn {
   transition:
     transform 0.15s ease,
