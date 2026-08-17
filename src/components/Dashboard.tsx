@@ -131,6 +131,8 @@ export function Dashboard({ showIntro: initialShowIntro }: { showIntro?: boolean
     bookings,
     missingInsuranceRequests,
     householdRequests,
+    referralStats,
+    hasClaimPerk,
   } = useBuddy();
   const [activeGroup, setActiveGroup] = useState<ItemGroupId | null>(null);
   const [itemSearch, setItemSearch] = useState("");
@@ -867,7 +869,7 @@ export function Dashboard({ showIntro: initialShowIntro }: { showIntro?: boolean
           </div>
         )}
 
-        <div className="grid md:grid-cols-3 gap-4 mb-4">
+        <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
           <div
             className="rounded-2xl p-6 text-white flex flex-col justify-between bg-ink"
             style={{ minHeight: 150 }}
@@ -922,6 +924,30 @@ export function Dashboard({ showIntro: initialShowIntro }: { showIntro?: boolean
               className="bd-btn self-start mt-4 px-4 py-2 rounded-full text-sm font-semibold text-white bg-forest"
             >
               Boka möte
+            </button>
+          </div>
+          <div
+            className="rounded-2xl p-6 border border-line flex flex-col justify-between bg-white"
+            style={{ minHeight: 150 }}
+          >
+            <div>
+              <div className="flex items-center gap-2 mb-2">
+                <Gift size={17} className="text-forest" />
+                <span className="text-sm font-semibold">Värva en vän</span>
+              </div>
+              <p className="text-sm text-slate">
+                {hasClaimPerk
+                  ? "Du har låst upp kostnadsfri hjälp vid skadereglering!"
+                  : referralStats && referralStats.qualified > 0
+                    ? `${referralStats.qualified} av 5 kvalificerade värvningar.`
+                    : "Dela din kod, lås upp kostnadsfri hjälp vid skadereglering."}
+              </p>
+            </div>
+            <button
+              onClick={() => router.push("/varva-en-van")}
+              className="bd-btn self-start mt-4 px-4 py-2 rounded-full text-sm font-semibold text-white bg-forest"
+            >
+              Dela min kod
             </button>
           </div>
         </div>
