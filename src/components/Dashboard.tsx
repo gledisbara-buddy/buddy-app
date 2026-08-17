@@ -363,31 +363,32 @@ export function Dashboard({ showIntro: initialShowIntro }: { showIntro?: boolean
         <p className="text-sm mb-8 text-slate">Här är läget på dina saker.</p>
 
         {trustScore && (
-          <div className="rounded-2xl border border-line p-6 mb-6 bg-white">
-            <button onClick={() => setShowTrustChecklist((v) => !v)} className="w-full text-left">
-              <div className="flex items-start justify-between gap-4 flex-wrap mb-3">
-                <div>
-                  <div className="text-xs font-semibold text-slate mb-1">TRYGGHETSPOÄNG</div>
-                  <div className="bd-display text-5xl text-ink" style={{ fontVariantNumeric: "proportional-nums" }}>
-                    {trustScore.score}
-                  </div>
+          <div className="rounded-2xl border border-line p-4 mb-4 bg-white">
+            <button onClick={() => setShowTrustChecklist((v) => !v)} className="w-full text-left flex items-center gap-4">
+              <div className="bd-display text-2xl text-ink flex-none" style={{ fontVariantNumeric: "proportional-nums" }}>
+                {trustScore.score}
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center justify-between gap-2 mb-1.5">
+                  <span className="text-sm font-medium text-ink">Trygghetspoäng</span>
+                  <span className="text-xs flex items-center gap-1 flex-none text-slate">
+                    {showTrustChecklist ? "Dölj" : "Mer"}
+                    <ChevronDown size={12} className={`transition-transform ${showTrustChecklist ? "rotate-180" : ""}`} />
+                  </span>
                 </div>
-                <div className="text-sm text-slate text-right max-w-[220px]">
+                <div className="h-1.5 rounded-full overflow-hidden bg-frost-2">
+                  <div
+                    className="h-full rounded-full bg-forest"
+                    style={{ width: `${trustScore.score}%`, transition: "width 500ms ease" }}
+                  />
+                </div>
+                <div className="text-xs mt-1.5 text-slate">
                   {trustScore.comparedCount < trustScore.comparableCount
                     ? `${trustScore.comparedCount} av ${trustScore.comparableCount} avtal jämförda`
                     : "Alla avtal jämförda"}
                   {trustScore.hasUrgentRenewal && <> · en förnyelse brådskar</>}
                   {!trustScore.fullmaktSigned && <> · fullmakt inte signerad</>}
-                  <div className="text-xs font-semibold mt-1 text-forest">
-                    {showTrustChecklist ? "Dölj förslag" : "Vad kan jag göra bättre?"}
-                  </div>
                 </div>
-              </div>
-              <div className="h-2 rounded-full overflow-hidden bg-frost-2">
-                <div
-                  className="h-full rounded-full bg-forest"
-                  style={{ width: `${trustScore.score}%`, transition: "width 500ms ease" }}
-                />
               </div>
             </button>
             {(healthCheck.potentialSavings > 0 || healthCheck.upcomingRenewals > 0) && (
@@ -445,6 +446,19 @@ export function Dashboard({ showIntro: initialShowIntro }: { showIntro?: boolean
             )}
           </div>
         )}
+
+        <button
+          onClick={() => router.push("/livshandelser")}
+          className="bd-card w-full rounded-2xl border border-dashed border-line p-4 mb-6 flex items-center gap-3 text-left bg-transparent"
+        >
+          <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-none bg-frost">
+            <Sparkles size={16} className="text-forest" />
+          </div>
+          <div>
+            <div className="text-sm font-medium">Ny sak på gång?</div>
+            <div className="text-xs text-slate">Ska du köpa, flytta eller skaffa nåt nytt? Vi hjälper dig komma igång.</div>
+          </div>
+        </button>
 
         <div className="flex items-center justify-between mb-4">
           {active ? (
@@ -921,23 +935,7 @@ export function Dashboard({ showIntro: initialShowIntro }: { showIntro?: boolean
                   );
                 })}
               </div>
-            ) : (
-              // Försäkringar läggs till via BankID (import/rescan), inte
-              // manuellt längre — se items.ts. Nya, ej ännu tecknade saker
-              // (ny bil, nytt husdjur osv) går via Livshandelser istället.
-              <button
-                onClick={() => router.push("/livshandelser")}
-                className="bd-card w-full rounded-2xl border border-dashed border-line p-5 flex items-center gap-3 text-left bg-transparent"
-              >
-                <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-none bg-frost">
-                  <Sparkles size={18} className="text-forest" />
-                </div>
-                <div>
-                  <div className="text-sm font-medium">Ny sak på gång?</div>
-                  <div className="text-xs text-slate">Ska du köpa, flytta eller skaffa nåt nytt? Vi hjälper dig komma igång.</div>
-                </div>
-              </button>
-            )}
+            ) : null}
           </div>
         )}
 
