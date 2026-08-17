@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Bell } from "lucide-react";
 import { useBuddy } from "@/lib/buddy-context";
@@ -21,6 +21,18 @@ export function NotificationBell() {
   const todoList = buildTodoList({ items, policies, profile, missingInsuranceRequests, pendingMobilNumber, householdRequests });
   const urgentCount = todoList.filter((t) => t.urgent).length;
 
+  // mousedown-utanför istället för onBlur — se TabBar.tsx:s Mer-knapp för
+  // samma fix och varför (onBlur kunde stänga panelen direkt vid
+  // öppningsklicket i vissa webbläsare).
+  useEffect(() => {
+    if (!open) return;
+    const onMouseDown = (e: MouseEvent) => {
+      if (!rootRef.current?.contains(e.target as Node)) setOpen(false);
+    };
+    document.addEventListener("mousedown", onMouseDown);
+    return () => document.removeEventListener("mousedown", onMouseDown);
+  }, [open]);
+
   if (todoList.length === 0) return null;
 
   const go = (href?: string) => {
@@ -32,9 +44,6 @@ export function NotificationBell() {
     <div className="relative flex-none" ref={rootRef}>
       <button
         onClick={() => setOpen((v) => !v)}
-        onBlur={(e) => {
-          if (!rootRef.current?.contains(e.relatedTarget as Node)) setOpen(false);
-        }}
         className="relative w-9 h-9 rounded-full flex items-center justify-center hover:bg-frost-2"
         aria-label="Notiser"
       >
