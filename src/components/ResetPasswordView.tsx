@@ -4,8 +4,9 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { ArrowLeft, Check, Loader2, Mail } from "lucide-react";
 import { Logo } from "@/components/Logo";
-import { Field, inputClass } from "@/components/onboarding/shared";
+import { Field, inputClass, PasswordField } from "@/components/onboarding/shared";
 import { createClient } from "@/lib/supabase/client";
+import { translateAuthError } from "@/lib/auth-errors";
 
 // Två lägen på samma sida: en begär en återställningslänk via mejl, den
 // andra (efter att man klickat länken, som ger en tillfällig session) sätter
@@ -40,7 +41,7 @@ export function ResetPasswordView() {
     });
     setLoading(false);
     if (resetError) {
-      setError(resetError.message);
+      setError(translateAuthError(resetError.message));
       return;
     }
     setSent(true);
@@ -54,7 +55,7 @@ export function ResetPasswordView() {
     const { error: updateError } = await supabase.auth.updateUser({ password });
     setLoading(false);
     if (updateError) {
-      setError(updateError.message);
+      setError(translateAuthError(updateError.message));
       return;
     }
     setDone(true);
@@ -97,15 +98,7 @@ export function ResetPasswordView() {
                 <h1 className="bd-display text-3xl mt-3 mb-2">Välj ett nytt lösenord</h1>
               </div>
               <div className="bg-white rounded-2xl border border-line p-6">
-                <Field label="Nytt lösenord">
-                  <input
-                    type="password"
-                    className={inputClass}
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    placeholder="Minst 6 tecken"
-                  />
-                </Field>
+                <PasswordField label="Nytt lösenord" value={password} onChange={setPassword} placeholder="Minst 6 tecken" />
                 {error && <p className="text-sm text-red-600 mb-4">{error}</p>}
                 <button
                   onClick={setNewPassword}

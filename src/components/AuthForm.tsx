@@ -5,10 +5,11 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft, Check, Loader2, Mail } from "lucide-react";
 import { Logo } from "@/components/Logo";
-import { Field, inputClass } from "@/components/onboarding/shared";
+import { Field, inputClass, PasswordField } from "@/components/onboarding/shared";
 import { createClient } from "@/lib/supabase/client";
 import { isValidSwedishMobile } from "@/lib/phone";
 import { isValidPersonnummer } from "@/lib/personnummer";
+import { translateAuthError } from "@/lib/auth-errors";
 import type { UserType } from "@/lib/types";
 
 type Mode = "login" | "signup";
@@ -34,18 +35,30 @@ export function AuthForm({ userType, initialReferralCode }: { userType: UserType
   const [verifying, setVerifying] = useState(false);
   const [resendMessage, setResendMessage] = useState<string | null>(null);
 
-  const valid =
-    email.trim().length > 3 &&
-    password.length >= 6 &&
-    (mode === "login" ||
-      (isValidSwedishMobile(phone) &&
-        name.trim().length >= 2 &&
-        lastName.trim().length >= 2 &&
-        isValidPersonnummer(personnummer) &&
-        confirmPassword === password));
+  const [triedSubmit, setTriedSubmit] = useState(false);
+
+  // Namngivna delkrav istället för en enda bool — så knappen kan förklara
+  // exakt vad som saknas istället för att bara vara gråmarkerad. Visas
+  // bara efter ett försök (triedSubmit), inte som en röd vägg redan vid
+  // första blicken på ett tomt formulär.
+  const missingReasons: string[] = [];
+  if (email.trim().length <= 3) missingReasons.push("en giltig e-postadress");
+  if (password.length < 6) missingReasons.push("ett lösenord på minst 6 tecken");
+  if (mode === "signup") {
+    if (name.trim().length < 2) missingReasons.push("förnamn");
+    if (lastName.trim().length < 2) missingReasons.push("efternamn");
+    if (!isValidSwedishMobile(phone)) missingReasons.push("ett giltigt mobilnummer");
+    if (!isValidPersonnummer(personnummer)) missingReasons.push("ett giltigt personnummer");
+    if (password.length >= 6 && confirmPassword !== password) missingReasons.push("lösenorden måste matcha");
+  }
+  const valid = missingReasons.length === 0;
 
   const handleSubmit = async () => {
-    if (!valid || loading) return;
+    if (loading) return;
+    if (!valid) {
+      setTriedSubmit(true);
+      return;
+    }
     setLoading(true);
     setError(null);
     const supabase = createClient();
@@ -66,7 +79,7 @@ export function AuthForm({ userType, initialReferralCode }: { userType: UserType
       });
       setLoading(false);
       if (signUpError) {
-        setError(signUpError.message);
+        setError(translateAuthError(signUpError.message));
         return;
       }
       if (!data.session) {
@@ -83,7 +96,7 @@ export function AuthForm({ userType, initialReferralCode }: { userType: UserType
       });
       setLoading(false);
       if (signInError) {
-        setError(signInError.message);
+        setError(translateAuthError(signInError.message));
         return;
       }
       router.push("/dashboard");
@@ -217,25 +230,14 @@ export function AuthForm({ userType, initialReferralCode }: { userType: UserType
                 placeholder="sam@exempel.se"
               />
             </Field>
-            <Field label="Lösenord">
-              <input
-                type="password"
-                className={inputClass}
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder="Minst 6 tecken"
-              />
-            </Field>
+            <PasswordField label="Lösenord" value={password} onChange={setPassword} placeholder="Minst 6 tecken" />
             {mode === "signup" && (
-              <Field label="Bekräfta lösenord">
-                <input
-                  type="password"
-                  className={inputClass}
-                  value={confirmPassword}
-                  onChange={(e) => setConfirmPassword(e.target.value)}
-                  placeholder="Upprepa lösenordet"
-                />
-              </Field>
+              <PasswordField
+                label="Bekräfta lösenord"
+                value={confirmPassword}
+                onChange={setConfirmPassword}
+                placeholder="Upprepa lösenordet"
+              />
             )}
             {mode === "signup" && (
               <Field label="Mobilnummer">
@@ -270,11 +272,16 @@ export function AuthForm({ userType, initialReferralCode }: { userType: UserType
               </Field>
             )}
 
+            {triedSubmit && missingReasons.length > 0 && (
+              <p className="text-sm mb-4 text-amber-deep">
+                Du behöver ange {missingReasons.join(", ")} innan du kan {mode === "signup" ? "skapa kontot" : "logga in"}.
+              </p>
+            )}
             {error && <p className="text-sm text-red-600 mb-4">{error}</p>}
 
             <button
               onClick={handleSubmit}
-              disabled={!valid || loading}
+              disabled={loading}
               className="bd-btn w-full flex items-center justify-center gap-2 py-3.5 rounded-full font-semibold text-white text-[15px] bg-forest disabled:opacity-50"
             >
               {loading ? (
@@ -296,6 +303,7 @@ export function AuthForm({ userType, initialReferralCode }: { userType: UserType
             onClick={() => {
               setMode(mode === "signup" ? "login" : "signup");
               setError(null);
+              setTriedSubmit(false);
             }}
             className="w-full text-center text-sm mt-5 text-slate hover:text-ink"
           >

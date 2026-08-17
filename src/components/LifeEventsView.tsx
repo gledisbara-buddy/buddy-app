@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { ArrowRight, Baby, Briefcase, Car, Check, PawPrint, Plus, Truck } from "lucide-react";
 import { TopBar } from "@/components/TopBar";
 import { ProfileMenu } from "@/components/ProfileMenu";
+import { PageSkeleton } from "@/components/PageSkeleton";
 import { useBuddy } from "@/lib/buddy-context";
 import { getSysselsattningTips, LIFE_EVENTS, type LifeEventId } from "@/lib/life-events";
 
@@ -19,7 +20,8 @@ export function LifeEventsView({ initialEvent }: { initialEvent?: LifeEventId })
     if (!loading && !userType) router.replace("/kom-igang");
   }, [loading, userType, router]);
 
-  if (loading || !userType) return null;
+  if (loading) return <PageSkeleton />;
+  if (!userType) return null;
 
   const selectEvent = (id: LifeEventId) => {
     setEvent(id);

@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { ArrowRight, CalendarClock, PhoneCall, PiggyBank, Plus } from "lucide-react";
 import { TopBar } from "@/components/TopBar";
 import { ProfileMenu } from "@/components/ProfileMenu";
+import { PageSkeleton } from "@/components/PageSkeleton";
 import { useBuddy } from "@/lib/buddy-context";
 import { buildHealthCheck } from "@/lib/health-check";
 
@@ -16,7 +17,8 @@ export function HealthCheckView() {
     if (!loading && !userType) router.replace("/kom-igang");
   }, [loading, userType, router]);
 
-  if (loading || !userType) return null;
+  if (loading) return <PageSkeleton />;
+  if (!userType) return null;
 
   const check = buildHealthCheck(items, policies);
   const comparableCount = check.comparedCount + check.uncomparedCount;

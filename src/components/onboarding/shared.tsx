@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Check } from "lucide-react";
+import { Check, Eye, EyeOff } from "lucide-react";
 
 export function PillGroup<T extends string>({
   options,
@@ -168,6 +168,44 @@ export function Field({ label, children }: { label: string; children: React.Reac
 
 export const inputClass = "w-full px-4 py-3 rounded-xl border border-line text-[15px]";
 
+// Samma lösenordsfält återanvänds på fem ställen (registrering x2,
+// inloggning, byt lösenord, återställ lösenord) — visa/dölj-knapp byggd
+// en gång här istället för att upprepas i varje formulär.
+export function PasswordField({
+  label,
+  value,
+  onChange,
+  placeholder,
+}: {
+  label: string;
+  value: string;
+  onChange: (v: string) => void;
+  placeholder?: string;
+}) {
+  const [visible, setVisible] = useState(false);
+  return (
+    <Field label={label}>
+      <div className="relative">
+        <input
+          type={visible ? "text" : "password"}
+          className={`${inputClass} pr-11`}
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          placeholder={placeholder}
+        />
+        <button
+          type="button"
+          onClick={() => setVisible((v) => !v)}
+          className="absolute right-3.5 top-1/2 -translate-y-1/2 opacity-50 hover:opacity-100"
+          aria-label={visible ? "Dölj lösenord" : "Visa lösenord"}
+        >
+          {visible ? <EyeOff size={17} /> : <Eye size={17} />}
+        </button>
+      </div>
+    </Field>
+  );
+}
+
 export function FormActions({
   valid,
   onSave,
@@ -177,11 +215,22 @@ export function FormActions({
   onSave: () => void;
   onCancel: () => void;
 }) {
+  // Skydd mot dubbel-inskick vid snabba dubbelklick — de flesta av de här
+  // formulären stänger/navigerar bort sig själva direkt vid en lyckad
+  // spara, så den korta timeouten är bara ett skyddsnät för fall där
+  // formuläret av någon anledning stannar kvar öppet.
+  const [saving, setSaving] = useState(false);
+  const handleSave = () => {
+    if (saving) return;
+    setSaving(true);
+    onSave();
+    setTimeout(() => setSaving(false), 1000);
+  };
   return (
     <div className="flex flex-col gap-2 mt-2">
       <button
-        onClick={onSave}
-        disabled={!valid}
+        onClick={handleSave}
+        disabled={!valid || saving}
         className="bd-btn w-full flex items-center justify-center gap-2 py-3.5 rounded-full font-semibold text-white text-[15px] bg-forest disabled:opacity-40"
       >
         Spara <Check size={16} />

@@ -5,7 +5,8 @@ import { useRouter } from "next/navigation";
 import { ArrowRight, Check, FolderOpen, KeyRound, LogOut } from "lucide-react";
 import { TopBar } from "@/components/TopBar";
 import { ProfileMenu } from "@/components/ProfileMenu";
-import { Field, inputClass } from "@/components/onboarding/shared";
+import { PageSkeleton } from "@/components/PageSkeleton";
+import { Field, inputClass, PasswordField } from "@/components/onboarding/shared";
 import { useBuddy } from "@/lib/buddy-context";
 import { createClient } from "@/lib/supabase/client";
 
@@ -42,7 +43,8 @@ export function ProfilePage() {
     }
   }
 
-  if (loading || !userType) return null;
+  if (loading) return <PageSkeleton />;
+  if (!userType) return null;
 
   const idLabel = userType === "foretag" ? "Organisationsnummer" : "Personnummer";
 
@@ -157,24 +159,13 @@ export function ProfilePage() {
             <KeyRound size={16} className="text-forest" />
             <h2 className="font-semibold text-[15px]">Byt lösenord</h2>
           </div>
-          <Field label="Nytt lösenord">
-            <input
-              type="password"
-              className={inputClass}
-              value={newPassword}
-              onChange={(e) => setNewPassword(e.target.value)}
-              placeholder="Minst 6 tecken"
-            />
-          </Field>
-          <Field label="Bekräfta nytt lösenord">
-            <input
-              type="password"
-              className={inputClass}
-              value={confirmPassword}
-              onChange={(e) => setConfirmPassword(e.target.value)}
-              placeholder="Upprepa lösenordet"
-            />
-          </Field>
+          <PasswordField label="Nytt lösenord" value={newPassword} onChange={setNewPassword} placeholder="Minst 6 tecken" />
+          <PasswordField
+            label="Bekräfta nytt lösenord"
+            value={confirmPassword}
+            onChange={setConfirmPassword}
+            placeholder="Upprepa lösenordet"
+          />
           {passwordError && <p className="text-sm text-red-600 mb-4">{passwordError}</p>}
           <button
             onClick={handlePasswordChange}

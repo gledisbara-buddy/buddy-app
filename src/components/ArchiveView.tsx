@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { ClipboardSignature, Download, FolderOpen, History } from "lucide-react";
 import { TopBar } from "@/components/TopBar";
 import { ProfileMenu } from "@/components/ProfileMenu";
+import { PageSkeleton } from "@/components/PageSkeleton";
 import { FullmaktSigning } from "@/components/FullmaktSigning";
 import { useBuddy } from "@/lib/buddy-context";
 import { createClient } from "@/lib/supabase/client";
@@ -54,7 +55,8 @@ export function ArchiveView() {
       .then(({ data }) => setHistory((data ?? []) as FullmaktHistoryRow[]));
   }, [userId, profile?.fullmaktSignedAt]);
 
-  if (loading || !userType) return null;
+  if (loading) return <PageSkeleton />;
+  if (!userType) return null;
 
   const priorSignings = history.filter((h) => h.pdf_path !== profile?.fullmaktPdfPath);
 

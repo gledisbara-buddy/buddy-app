@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { ArrowLeft, Loader2, PhoneCall } from "lucide-react";
 import { Logo } from "@/components/Logo";
 import { Overlay } from "@/components/Overlay";
+import { PageSkeleton } from "@/components/PageSkeleton";
 import { AutoFetchStep } from "@/components/onboarding/AutoFetchStep";
 import { BoendeForm } from "@/components/onboarding/BoendeForm";
 import { TelekomForm } from "@/components/onboarding/TelekomForm";
@@ -640,7 +641,8 @@ export function Onboarding({
     setAddMode(editItem ? "manual" : activeCategory ? (hasAutoFetch(activeCategory) ? "choice" : "manual") : null);
   }
 
-  if (loading || !userType) return null;
+  if (loading) return <PageSkeleton />;
+  if (!userType) return null;
   if (editItemId && !editItem) {
     router.replace("/dashboard");
     return null;

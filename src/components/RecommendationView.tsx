@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { ArrowRight, PhoneCall, Sparkles } from "lucide-react";
 import { TopBar } from "@/components/TopBar";
 import { ProfileMenu } from "@/components/ProfileMenu";
+import { PageSkeleton } from "@/components/PageSkeleton";
 import { useBuddy } from "@/lib/buddy-context";
 import { buildRecommendation } from "@/lib/recommendation";
 
@@ -16,7 +17,8 @@ export function RecommendationView() {
     if (!loading && !userType) router.replace("/kom-igang");
   }, [loading, userType, router]);
 
-  if (loading || !userType) return null;
+  if (loading) return <PageSkeleton />;
+  if (!userType) return null;
 
   const rec = buildRecommendation(items, policies, profile);
 

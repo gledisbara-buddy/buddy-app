@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { AlertTriangle, Check, Download } from "lucide-react";
 import { TopBar } from "@/components/TopBar";
 import { ProfileMenu } from "@/components/ProfileMenu";
+import { PageSkeleton } from "@/components/PageSkeleton";
 import { ConfirmDialog } from "@/components/Overlay";
 import { Field, PillGroup } from "@/components/onboarding/shared";
 import { useBuddy } from "@/lib/buddy-context";
@@ -74,7 +75,8 @@ export function SettingsPage() {
       });
   }, [userId]);
 
-  if (loading || !userType) return null;
+  if (loading) return <PageSkeleton />;
+  if (!userType) return null;
 
   const handleSave = () => {
     const changed: string[] = [];

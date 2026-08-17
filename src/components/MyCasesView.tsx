@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { CalendarPlus, Phone, ShieldAlert, Video } from "lucide-react";
 import { TopBar } from "@/components/TopBar";
 import { ProfileMenu } from "@/components/ProfileMenu";
+import { PageSkeleton } from "@/components/PageSkeleton";
 import { ConfirmDialog } from "@/components/Overlay";
 import { useBuddy, type BookingRecord, type ClaimRecord } from "@/lib/buddy-context";
 import { FIXED_TOPICS, formatBookingDay } from "@/lib/booking";
@@ -51,7 +52,8 @@ export function MyCasesView() {
     if (!loading && !userType) router.replace("/kom-igang");
   }, [loading, userType, router]);
 
-  if (loading || !userType) return null;
+  if (loading) return <PageSkeleton />;
+  if (!userType) return null;
 
   const today = new Date().toISOString().slice(0, 10);
 

@@ -26,6 +26,7 @@ import {
 import { ConfirmDialog, Overlay } from "@/components/Overlay";
 import { TopBar } from "@/components/TopBar";
 import { ProfileMenu } from "@/components/ProfileMenu";
+import { PageSkeleton } from "@/components/PageSkeleton";
 import { useBuddy } from "@/lib/buddy-context";
 import { createClient } from "@/lib/supabase/client";
 import { formatBookingDay } from "@/lib/booking";
@@ -180,7 +181,8 @@ export function Dashboard({ showIntro: initialShowIntro }: { showIntro?: boolean
     router.replace("/dashboard");
   };
 
-  if (loading || !userType) return null;
+  if (loading) return <PageSkeleton />;
+  if (!userType) return null;
 
   if (switching) {
     return (

@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { Check, Copy, Link2, ShieldCheck, Sparkles } from "lucide-react";
 import { TopBar } from "@/components/TopBar";
 import { ProfileMenu } from "@/components/ProfileMenu";
+import { PageSkeleton } from "@/components/PageSkeleton";
 import { useBuddy } from "@/lib/buddy-context";
 import { generateCode } from "@/lib/referral";
 
@@ -32,7 +33,8 @@ export function ReferralView() {
     return () => clearTimeout(t);
   }, [copiedCode]);
 
-  if (loading || !userType) return null;
+  if (loading) return <PageSkeleton />;
+  if (!userType) return null;
 
   const code = profile?.referralCode;
   const qualified = referralStats?.qualified ?? 0;
