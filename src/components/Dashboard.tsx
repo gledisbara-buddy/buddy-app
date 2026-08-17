@@ -33,6 +33,7 @@ import { ConfirmDialog, Overlay } from "@/components/Overlay";
 import { TopBar } from "@/components/TopBar";
 import { ProfileMenu } from "@/components/ProfileMenu";
 import { useBuddy } from "@/lib/buddy-context";
+import { createClient } from "@/lib/supabase/client";
 import { formatBookingDay } from "@/lib/booking";
 import { buildTodoList } from "@/lib/todo";
 import { computeTrustScore } from "@/lib/trust-score";
@@ -51,6 +52,7 @@ import {
 import { computeMoveStatus, effectiveQuote, MOVE_STATUS_LABELS, type Quote } from "@/lib/quote";
 
 type ItemStatus = "saved" | "added" | "uncompared" | "compared" | "fetched" | "pending";
+type HouseholdMemberItem = { memberUserId: string; memberName: string; item: InsuranceItem; price: number | null };
 
 // Vem ska Buddy höra av sig till för att säga upp? Finns redan ett
 // tecknat/auto-hämtat avtal (signed) används det bolagsnamnet. Annars
@@ -121,6 +123,7 @@ export function Dashboard({ showIntro: initialShowIntro }: { showIntro?: boolean
   const {
     userType,
     loading,
+    userId,
     profile,
     items,
     removeItem,
@@ -131,6 +134,7 @@ export function Dashboard({ showIntro: initialShowIntro }: { showIntro?: boolean
     bookings,
     missingInsuranceRequests,
     householdRequests,
+    household,
     referralStats,
     hasClaimPerk,
   } = useBuddy();
@@ -142,10 +146,30 @@ export function Dashboard({ showIntro: initialShowIntro }: { showIntro?: boolean
   const [confirmCancelId, setConfirmCancelId] = useState<string | null>(null);
   const [switching, setSwitching] = useState(false);
   const [showTrustChecklist, setShowTrustChecklist] = useState(false);
+  const [householdItems, setHouseholdItems] = useState<HouseholdMemberItem[] | null>(null);
 
   useEffect(() => {
     if (!loading && !userType) router.replace("/kom-igang");
   }, [loading, userType, router]);
+
+  // Hushållets övriga medlemmars saker, separat från kundens egna — samma
+  // RPC och filtrering som HouseholdView.tsx:s "FAMILJENS SAKER", bara
+  // hämtad här också så det syns direkt på översikten istället för att
+  // kräva ett extra klick in till /hushall.
+  useEffect(() => {
+    if (!household) return;
+    const supabase = createClient();
+    supabase
+      .rpc("get_household_items")
+      .then(({ data }) => {
+        const rows = (data ?? []) as { member_user_id: string; member_name: string; kind: string; data: InsuranceItem; price: number | null }[];
+        setHouseholdItems(
+          rows
+            .filter((r) => r.member_user_id !== userId)
+            .map((r) => ({ memberUserId: r.member_user_id, memberName: r.member_name, item: r.data, price: r.price }))
+        );
+      });
+  }, [household, userId]);
 
   // Nollställ sökrutan när kunden byter grupp — justerat under rendering
   // (samma mönster som ProfilePage.tsx:s syncedLoading) istället för i en
@@ -866,6 +890,48 @@ export function Dashboard({ showIntro: initialShowIntro }: { showIntro?: boolean
                 </div>
               </button>
             )}
+          </div>
+        )}
+
+        {householdItems && householdItems.length > 0 && (
+          <div className="mb-8">
+            <div className="text-sm font-semibold mb-3 text-slate">Hushållets saker</div>
+            <div className="bg-white rounded-2xl border border-line p-5">
+              <div className="flex flex-col gap-4">
+                {Object.entries(
+                  householdItems.reduce<Record<string, HouseholdMemberItem[]>>((acc, mi) => {
+                    (acc[mi.memberName] ??= []).push(mi);
+                    return acc;
+                  }, {})
+                ).map(([name, memberItems]) => (
+                  <div key={name}>
+                    <div className="text-xs font-semibold mb-2 text-slate">{name}</div>
+                    <div className="flex flex-col gap-2">
+                      {memberItems.map((mi, i) => {
+                        const Icon = ITEM_CATEGORIES.find((c) => c.kind === mi.item.kind)?.icon;
+                        return (
+                          <div key={`${mi.memberUserId}-${i}`} className="flex items-center justify-between gap-3 text-sm">
+                            <span className="flex items-center gap-2 min-w-0">
+                              {Icon && <Icon size={14} className="text-forest flex-none" />}
+                              <span className="truncate">
+                                {itemTitle(mi.item)} <span className="text-slate">· {itemSummary(mi.item)}</span>
+                              </span>
+                            </span>
+                            {mi.price != null && <span className="font-medium flex-none">{mi.price} kr/mån</span>}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                ))}
+              </div>
+              <button
+                onClick={() => router.push("/hushall")}
+                className="text-xs font-semibold mt-4 text-forest hover:opacity-80"
+              >
+                Till hela hushållet →
+              </button>
+            </div>
           </div>
         )}
 
