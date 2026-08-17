@@ -11,6 +11,7 @@ import { useBuddy } from "@/lib/buddy-context";
 import { HOUSEHOLD_RELATION_LABELS, type HouseholdRelation } from "@/lib/household";
 import { createClient } from "@/lib/supabase/client";
 import { ITEM_CATEGORIES, ITEM_GROUPS, itemSummary, itemTitle, type InsuranceItem, type ItemKind } from "@/lib/items";
+import type { Quote } from "@/lib/quote";
 
 const SENT_STATUS_LABELS: Record<"pending" | "approved" | "declined", string> = {
   pending: "Väntar på svar",
@@ -19,7 +20,7 @@ const SENT_STATUS_LABELS: Record<"pending" | "approved" | "declined", string> = 
 };
 
 type HouseholdSummary = { memberCount: number; totalMonthlyCost: number; kindCounts: Record<string, number> };
-type MemberItem = { memberUserId: string; memberName: string; item: InsuranceItem; price: number | null };
+type MemberItem = { memberUserId: string; memberName: string; item: InsuranceItem; policy: Quote | null };
 
 // "Gledis", "Gledis och Blondina", "Gledis, Blondina och Sam" — används i
 // hushållssammanfattningen istället för en bar personantal-siffra.
@@ -89,9 +90,9 @@ export function HouseholdView() {
     supabase
       .rpc("get_household_items")
       .then(({ data }) => {
-        const rows = (data ?? []) as { member_user_id: string; member_name: string; kind: string; data: InsuranceItem; price: number | null }[];
+        const rows = (data ?? []) as { member_user_id: string; member_name: string; kind: string; data: InsuranceItem; policy: Quote | null }[];
         setMemberItems(
-          rows.filter((r) => r.member_user_id !== userId).map((r) => ({ memberUserId: r.member_user_id, memberName: r.member_name, item: r.data, price: r.price }))
+          rows.filter((r) => r.member_user_id !== userId).map((r) => ({ memberUserId: r.member_user_id, memberName: r.member_name, item: r.data, policy: r.policy }))
         );
       });
   }, [household, userId]);
@@ -273,15 +274,19 @@ export function HouseholdView() {
                         {items.map((mi, i) => {
                           const Icon = ITEM_CATEGORIES.find((c) => c.kind === mi.item.kind)?.icon;
                           return (
-                            <div key={`${mi.memberUserId}-${i}`} className="flex items-center justify-between gap-3 text-sm">
+                            <button
+                              key={`${mi.memberUserId}-${i}`}
+                              onClick={() => router.push(`/objekt/${mi.item.id}`)}
+                              className="flex items-center justify-between gap-3 text-sm text-left hover:opacity-70"
+                            >
                               <span className="flex items-center gap-2 min-w-0">
                                 {Icon && <Icon size={14} className="text-forest flex-none" />}
                                 <span className="truncate">
                                   {itemTitle(mi.item)} <span className="text-slate">· {itemSummary(mi.item)}</span>
                                 </span>
                               </span>
-                              {mi.price != null && <span className="font-medium flex-none">{mi.price} kr/mån</span>}
-                            </div>
+                              {mi.policy?.price != null && <span className="font-medium flex-none">{mi.policy.price} kr/mån</span>}
+                            </button>
                           );
                         })}
                       </div>

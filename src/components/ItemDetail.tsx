@@ -6,7 +6,7 @@ import { ArrowLeft, ArrowRight, CalendarPlus, Download, Pencil, Trash2 } from "l
 import { Logo } from "@/components/Logo";
 import { ConfirmDialog } from "@/components/Overlay";
 import { useBuddy } from "@/lib/buddy-context";
-import { isComparableItem, ITEM_CATEGORIES, itemDetailRows, itemSummary, itemTitle } from "@/lib/items";
+import { isComparableItem, ITEM_CATEGORIES, itemDetailRows, itemSummary, itemTitle, type InsuranceItem } from "@/lib/items";
 import { buildIcsFile } from "@/lib/booking";
 import { buildItemSummaryPdf } from "@/lib/item-pdf";
 import { parseSwedishDate } from "@/lib/dates";
@@ -14,6 +14,7 @@ import { createClient } from "@/lib/supabase/client";
 import { computeMoveStatus, effectiveQuote, MOVE_STATUS_LABELS, type Quote } from "@/lib/quote";
 
 type HistoryRow = { data: Quote; created_at: string };
+type ForeignItem = { memberName: string; item: InsuranceItem; policy: Quote | null };
 
 function formatHistoryDate(iso: string): string {
   return new Date(iso).toLocaleDateString("sv-SE", { day: "numeric", month: "short", year: "numeric" });
@@ -27,15 +28,33 @@ function formatHistoryDate(iso: string): string {
 // om det faktiskt finns rader — en ny post har ingen historik än.
 export function ItemDetail({ itemId }: { itemId: string }) {
   const router = useRouter();
-  const { items, policies, removeItem } = useBuddy();
+  const { items, policies, removeItem, household } = useBuddy();
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [history, setHistory] = useState<HistoryRow[]>([]);
   const [downloadingPdf, setDownloadingPdf] = useState(false);
   const item = items.find((i) => i.id === itemId);
+  // undefined = inte kollat än, null = kollat men hittade inget, annars
+  // en hushållsmedlems sak öppnad i skrivskyddat läge (se Dashboard.tsx).
+  const [foreignItem, setForeignItem] = useState<ForeignItem | null | undefined>(undefined);
 
   useEffect(() => {
-    if (!item) router.replace("/dashboard");
-  }, [item, router]);
+    if (item || !household) return;
+    const supabase = createClient();
+    supabase
+      .rpc("get_household_items")
+      .then(({ data }) => {
+        const rows = (data ?? []) as { member_name: string; data: InsuranceItem; policy: Quote | null }[];
+        const match = rows.find((r) => r.data.id === itemId);
+        setForeignItem(match ? { memberName: match.member_name, item: match.data, policy: match.policy } : null);
+      });
+  }, [item, household, itemId]);
+
+  // Väntar inte in en pågående hushålls-koll (foreignItem === undefined)
+  // innan den redirectar — bara när det är klart att det inte finns
+  // något hushåll att kolla mot, eller att kollen redan gav nobben.
+  useEffect(() => {
+    if (!item && (!household || foreignItem === null)) router.replace("/dashboard");
+  }, [item, household, foreignItem, router]);
 
   useEffect(() => {
     const supabase = createClient();
@@ -47,7 +66,58 @@ export function ItemDetail({ itemId }: { itemId: string }) {
       .then(({ data }) => setHistory((data ?? []) as HistoryRow[]));
   }, [itemId]);
 
-  if (!item) return null;
+  if (!item) {
+    if (!foreignItem) return null;
+    // Skrivskyddad detaljvy för en hushållsmedlems sak (öppnad via
+    // Dashboard.tsx/HouseholdView.tsx) — samma "Nuvarande villkor"-rader
+    // som kundens egna, men utan redigera/ta bort/jämför/skada-knappar.
+    const ForeignIcon = ITEM_CATEGORIES.find((c) => c.kind === foreignItem.item.kind)!.icon;
+    const foreignRows = itemDetailRows(foreignItem.item, foreignItem.policy ?? undefined);
+    return (
+      <div className="min-h-screen w-full flex flex-col">
+        <div className="w-full flex items-center justify-between px-6 py-5">
+          <Logo />
+          <div className="w-6" />
+        </div>
+        <div className="flex-1 flex items-start justify-center px-5 pb-16">
+          <div className="w-full max-w-md bd-fade">
+            <button onClick={() => router.back()} className="flex items-center gap-1.5 text-sm mb-5 opacity-60 hover:opacity-100">
+              <ArrowLeft size={15} /> Tillbaka
+            </button>
+
+            <div className="flex items-center gap-3 mb-2">
+              <div className="w-11 h-11 rounded-xl flex items-center justify-center flex-none bg-frost-2">
+                <ForeignIcon size={20} className="text-forest" />
+              </div>
+              <div>
+                <h1 className="bd-display text-xl">{itemTitle(foreignItem.item)}</h1>
+                <div className="text-sm text-slate">{itemSummary(foreignItem.item)}</div>
+              </div>
+            </div>
+            <p className="text-xs mb-6 text-slate">{foreignItem.memberName}s sak — du ser detaljer, inga ändringar.</p>
+
+            <div className="bg-white rounded-2xl border border-line mb-6 overflow-hidden">
+              <div className="px-5 pt-4 pb-2 text-sm font-semibold">
+                {foreignItem.policy ? "Nuvarande villkor" : `Inga villkor sparade för ${itemTitle(foreignItem.item)} ännu`}
+              </div>
+              {foreignRows.length > 0 ? (
+                <div className="divide-y divide-line">
+                  {foreignRows.map((row) => (
+                    <div key={row.label} className="flex items-center justify-between px-5 py-3 text-sm">
+                      <span className="text-slate">{row.label}</span>
+                      <span className="font-medium text-right">{row.value}</span>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="px-5 pb-4 text-sm text-slate">Inga sparade villkor att visa.</div>
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   const rawQuote = policies[item.id];
   const quote = rawQuote ? effectiveQuote(rawQuote) : undefined;

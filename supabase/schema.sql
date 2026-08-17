@@ -936,6 +936,38 @@ begin
 end;
 $$;
 
+-- Uppdaterad för att stödja en klickbar, skrivskyddad detaljvy per
+-- hushållsmedlems sak (Dashboard.tsx/ItemDetail.tsx) — samma
+-- "Nuvarande villkor"-rader (bolag, pris, omfattning, självrisk osv) som
+-- kundens egna saker visar, inte bara en bar prissiffra. Måste droppas
+-- och skapas om eftersom returtypen (price numeric → policy jsonb) inte
+-- går att ändra med bara create or replace.
+drop function if exists public.get_household_items();
+create function public.get_household_items()
+returns table(member_user_id uuid, member_name text, kind text, data jsonb, policy jsonb)
+language plpgsql
+security definer
+set search_path = public
+stable
+as $$
+declare
+  v_household_id uuid;
+begin
+  select household_id into v_household_id from public.profiles where id = auth.uid();
+  if v_household_id is null then
+    return;
+  end if;
+
+  return query
+    select i.user_id, p.name, i.kind, i.data,
+      (select pol.data from public.policies pol where pol.item_id = i.id)
+    from public.items i
+    join public.profiles p on p.id = i.user_id
+    where i.user_id in (select id from public.profiles where household_id = v_household_id)
+    order by p.name, i.kind;
+end;
+$$;
+
 -- Notisinställningar (Inställningar-sidan) — låg tidigare bara i lokalt
 -- komponent-state i SettingsPage.tsx och sparades aldrig, så ändringar
 -- försvann vid nästa inloggning. Vanliga profilkolumner, samma mönster

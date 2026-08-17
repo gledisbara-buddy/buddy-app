@@ -52,7 +52,7 @@ import {
 import { computeMoveStatus, effectiveQuote, MOVE_STATUS_LABELS, type Quote } from "@/lib/quote";
 
 type ItemStatus = "saved" | "added" | "uncompared" | "compared" | "fetched" | "pending";
-type HouseholdMemberItem = { memberUserId: string; memberName: string; item: InsuranceItem; price: number | null };
+type HouseholdMemberItem = { memberUserId: string; memberName: string; item: InsuranceItem; policy: Quote | null };
 
 // Vem ska Buddy höra av sig till för att säga upp? Finns redan ett
 // tecknat/auto-hämtat avtal (signed) används det bolagsnamnet. Annars
@@ -162,11 +162,11 @@ export function Dashboard({ showIntro: initialShowIntro }: { showIntro?: boolean
     supabase
       .rpc("get_household_items")
       .then(({ data }) => {
-        const rows = (data ?? []) as { member_user_id: string; member_name: string; kind: string; data: InsuranceItem; price: number | null }[];
+        const rows = (data ?? []) as { member_user_id: string; member_name: string; kind: string; data: InsuranceItem; policy: Quote | null }[];
         setHouseholdItems(
           rows
             .filter((r) => r.member_user_id !== userId)
-            .map((r) => ({ memberUserId: r.member_user_id, memberName: r.member_name, item: r.data, price: r.price }))
+            .map((r) => ({ memberUserId: r.member_user_id, memberName: r.member_name, item: r.data, policy: r.policy }))
         );
       });
   }, [household, userId]);
@@ -219,6 +219,20 @@ export function Dashboard({ showIntro: initialShowIntro }: { showIntro?: boolean
             itemTitle(item).toLowerCase().includes(searchQuery) || itemSummary(item).toLowerCase().includes(searchQuery)
         )
       : active.items
+    : [];
+
+  // Hushållets saker i den aktiva kategorin — grupperas per medlem och
+  // visas under samma rubrik som kundens egna, inte i en separat
+  // fristående sektion (se Dashboard.tsx:s rendering nedan).
+  const householdItemsByMemberInActiveGroup = active
+    ? Object.entries(
+        (householdItems ?? [])
+          .filter((mi) => groupForKind(mi.item.kind) === active.id)
+          .reduce<Record<string, HouseholdMemberItem[]>>((acc, mi) => {
+            (acc[mi.memberName] ??= []).push(mi);
+            return acc;
+          }, {})
+      )
     : [];
 
   // Kundens registrerade nummer (obligatoriskt vid registrering, se
@@ -854,6 +868,40 @@ export function Dashboard({ showIntro: initialShowIntro }: { showIntro?: boolean
               </div>
             )}
 
+            {householdItemsByMemberInActiveGroup.map(([name, memberItems]) => (
+              <div key={name} className="mb-4">
+                <div className="text-sm font-semibold mb-3 text-slate">
+                  {name.split(" ")[0]}s {active.label.toLowerCase()}
+                </div>
+                <div className="grid md:grid-cols-3 gap-4">
+                  {memberItems.map((mi, i) => {
+                    const Icon = ITEM_CATEGORIES.find((c) => c.kind === mi.item.kind)?.icon;
+                    return (
+                      <button
+                        key={`${mi.memberUserId}-${i}`}
+                        onClick={() => router.push(`/objekt/${mi.item.id}`)}
+                        className="bg-white rounded-2xl border border-line p-5 flex flex-col text-left"
+                      >
+                        <div className="w-10 h-10 rounded-xl flex items-center justify-center bg-frost-2 mb-4">
+                          {Icon && <Icon size={18} className="text-forest" />}
+                        </div>
+                        <div className="font-semibold text-[15px] mb-1">{itemTitle(mi.item)}</div>
+                        <div className="text-xs text-slate mb-2">{itemSummary(mi.item)}</div>
+                        {mi.policy?.price != null && (
+                          <div className="text-xs text-ink mb-2">
+                            <b>{mi.policy.name}</b> · {mi.policy.price} kr/mån
+                          </div>
+                        )}
+                        <div className="text-xs font-semibold flex items-center gap-1 mt-auto pt-1 text-forest">
+                          Visa mer <ArrowRight size={12} />
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            ))}
+
             {active.addTargets.length > 0 ? (
               <div className="grid md:grid-cols-3 gap-4">
                 {active.addTargets.map((target) => {
@@ -890,48 +938,6 @@ export function Dashboard({ showIntro: initialShowIntro }: { showIntro?: boolean
                 </div>
               </button>
             )}
-          </div>
-        )}
-
-        {householdItems && householdItems.length > 0 && (
-          <div className="mb-8">
-            <div className="text-sm font-semibold mb-3 text-slate">Hushållets saker</div>
-            <div className="bg-white rounded-2xl border border-line p-5">
-              <div className="flex flex-col gap-4">
-                {Object.entries(
-                  householdItems.reduce<Record<string, HouseholdMemberItem[]>>((acc, mi) => {
-                    (acc[mi.memberName] ??= []).push(mi);
-                    return acc;
-                  }, {})
-                ).map(([name, memberItems]) => (
-                  <div key={name}>
-                    <div className="text-xs font-semibold mb-2 text-slate">{name}</div>
-                    <div className="flex flex-col gap-2">
-                      {memberItems.map((mi, i) => {
-                        const Icon = ITEM_CATEGORIES.find((c) => c.kind === mi.item.kind)?.icon;
-                        return (
-                          <div key={`${mi.memberUserId}-${i}`} className="flex items-center justify-between gap-3 text-sm">
-                            <span className="flex items-center gap-2 min-w-0">
-                              {Icon && <Icon size={14} className="text-forest flex-none" />}
-                              <span className="truncate">
-                                {itemTitle(mi.item)} <span className="text-slate">· {itemSummary(mi.item)}</span>
-                              </span>
-                            </span>
-                            {mi.price != null && <span className="font-medium flex-none">{mi.price} kr/mån</span>}
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </div>
-                ))}
-              </div>
-              <button
-                onClick={() => router.push("/hushall")}
-                className="text-xs font-semibold mt-4 text-forest hover:opacity-80"
-              >
-                Till hela hushållet →
-              </button>
-            </div>
           </div>
         )}
 
