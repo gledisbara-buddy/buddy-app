@@ -4,6 +4,7 @@ import Link from "next/link";
 import {
   ArrowRight,
   CalendarDays,
+  Check,
   Clock,
   FileX,
   Fingerprint,
@@ -11,11 +12,15 @@ import {
   LifeBuoy,
   MessageCircle,
   Scale,
+  ShieldCheck,
   Sparkles,
   Star,
+  Users,
 } from "lucide-react";
 import { FaqAccordion } from "@/components/marketing/FaqAccordion";
+import { Reveal } from "@/components/marketing/Reveal";
 import { StartCta } from "@/components/marketing/StartCta";
+import { StickyMiniCta } from "@/components/marketing/StickyMiniCta";
 import { FAQ_ITEMS } from "@/lib/faq";
 import { GUIDES } from "@/lib/guides";
 import { NEWS_ARTICLES } from "@/lib/news";
@@ -69,6 +74,34 @@ const STEPS = [
     n: "3",
     title: "Jämför, säg upp eller anmäl en skada",
     desc: "Allt i samma app, från och med nu — inga fler inloggningar på fem olika bolags hemsidor.",
+  },
+];
+
+const COMPARISON = [
+  {
+    label: "Tid till samlad överblick",
+    buddy: "Under en minut med BankID",
+    self: "Flera timmar, utspritt på olika hemsidor",
+  },
+  {
+    label: "Antal inloggningar",
+    buddy: "En, i Buddy",
+    self: "En per bolag och abonnemang",
+  },
+  {
+    label: "Uppsägning av gamla avtal",
+    buddy: "Vi tar samtalet, med fullmakt",
+    self: "Du ringer och fyller i blanketter själv",
+  },
+  {
+    label: "Bevakning av förnyelser & besparingar",
+    buddy: "Automatisk påminnelse i appen",
+    self: "Du måste komma ihåg det själv",
+  },
+  {
+    label: "Hjälp vid en skada",
+    buddy: "Anmäl i appen, följ hela ärendet",
+    self: "Separat kontakt per bolag, egen uppföljning",
   },
 ];
 
@@ -126,205 +159,271 @@ export default function MarketingHome() {
         </div>
       </section>
 
-      <section className="max-w-6xl mx-auto px-5 md:px-10 py-16 border-t border-line">
-        <div className="text-center mb-10">
-          <span className="bd-eyebrow">Det här gör Buddy</span>
-          <h2 className="bd-display text-3xl mt-3">Fyra saker, en app</h2>
-        </div>
-        <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          {PILLARS.map((p, i) => (
-            <div key={p.title} className="bd-card relative bg-white rounded-2xl border border-line p-6">
-              <div className="flex items-center gap-3 mb-5">
-                <div className="w-11 h-11 rounded-xl flex items-center justify-center flex-none bg-frost-2">
-                  <p.icon size={19} className="text-forest" />
-                </div>
-                <div className="bd-display text-sm w-6 h-6 rounded-full flex items-center justify-center flex-none bg-frost text-forest">
-                  {i + 1}
-                </div>
-              </div>
-              <div className="font-semibold text-[15px] mb-1.5">{p.title}</div>
-              <p className="text-sm text-slate">{p.desc}</p>
-            </div>
-          ))}
-        </div>
-      </section>
+      <StickyMiniCta />
 
-      <section className="bg-frost-2 py-16 border-t border-line">
-        <div className="max-w-4xl mx-auto px-5 md:px-10">
+      <Reveal>
+        <section className="max-w-6xl mx-auto px-5 md:px-10 py-16 border-t border-line">
           <div className="text-center mb-10">
-            <span className="bd-eyebrow">Så funkar det</span>
-            <h2 className="bd-display text-3xl mt-3">Igång på under en minut</h2>
+            <span className="bd-eyebrow">Det här gör Buddy</span>
+            <h2 className="bd-display text-3xl mt-3">Fyra saker, en app</h2>
           </div>
-          <div className="grid md:grid-cols-3 gap-6">
-            {STEPS.map((s) => (
-              <div key={s.title} className="text-center">
-                <div className="w-10 h-10 rounded-full flex items-center justify-center mx-auto mb-4 bd-display text-white bg-forest">
-                  {s.icon ? <s.icon size={17} /> : s.n}
+          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            {PILLARS.map((p, i) => (
+              <div key={p.title} className="bd-card relative bg-white rounded-2xl border border-line p-6">
+                <div className="flex items-center gap-3 mb-5">
+                  <div className="w-11 h-11 rounded-xl flex items-center justify-center flex-none bg-frost-2">
+                    <p.icon size={19} className="text-forest" />
+                  </div>
+                  <div className="bd-display text-sm w-6 h-6 rounded-full flex items-center justify-center flex-none bg-frost text-forest">
+                    {i + 1}
+                  </div>
                 </div>
-                <div className="font-semibold text-[15px] mb-1.5">{s.title}</div>
-                <p className="text-sm text-slate">{s.desc}</p>
+                <div className="font-semibold text-[15px] mb-1.5">{p.title}</div>
+                <p className="text-sm text-slate">{p.desc}</p>
               </div>
             ))}
           </div>
-        </div>
-      </section>
+        </section>
+      </Reveal>
 
-      <section className="max-w-4xl mx-auto px-5 md:px-10 py-16 border-t border-line">
-        <div className="flex items-end justify-between mb-8 flex-wrap gap-3">
-          <div>
-            <span className="bd-eyebrow">Topplista</span>
-            <h2 className="bd-display text-3xl mt-3">Så rankar vi bolagen i vår försäkringsjämförelse</h2>
+      <Reveal>
+        <section className="bg-frost-2 py-16 border-t border-line">
+          <div className="max-w-4xl mx-auto px-5 md:px-10">
+            <div className="text-center mb-10">
+              <span className="bd-eyebrow">Så funkar det</span>
+              <h2 className="bd-display text-3xl mt-3">Igång på under en minut</h2>
+            </div>
+            <div className="grid md:grid-cols-3 gap-6">
+              {STEPS.map((s) => (
+                <div key={s.title} className="text-center">
+                  <div className="w-10 h-10 rounded-full flex items-center justify-center mx-auto mb-4 bd-display text-white bg-forest">
+                    {s.icon ? <s.icon size={17} /> : s.n}
+                  </div>
+                  <div className="font-semibold text-[15px] mb-1.5">{s.title}</div>
+                  <p className="text-sm text-slate">{s.desc}</p>
+                </div>
+              ))}
+            </div>
           </div>
-          <Link href="/jamfor" className="text-sm font-semibold flex items-center gap-1 text-forest">
-            Så jämför vi <ArrowRight size={14} />
-          </Link>
-        </div>
-        <div className="flex flex-col gap-3">
-          {TOP_LIST.map((entry) => (
-            <div key={entry.name} className="bg-white rounded-2xl border border-line p-5 flex items-start gap-5">
-              <div className="bd-display text-2xl w-8 text-center flex-none text-forest">{entry.rank}</div>
-              <div className="flex-1">
-                <div className="flex items-center gap-2 mb-1 flex-wrap">
-                  <div className="font-semibold text-[15px]">{entry.name}</div>
-                  <div className="flex items-center gap-1 text-xs text-amber-deep">
-                    <Star size={12} fill="currentColor" /> {entry.rating}{" "}
-                    <span className="text-slate">({entry.reviews} omdömen)</span>
+        </section>
+      </Reveal>
+
+      <Reveal>
+        <section className="max-w-4xl mx-auto px-5 md:px-10 py-16 border-t border-line">
+          <div className="text-center mb-10">
+            <span className="bd-eyebrow">Buddy vs. att göra det själv</span>
+            <h2 className="bd-display text-3xl mt-3">Samma resultat, olika mängd jobb</h2>
+          </div>
+          <div className="rounded-2xl border border-line overflow-hidden bg-white">
+            <div className="grid grid-cols-[1.3fr_1fr_1fr]">
+              <div className="p-3 md:p-4" />
+              <div className="p-3 md:p-4 bg-frost-2 text-forest flex items-center gap-1.5 text-xs md:text-sm font-semibold">
+                <ShieldCheck size={14} className="flex-none" /> Med Buddy
+              </div>
+              <div className="p-3 md:p-4 text-slate text-xs md:text-sm font-semibold">På egen hand</div>
+            </div>
+            {COMPARISON.map((row) => (
+              <div key={row.label} className="grid grid-cols-[1.3fr_1fr_1fr] border-t border-line">
+                <div className="p-3 md:p-4 text-xs md:text-sm font-medium">{row.label}</div>
+                <div className="p-3 md:p-4 bg-frost-2 text-ink text-xs md:text-sm flex items-start gap-1.5">
+                  <Check size={14} className="text-forest flex-none mt-0.5" />
+                  <span>{row.buddy}</span>
+                </div>
+                <div className="p-3 md:p-4 text-slate text-xs md:text-sm">{row.self}</div>
+              </div>
+            ))}
+          </div>
+        </section>
+      </Reveal>
+
+      <Reveal>
+        <section className="max-w-4xl mx-auto px-5 md:px-10 py-16 border-t border-line">
+          <div className="flex items-end justify-between mb-8 flex-wrap gap-3">
+            <div>
+              <span className="bd-eyebrow">Topplista</span>
+              <h2 className="bd-display text-3xl mt-3">Så rankar vi bolagen i vår försäkringsjämförelse</h2>
+            </div>
+            <Link href="/jamfor" className="text-sm font-semibold flex items-center gap-1 text-forest">
+              Så jämför vi <ArrowRight size={14} />
+            </Link>
+          </div>
+          <div className="flex flex-col gap-3">
+            {TOP_LIST.map((entry) => (
+              <div key={entry.name} className="bg-white rounded-2xl border border-line p-5 flex items-start gap-5">
+                <div className="bd-display text-2xl w-8 text-center flex-none text-forest">{entry.rank}</div>
+                <div className="flex-1">
+                  <div className="flex items-center gap-2 mb-1 flex-wrap">
+                    <div className="font-semibold text-[15px]">{entry.name}</div>
+                    <div className="flex items-center gap-1 text-xs text-amber-deep">
+                      <Star size={12} fill="currentColor" /> {entry.rating}{" "}
+                      <span className="text-slate">({entry.reviews} omdömen)</span>
+                    </div>
+                  </div>
+                  <p className="text-sm mb-2.5 text-slate">{entry.tagline}</p>
+                  <div className="flex flex-wrap gap-2">
+                    {entry.strengths.map((s) => (
+                      <span key={s} className="text-xs px-2.5 py-1 rounded-full bg-frost text-forest">
+                        {s}
+                      </span>
+                    ))}
                   </div>
                 </div>
-                <p className="text-sm mb-2.5 text-slate">{entry.tagline}</p>
-                <div className="flex flex-wrap gap-2">
-                  {entry.strengths.map((s) => (
-                    <span key={s} className="text-xs px-2.5 py-1 rounded-full bg-frost text-forest">
-                      {s}
-                    </span>
-                  ))}
+              </div>
+            ))}
+          </div>
+          <p className="text-xs text-center mt-6 text-slate">
+            Exempeldata i den här prototypen — bolagsnamn, betyg och omdömen är fiktiva.
+          </p>
+        </section>
+      </Reveal>
+
+      <Reveal>
+        <section className="max-w-5xl mx-auto px-5 md:px-10 py-16 border-t border-line">
+          <div className="rounded-3xl bg-white border border-line overflow-hidden flex flex-col md:flex-row">
+            <div className="relative w-full md:w-[280px] flex-none aspect-[3/4]">
+              <Image
+                src="/images/founder.jpg"
+                alt="Gledis Bara, grundare av Buddy"
+                fill
+                sizes="(min-width: 768px) 280px, 100vw"
+                className="object-cover"
+                style={{ objectPosition: "50% 20%" }}
+              />
+            </div>
+            <div className="p-8 md:p-10 flex flex-col justify-center">
+              <span className="bd-eyebrow">Från vår specialist</span>
+              <h2 className="bd-display text-2xl md:text-3xl mt-3 mb-4">
+                Ett vanligt misstag vi ser om och om igen
+              </h2>
+              <p className="text-sm mb-6 text-slate">
+                &quot;Många är dubbelförsäkrade utan att veta om det — eller saknar skydd de tror
+                att de redan har. Som villkorsspecialist är det första jag brukar hitta när jag
+                hjälper någon gå igenom sina papper. Det är precis det trygghetspoängen i Buddy
+                visar dig direkt, utan att du behöver boka ett möte för att fråga.&quot;
+              </p>
+              <div className="font-semibold text-sm">Gledis Bara</div>
+              <div className="text-xs text-slate">Grundare & VD, Buddy</div>
+            </div>
+          </div>
+        </section>
+      </Reveal>
+
+      <Reveal>
+        <section className="max-w-6xl mx-auto px-5 md:px-10 py-16 border-t border-line">
+          <div className="flex items-end justify-between mb-8 flex-wrap gap-3">
+            <div>
+              <span className="bd-eyebrow">Guider</span>
+              <h2 className="bd-display text-3xl mt-3">Lär dig mer innan du väljer</h2>
+            </div>
+            <Link href="/guider" className="text-sm font-semibold flex items-center gap-1 text-forest">
+              Alla guider <ArrowRight size={14} />
+            </Link>
+          </div>
+          <div className="grid sm:grid-cols-2 gap-4">
+            {GUIDES.slice(0, 4).map((g) => (
+              <Link key={g.slug} href={`/guider/${g.slug}`} className="bd-card block bg-white rounded-2xl border border-line p-5">
+                <div className="font-semibold text-[15px] mb-1.5">{g.title}</div>
+                <p className="text-sm mb-3 text-slate">{g.excerpt}</p>
+                <div className="flex items-center gap-1.5 text-xs text-slate">
+                  <Clock size={13} /> {g.readMinutes} min läsning
+                </div>
+              </Link>
+            ))}
+          </div>
+        </section>
+      </Reveal>
+
+      <Reveal>
+        <section className="max-w-6xl mx-auto px-5 md:px-10 py-16 border-t border-line">
+          <div className="flex items-end justify-between mb-8 flex-wrap gap-3">
+            <div>
+              <span className="bd-eyebrow">Nyheter & aktuellt</span>
+              <h2 className="bd-display text-3xl mt-3">Vad som är aktuellt just nu</h2>
+            </div>
+            <Link href="/nyheter" className="text-sm font-semibold flex items-center gap-1 text-forest">
+              Alla nyheter <ArrowRight size={14} />
+            </Link>
+          </div>
+          <div className="grid sm:grid-cols-3 gap-4">
+            {NEWS_ARTICLES.slice(0, 3).map((a) => (
+              <Link key={a.slug} href={`/nyheter/${a.slug}`} className="bd-card block bg-white rounded-2xl border border-line p-5">
+                <span className="text-xs font-medium px-2.5 py-1 rounded-full bg-frost-2 text-forest">
+                  {a.category}
+                </span>
+                <div className="font-semibold text-[15px] mt-3 mb-1.5 leading-snug">{a.title}</div>
+                <p className="text-sm mb-3 text-slate">{a.excerpt}</p>
+                <div className="text-xs text-slate">{formatDate(a.date)}</div>
+              </Link>
+            ))}
+          </div>
+        </section>
+      </Reveal>
+
+      <Reveal>
+        <section className="max-w-4xl mx-auto px-5 md:px-10 py-16 border-t border-line">
+          <div className="text-center mb-10">
+            <span className="bd-eyebrow">Behöver du prata med oss?</span>
+            <h2 className="bd-display text-3xl mt-3">Ibland vill man bara fråga någon</h2>
+          </div>
+          <div className="grid sm:grid-cols-2 gap-4">
+            {SUPPORT.map((s) => (
+              <div key={s.title} className="bg-white rounded-2xl border border-line p-5 flex items-start gap-4">
+                <div className="w-11 h-11 rounded-xl flex items-center justify-center flex-none bg-frost-2">
+                  <s.icon size={19} className="text-forest" />
+                </div>
+                <div>
+                  <div className="font-semibold text-[15px] mb-1">{s.title}</div>
+                  <p className="text-sm text-slate">{s.desc}</p>
                 </div>
               </div>
-            </div>
-          ))}
-        </div>
-        <p className="text-xs text-center mt-6 text-slate">
-          Exempeldata i den här prototypen — bolagsnamn, betyg och omdömen är fiktiva.
-        </p>
-      </section>
+            ))}
+          </div>
+        </section>
+      </Reveal>
 
-      <section className="max-w-5xl mx-auto px-5 md:px-10 py-16 border-t border-line">
-        <div className="rounded-3xl bg-white border border-line overflow-hidden flex flex-col md:flex-row">
-          <div className="relative w-full md:w-[280px] flex-none aspect-[3/4]">
-            <Image
-              src="/images/founder.jpg"
-              alt="Gledis Bara, grundare av Buddy"
-              fill
-              sizes="(min-width: 768px) 280px, 100vw"
-              className="object-cover"
-              style={{ objectPosition: "50% 20%" }}
-            />
-          </div>
-          <div className="p-8 md:p-10 flex flex-col justify-center">
-            <span className="bd-eyebrow">Från vår specialist</span>
-            <h2 className="bd-display text-2xl md:text-3xl mt-3 mb-4">
-              Ett vanligt misstag vi ser om och om igen
-            </h2>
-            <p className="text-sm mb-6 text-slate">
-              &quot;Många är dubbelförsäkrade utan att veta om det — eller saknar skydd de tror
-              att de redan har. Som villkorsspecialist är det första jag brukar hitta när jag
-              hjälper någon gå igenom sina papper. Det är precis det trygghetspoängen i Buddy
-              visar dig direkt, utan att du behöver boka ett möte för att fråga.&quot;
-            </p>
-            <div className="font-semibold text-sm">Gledis Bara</div>
-            <div className="text-xs text-slate">Grundare & VD, Buddy</div>
-          </div>
-        </div>
-      </section>
-
-      <section className="max-w-6xl mx-auto px-5 md:px-10 py-16 border-t border-line">
-        <div className="flex items-end justify-between mb-8 flex-wrap gap-3">
-          <div>
-            <span className="bd-eyebrow">Guider</span>
-            <h2 className="bd-display text-3xl mt-3">Lär dig mer innan du väljer</h2>
-          </div>
-          <Link href="/guider" className="text-sm font-semibold flex items-center gap-1 text-forest">
-            Alla guider <ArrowRight size={14} />
+      <Reveal>
+        <section className="max-w-3xl mx-auto px-5 md:px-10 py-16 border-t border-line text-center">
+          <Users size={22} className="text-forest mx-auto mb-4" />
+          <span className="bd-eyebrow">Dela Buddy</span>
+          <h2 className="bd-display text-3xl mt-3 mb-4">Buddy växer mest genom att kunder delar den vidare</h2>
+          <p className="text-sm mb-7 max-w-lg mx-auto text-slate">
+            Bjud in vänner med din egen delningslänk. När fem av dem kommit igång och jämfört får
+            du kostnadsfri hjälp av en specialist vid skadereglering, oavsett vad som händer.
+          </p>
+          <Link
+            href="/kom-igang"
+            className="bd-btn inline-flex items-center gap-2 px-6 py-3.5 rounded-full font-semibold text-white text-[15px] bg-forest"
+          >
+            Skapa konto och få din länk <ArrowRight size={16} />
           </Link>
-        </div>
-        <div className="grid sm:grid-cols-2 gap-4">
-          {GUIDES.slice(0, 4).map((g) => (
-            <Link key={g.slug} href={`/guider/${g.slug}`} className="bd-card block bg-white rounded-2xl border border-line p-5">
-              <div className="font-semibold text-[15px] mb-1.5">{g.title}</div>
-              <p className="text-sm mb-3 text-slate">{g.excerpt}</p>
-              <div className="flex items-center gap-1.5 text-xs text-slate">
-                <Clock size={13} /> {g.readMinutes} min läsning
-              </div>
+        </section>
+      </Reveal>
+
+      <Reveal>
+        <section className="max-w-2xl mx-auto px-5 md:px-10 py-16 border-t border-line">
+          <div className="text-center mb-8">
+            <span className="bd-eyebrow">Vanliga frågor</span>
+            <h2 className="bd-display text-3xl mt-3">Kort svar på det vanligaste</h2>
+          </div>
+          <FaqAccordion items={FAQ_ITEMS.slice(0, 4)} />
+          <div className="text-center mt-6">
+            <Link href="/vanliga-fragor" className="text-sm font-semibold text-forest">
+              Se alla frågor →
             </Link>
-          ))}
-        </div>
-      </section>
-
-      <section className="max-w-6xl mx-auto px-5 md:px-10 py-16 border-t border-line">
-        <div className="flex items-end justify-between mb-8 flex-wrap gap-3">
-          <div>
-            <span className="bd-eyebrow">Nyheter & aktuellt</span>
-            <h2 className="bd-display text-3xl mt-3">Vad som är aktuellt just nu</h2>
           </div>
-          <Link href="/nyheter" className="text-sm font-semibold flex items-center gap-1 text-forest">
-            Alla nyheter <ArrowRight size={14} />
-          </Link>
-        </div>
-        <div className="grid sm:grid-cols-3 gap-4">
-          {NEWS_ARTICLES.slice(0, 3).map((a) => (
-            <Link key={a.slug} href={`/nyheter/${a.slug}`} className="bd-card block bg-white rounded-2xl border border-line p-5">
-              <span className="text-xs font-medium px-2.5 py-1 rounded-full bg-frost-2 text-forest">
-                {a.category}
-              </span>
-              <div className="font-semibold text-[15px] mt-3 mb-1.5 leading-snug">{a.title}</div>
-              <p className="text-sm mb-3 text-slate">{a.excerpt}</p>
-              <div className="text-xs text-slate">{formatDate(a.date)}</div>
-            </Link>
-          ))}
-        </div>
-      </section>
+        </section>
+      </Reveal>
 
-      <section className="max-w-4xl mx-auto px-5 md:px-10 py-16 border-t border-line">
-        <div className="text-center mb-10">
-          <span className="bd-eyebrow">Behöver du prata med oss?</span>
-          <h2 className="bd-display text-3xl mt-3">Ibland vill man bara fråga någon</h2>
-        </div>
-        <div className="grid sm:grid-cols-2 gap-4">
-          {SUPPORT.map((s) => (
-            <div key={s.title} className="bg-white rounded-2xl border border-line p-5 flex items-start gap-4">
-              <div className="w-11 h-11 rounded-xl flex items-center justify-center flex-none bg-frost-2">
-                <s.icon size={19} className="text-forest" />
-              </div>
-              <div>
-                <div className="font-semibold text-[15px] mb-1">{s.title}</div>
-                <p className="text-sm text-slate">{s.desc}</p>
-              </div>
-            </div>
-          ))}
-        </div>
-      </section>
-
-      <section className="max-w-2xl mx-auto px-5 md:px-10 py-16 border-t border-line">
-        <div className="text-center mb-8">
-          <span className="bd-eyebrow">Vanliga frågor</span>
-          <h2 className="bd-display text-3xl mt-3">Kort svar på det vanligaste</h2>
-        </div>
-        <FaqAccordion items={FAQ_ITEMS.slice(0, 4)} />
-        <div className="text-center mt-6">
-          <Link href="/vanliga-fragor" className="text-sm font-semibold text-forest">
-            Se alla frågor →
-          </Link>
-        </div>
-      </section>
-
-      <section className="max-w-4xl mx-auto px-5 md:px-10 py-20 text-center border-t border-line">
-        <Sparkles size={22} className="text-amber-deep mx-auto mb-4" />
-        <h2 className="bd-display text-2xl md:text-3xl mb-3">Redo att se allt du betalar för?</h2>
-        <p className="text-sm mb-7 text-slate">
-          Under en minut med BankID — eller i din egen takt för hand.
-        </p>
-        <StartCta className="bd-btn inline-flex items-center gap-2 px-6 py-3.5 rounded-full font-semibold text-white text-[15px] bg-forest" />
-      </section>
+      <Reveal>
+        <section className="max-w-4xl mx-auto px-5 md:px-10 py-20 text-center border-t border-line">
+          <Sparkles size={22} className="text-amber-deep mx-auto mb-4" />
+          <h2 className="bd-display text-2xl md:text-3xl mb-3">Redo att se allt du betalar för?</h2>
+          <p className="text-sm mb-7 text-slate">
+            Under en minut med BankID — eller i din egen takt för hand.
+          </p>
+          <StartCta className="bd-btn inline-flex items-center gap-2 px-6 py-3.5 rounded-full font-semibold text-white text-[15px] bg-forest" />
+        </section>
+      </Reveal>
     </div>
   );
 }
