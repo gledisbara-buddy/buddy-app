@@ -11,6 +11,7 @@ import {
   Layers,
   LifeBuoy,
   MessageCircle,
+  Quote as QuoteIcon,
   Scale,
   ShieldCheck,
   Sparkles,
@@ -18,6 +19,7 @@ import {
   Users,
 } from "lucide-react";
 import { FaqAccordion } from "@/components/marketing/FaqAccordion";
+import { ProductPreview } from "@/components/marketing/ProductPreview";
 import { Reveal } from "@/components/marketing/Reveal";
 import { StartCta } from "@/components/marketing/StartCta";
 import { StickyMiniCta } from "@/components/marketing/StickyMiniCta";
@@ -56,6 +58,35 @@ const PILLARS = [
     icon: LifeBuoy,
     title: "Hjälp vid skada",
     desc: "Händer något är Buddy kvar. Anmäl direkt i appen, ladda upp foton, och följ ärendet hela vägen till beslut.",
+  },
+];
+
+const TESTIMONIALS = [
+  {
+    pillar: "Samla",
+    quote:
+      "Jag loggade in med BankID en söndagskväll och såg allt jag har på under en minut — sånt jag hade glömt att jag ens betalade för.",
+    name: "Sara L.",
+    place: "Göteborg",
+  },
+  {
+    pillar: "Jämför",
+    quote: "Jag trodde jag hade bra villkor på min hemförsäkring. Buddy visade att jag betalade dubbelt så mycket som jag behövde.",
+    name: "Erik H.",
+    place: "Malmö",
+  },
+  {
+    pillar: "Säg upp",
+    quote:
+      "Det var uppsägningen av det gamla bolaget jag dreg mest inför. Buddy tog hela samtalet — jag behövde bara skriva under fullmakten.",
+    name: "Amanda K.",
+    place: "Stockholm",
+  },
+  {
+    pillar: "Hjälp vid skada",
+    quote: "Vi fick vattenskada mitt i natten. Jag anmälde direkt i appen och hade svar samma morgon.",
+    name: "Johan P.",
+    place: "Uppsala",
   },
 ];
 
@@ -146,15 +177,11 @@ export default function MarketingHome() {
               </Link>
             </div>
           </div>
-          <div className="relative rounded-[2rem] overflow-hidden aspect-[4/3]">
-            <Image
-              src="/images/hero-couple.jpg"
-              alt="Ett par som tillsammans går igenom vad de betalar för i mobilen"
-              fill
-              priority
-              sizes="(min-width: 768px) 45vw, 100vw"
-              className="object-cover"
-            />
+          <div>
+            <ProductPreview />
+            <p className="text-xs text-center mt-3 text-slate">
+              Exempelvy i den här prototypen — inte ditt riktiga konto.
+            </p>
           </div>
         </div>
       </section>
@@ -183,6 +210,31 @@ export default function MarketingHome() {
               </div>
             ))}
           </div>
+        </section>
+      </Reveal>
+
+      <Reveal>
+        <section className="max-w-6xl mx-auto px-5 md:px-10 py-16 border-t border-line">
+          <div className="text-center mb-10">
+            <span className="bd-eyebrow">Fyra löften, fyra kunder</span>
+            <h2 className="bd-display text-3xl mt-3">Så säger de som redan använder Buddy</h2>
+          </div>
+          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            {TESTIMONIALS.map((t) => (
+              <div key={t.pillar} className="bg-white rounded-2xl border border-line p-5 flex flex-col">
+                <QuoteIcon size={16} className="text-forest mb-3" />
+                <span className="text-xs font-medium px-2 py-1 rounded-full bg-frost-2 text-forest self-start mb-3">
+                  {t.pillar}
+                </span>
+                <p className="text-sm mb-4 text-ink flex-1">&quot;{t.quote}&quot;</p>
+                <div className="text-xs font-semibold text-ink">{t.name}</div>
+                <div className="text-xs text-slate">{t.place}</div>
+              </div>
+            ))}
+          </div>
+          <p className="text-xs text-center mt-6 text-slate">
+            Exempelröster i den här prototypen — inte riktiga kundcitat.
+          </p>
         </section>
       </Reveal>
 
