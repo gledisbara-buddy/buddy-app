@@ -1,11 +1,11 @@
 import type { Metadata } from "next";
 import Image from "next/image";
-import { Heart, Lightbulb, ShieldCheck } from "lucide-react";
+import { FileX, Heart, Lightbulb, ShieldCheck } from "lucide-react";
 
 export const metadata: Metadata = {
   title: "Om oss",
   description:
-    "Buddy hjälper dig samla, jämföra och hålla koll på allt du betalar för — försäkring, mobil, kreditkort och el — på ett ställe.",
+    "Buddy hjälper dig samla, jämföra, säga upp och hålla koll på allt du betalar för — försäkring, mobil, kreditkort och el — på ett ställe.",
 };
 
 const VALUES = [
@@ -17,12 +17,17 @@ const VALUES = [
   {
     icon: ShieldCheck,
     title: "På din sida",
-    desc: "Buddy jobbar för dig, inte för en enskild leverantör. Vi visar alternativen ärligt.",
+    desc: "Buddy jobbar för dig, inte för en enskild leverantör — vi rankar aldrig ett bolag högre för att de betalar mer för platsen. Du ser samma jämförelse vi själva skulle litat på.",
+  },
+  {
+    icon: FileX,
+    title: "Vi tar det jobbiga samtalet",
+    desc: "Bestämmer du dig för att byta står vi för kontakten med det gamla bolaget — du slipper telefonkön och uppsägningsblanketten.",
   },
   {
     icon: Heart,
     title: "Finns när det gäller",
-    desc: "Vid en skada räknas varje minut. Vi gör anmälan så enkel och snabb som möjligt.",
+    desc: "Vid en skada räknas varje minut. Vi gör anmälan så enkel och snabb som möjligt, och följer med hela vägen till beslut.",
   },
 ];
 
@@ -38,9 +43,9 @@ export default function OmOssPage() {
       </p>
       <p className="text-base mb-12 text-slate">
         Vi insåg snabbt att samma problem gäller nästan allt man betalar löpande för — mobil,
-        bredband, kreditkort, el. Idag hjälper Buddy dig lägga in allt det du äger och
-        prenumererar på, jämföra skydd och pris där det går, och finns kvar genom hela resan —
-        från första frågan till en skadeanmälan mitt i natten.
+        bredband, kreditkort, el. Idag hjälper Buddy dig samla allt du äger och prenumererar på,
+        jämföra skydd och pris där det går, säga upp det du inte längre behöver, och finns kvar
+        genom hela resan — från första frågan till en skadeanmälan mitt i natten.
       </p>
 
       <div className="rounded-3xl border border-line bg-white p-6 md:p-8 mb-12 flex flex-col sm:flex-row gap-6 items-center sm:items-start">
@@ -67,7 +72,7 @@ export default function OmOssPage() {
         </div>
       </div>
 
-      <div className="grid md:grid-cols-3 gap-4 mb-12">
+      <div className="grid sm:grid-cols-2 gap-4 mb-12">
         {VALUES.map((v) => (
           <div key={v.title} className="bg-white rounded-2xl border border-line p-5">
             <div className="w-10 h-10 rounded-xl flex items-center justify-center mb-4 bg-frost-2">

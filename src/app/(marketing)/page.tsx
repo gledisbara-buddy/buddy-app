@@ -5,9 +5,12 @@ import {
   ArrowRight,
   CalendarDays,
   Clock,
+  FileX,
+  Fingerprint,
+  Layers,
+  LifeBuoy,
   MessageCircle,
-  ShieldAlert,
-  ShieldCheck,
+  Scale,
   Sparkles,
   Star,
 } from "lucide-react";
@@ -25,36 +28,61 @@ function formatDate(iso: string) {
 export const metadata: Metadata = {
   title: "Allt du betalar för, på ett ställe",
   description:
-    "Försäkring, mobil & bredband, kreditkort, el — Buddy samlar allt på ett ställe, hjälper dig jämföra, och finns kvar när något händer.",
+    "Försäkring, mobil & bredband, kreditkort, el — Buddy samlar allt på ett ställe, hjälper dig jämföra, säger upp det gamla åt dig, och finns kvar när något händer.",
 };
 
-const FEATURES = [
+const PILLARS = [
   {
-    icon: ShieldCheck,
-    title: "Lägg in det du har",
-    desc: "Boende, bil, mobil & bredband, kreditkort, el — en sak i taget, i din egen takt. Hoppa över och kom tillbaka när du vill.",
+    icon: Layers,
+    title: "Samla",
+    desc: "Logga in med BankID och se allt du redan betalar för på under en minut — försäkring, mobil, kreditkort, el. Eller lägg till för hand, i din egen takt.",
   },
+  {
+    icon: Scale,
+    title: "Jämför",
+    desc: "Se pris och villkor sida vid sida, utan att besöka fem olika bolags hemsidor. Buddy rankar aldrig ett bolag högre för att de betalar mer för platsen.",
+  },
+  {
+    icon: FileX,
+    title: "Säg upp",
+    desc: "Bestämmer du dig för att byta sköter Buddy kontakten med det gamla bolaget åt dig — med en fullmakt du när som helst kan återkalla.",
+  },
+  {
+    icon: LifeBuoy,
+    title: "Hjälp vid skada",
+    desc: "Händer något är Buddy kvar. Anmäl direkt i appen, ladda upp foton, och följ ärendet hela vägen till beslut.",
+  },
+];
+
+const STEPS = [
+  {
+    icon: Fingerprint,
+    title: "Logga in med BankID",
+    desc: "Se allt du redan har hämtat automatiskt — eller skapa konto och lägg till för hand om du hellre vill.",
+  },
+  {
+    n: "2",
+    title: "Få din trygghetspoäng direkt",
+    desc: "Buddy visar vad du har skydd för och vad som eventuellt saknas, baserat på det du faktiskt lagt in.",
+  },
+  {
+    n: "3",
+    title: "Jämför, säg upp eller anmäl en skada",
+    desc: "Allt i samma app, från och med nu — inga fler inloggningar på fem olika bolags hemsidor.",
+  },
+];
+
+const SUPPORT = [
   {
     icon: MessageCircle,
     title: "Fråga Buddy",
     desc: "Osäker på vad som täcks eller vad du behöver? Buddy svarar direkt, dygnet runt.",
   },
   {
-    icon: ShieldAlert,
-    title: "Snabb skadeanmälan",
-    desc: "Berätta vad som hänt, ladda upp foton — Buddy sköter resten av pappersarbetet.",
-  },
-  {
     icon: CalendarDays,
     title: "Boka en specialist",
     desc: "Vill du hellre prata med en människa? Boka video- eller telefonmöte på några klick.",
   },
-];
-
-const STEPS = [
-  { n: "1", title: "Skapa ett konto", desc: "Med e-post och lösenord — klart på under en minut." },
-  { n: "2", title: "Lägg till dina saker", desc: "Boende, fordon, mobil, kreditkort — så mycket eller lite du vill." },
-  { n: "3", title: "Få en samlad överblick", desc: "Se allt på ett ställe och jämför när du är redo." },
 ];
 
 export default function MarketingHome() {
@@ -72,8 +100,8 @@ export default function MarketingHome() {
               på ett ställe.
             </h1>
             <p className="text-base md:text-lg mb-9 max-w-xl mx-auto md:mx-0 text-slate">
-              Försäkring, mobil & bredband, kreditkort, el — Buddy samlar allt på ett ställe,
-              hjälper dig jämföra, och finns kvar när något händer.
+              Logga in med BankID och se allt på under en minut. Jämför, säg upp det gamla och
+              få hjälp direkt om något händer — allt på ett ställe.
             </p>
             <div className="flex flex-col sm:flex-row gap-3 justify-center md:justify-start">
               <StartCta className="bd-btn px-6 py-3.5 rounded-full font-semibold text-white text-[15px] bg-forest flex items-center justify-center gap-2" />
@@ -99,16 +127,45 @@ export default function MarketingHome() {
       </section>
 
       <section className="max-w-6xl mx-auto px-5 md:px-10 py-16 border-t border-line">
+        <div className="text-center mb-10">
+          <span className="bd-eyebrow">Det här gör Buddy</span>
+          <h2 className="bd-display text-3xl mt-3">Fyra saker, en app</h2>
+        </div>
         <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          {FEATURES.map((f) => (
-            <div key={f.title} className="bd-card bg-white rounded-2xl border border-line p-6">
-              <div className="w-11 h-11 rounded-xl flex items-center justify-center mb-5 bg-frost-2">
-                <f.icon size={19} className="text-forest" />
+          {PILLARS.map((p, i) => (
+            <div key={p.title} className="bd-card relative bg-white rounded-2xl border border-line p-6">
+              <div className="flex items-center gap-3 mb-5">
+                <div className="w-11 h-11 rounded-xl flex items-center justify-center flex-none bg-frost-2">
+                  <p.icon size={19} className="text-forest" />
+                </div>
+                <div className="bd-display text-sm w-6 h-6 rounded-full flex items-center justify-center flex-none bg-frost text-forest">
+                  {i + 1}
+                </div>
               </div>
-              <div className="font-semibold text-[15px] mb-1.5">{f.title}</div>
-              <p className="text-sm text-slate">{f.desc}</p>
+              <div className="font-semibold text-[15px] mb-1.5">{p.title}</div>
+              <p className="text-sm text-slate">{p.desc}</p>
             </div>
           ))}
+        </div>
+      </section>
+
+      <section className="bg-frost-2 py-16 border-t border-line">
+        <div className="max-w-4xl mx-auto px-5 md:px-10">
+          <div className="text-center mb-10">
+            <span className="bd-eyebrow">Så funkar det</span>
+            <h2 className="bd-display text-3xl mt-3">Igång på under en minut</h2>
+          </div>
+          <div className="grid md:grid-cols-3 gap-6">
+            {STEPS.map((s) => (
+              <div key={s.title} className="text-center">
+                <div className="w-10 h-10 rounded-full flex items-center justify-center mx-auto mb-4 bd-display text-white bg-forest">
+                  {s.icon ? <s.icon size={17} /> : s.n}
+                </div>
+                <div className="font-semibold text-[15px] mb-1.5">{s.title}</div>
+                <p className="text-sm text-slate">{s.desc}</p>
+              </div>
+            ))}
+          </div>
         </div>
       </section>
 
@@ -151,6 +208,58 @@ export default function MarketingHome() {
         </p>
       </section>
 
+      <section className="max-w-5xl mx-auto px-5 md:px-10 py-16 border-t border-line">
+        <div className="rounded-3xl bg-white border border-line overflow-hidden flex flex-col md:flex-row">
+          <div className="relative w-full md:w-[280px] flex-none aspect-[3/4]">
+            <Image
+              src="/images/founder.jpg"
+              alt="Gledis Bara, grundare av Buddy"
+              fill
+              sizes="(min-width: 768px) 280px, 100vw"
+              className="object-cover"
+              style={{ objectPosition: "50% 20%" }}
+            />
+          </div>
+          <div className="p-8 md:p-10 flex flex-col justify-center">
+            <span className="bd-eyebrow">Från vår specialist</span>
+            <h2 className="bd-display text-2xl md:text-3xl mt-3 mb-4">
+              Ett vanligt misstag vi ser om och om igen
+            </h2>
+            <p className="text-sm mb-6 text-slate">
+              &quot;Många är dubbelförsäkrade utan att veta om det — eller saknar skydd de tror
+              att de redan har. Som villkorsspecialist är det första jag brukar hitta när jag
+              hjälper någon gå igenom sina papper. Det är precis det trygghetspoängen i Buddy
+              visar dig direkt, utan att du behöver boka ett möte för att fråga.&quot;
+            </p>
+            <div className="font-semibold text-sm">Gledis Bara</div>
+            <div className="text-xs text-slate">Grundare & VD, Buddy</div>
+          </div>
+        </div>
+      </section>
+
+      <section className="max-w-6xl mx-auto px-5 md:px-10 py-16 border-t border-line">
+        <div className="flex items-end justify-between mb-8 flex-wrap gap-3">
+          <div>
+            <span className="bd-eyebrow">Guider</span>
+            <h2 className="bd-display text-3xl mt-3">Lär dig mer innan du väljer</h2>
+          </div>
+          <Link href="/guider" className="text-sm font-semibold flex items-center gap-1 text-forest">
+            Alla guider <ArrowRight size={14} />
+          </Link>
+        </div>
+        <div className="grid sm:grid-cols-2 gap-4">
+          {GUIDES.slice(0, 4).map((g) => (
+            <Link key={g.slug} href={`/guider/${g.slug}`} className="bd-card block bg-white rounded-2xl border border-line p-5">
+              <div className="font-semibold text-[15px] mb-1.5">{g.title}</div>
+              <p className="text-sm mb-3 text-slate">{g.excerpt}</p>
+              <div className="flex items-center gap-1.5 text-xs text-slate">
+                <Clock size={13} /> {g.readMinutes} min läsning
+              </div>
+            </Link>
+          ))}
+        </div>
+      </section>
+
       <section className="max-w-6xl mx-auto px-5 md:px-10 py-16 border-t border-line">
         <div className="flex items-end justify-between mb-8 flex-wrap gap-3">
           <div>
@@ -175,77 +284,23 @@ export default function MarketingHome() {
         </div>
       </section>
 
-      <section className="max-w-5xl mx-auto px-5 md:px-10 py-16 border-t border-line">
-        <div className="rounded-3xl bg-white border border-line overflow-hidden flex flex-col md:flex-row">
-          <div className="relative w-full md:w-[280px] flex-none aspect-[3/4]">
-            <Image
-              src="/images/founder.jpg"
-              alt="Gledis Bara, grundare av Buddy"
-              fill
-              sizes="(min-width: 768px) 280px, 100vw"
-              className="object-cover"
-              style={{ objectPosition: "50% 20%" }}
-            />
-          </div>
-          <div className="p-8 md:p-10 flex flex-col justify-center">
-            <span className="bd-eyebrow">Från vår specialist</span>
-            <h2 className="bd-display text-2xl md:text-3xl mt-3 mb-4">
-              Ett vanligt misstag vi ser om och om igen
-            </h2>
-            <p className="text-sm mb-6 text-slate">
-              &quot;Många är dubbelförsäkrade utan att veta om det — eller saknar skydd de tror
-              att de redan har. Som villkorsspecialist är det första jag brukar hitta när jag
-              hjälper någon gå igenom sina papper. Buddy är byggt för att du ska kunna se det
-              själv, direkt, utan att behöva boka ett möte för att fråga.&quot;
-            </p>
-            <div className="font-semibold text-sm">Gledis Bara</div>
-            <div className="text-xs text-slate">Grundare & VD, Buddy</div>
-          </div>
-        </div>
-      </section>
-
-      <section className="max-w-6xl mx-auto px-5 md:px-10 py-16 border-t border-line">
-        <div className="flex items-end justify-between mb-8 flex-wrap gap-3">
-          <div>
-            <span className="bd-eyebrow">Guider</span>
-            <h2 className="bd-display text-3xl mt-3">Lär dig mer innan du väljer</h2>
-          </div>
-          <Link href="/guider" className="text-sm font-semibold flex items-center gap-1 text-forest">
-            Alla guider <ArrowRight size={14} />
-          </Link>
+      <section className="max-w-4xl mx-auto px-5 md:px-10 py-16 border-t border-line">
+        <div className="text-center mb-10">
+          <span className="bd-eyebrow">Behöver du prata med oss?</span>
+          <h2 className="bd-display text-3xl mt-3">Ibland vill man bara fråga någon</h2>
         </div>
         <div className="grid sm:grid-cols-2 gap-4">
-          {GUIDES.map((g) => (
-            <Link key={g.slug} href={`/guider/${g.slug}`} className="bd-card block bg-white rounded-2xl border border-line p-5">
-              <div className="font-semibold text-[15px] mb-1.5">{g.title}</div>
-              <p className="text-sm mb-3 text-slate">{g.excerpt}</p>
-              <div className="flex items-center gap-1.5 text-xs text-slate">
-                <Clock size={13} /> {g.readMinutes} min läsning
+          {SUPPORT.map((s) => (
+            <div key={s.title} className="bg-white rounded-2xl border border-line p-5 flex items-start gap-4">
+              <div className="w-11 h-11 rounded-xl flex items-center justify-center flex-none bg-frost-2">
+                <s.icon size={19} className="text-forest" />
               </div>
-            </Link>
-          ))}
-        </div>
-      </section>
-
-      <section className="bg-frost-2 py-16 border-t border-line">
-        <div className="max-w-4xl mx-auto px-5 md:px-10">
-          <div className="text-center mb-10">
-            <span className="bd-eyebrow">Så funkar det</span>
-            <h2 className="bd-display text-3xl mt-3">Igång på under 5 minuter</h2>
-          </div>
-          <div className="grid md:grid-cols-3 gap-6">
-            {STEPS.map((s) => (
-              <div key={s.n} className="text-center">
-                <div
-                  className="w-10 h-10 rounded-full flex items-center justify-center mx-auto mb-4 bd-display text-white bg-forest"
-                >
-                  {s.n}
-                </div>
-                <div className="font-semibold text-[15px] mb-1.5">{s.title}</div>
+              <div>
+                <div className="font-semibold text-[15px] mb-1">{s.title}</div>
                 <p className="text-sm text-slate">{s.desc}</p>
               </div>
-            ))}
-          </div>
+            </div>
+          ))}
         </div>
       </section>
 
@@ -264,9 +319,9 @@ export default function MarketingHome() {
 
       <section className="max-w-4xl mx-auto px-5 md:px-10 py-20 text-center border-t border-line">
         <Sparkles size={22} className="text-amber-deep mx-auto mb-4" />
-        <h2 className="bd-display text-2xl md:text-3xl mb-3">Redo att komma igång?</h2>
+        <h2 className="bd-display text-2xl md:text-3xl mb-3">Redo att se allt du betalar för?</h2>
         <p className="text-sm mb-7 text-slate">
-          Det tar bara ett par minuter att få en första överblick.
+          Under en minut med BankID — eller i din egen takt för hand.
         </p>
         <StartCta className="bd-btn inline-flex items-center gap-2 px-6 py-3.5 rounded-full font-semibold text-white text-[15px] bg-forest" />
       </section>
