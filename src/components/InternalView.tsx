@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { TopBar } from "@/components/TopBar";
 import { ProfileMenu } from "@/components/ProfileMenu";
@@ -10,6 +10,7 @@ import { MissingInsuranceQueue } from "@/components/internal/MissingInsuranceQue
 import { AccountDeletionQueue } from "@/components/internal/AccountDeletionQueue";
 import { CustomerSearchRail } from "@/components/internal/CustomerSearchRail";
 import { CustomerWorkspace } from "@/components/internal/CustomerWorkspace";
+import { EmployeeProfile } from "@/components/internal/EmployeeProfile";
 import { MfaGate } from "@/components/internal/MfaGate";
 import { useBuddy } from "@/lib/buddy-context";
 import { createClient } from "@/lib/supabase/client";
@@ -34,13 +35,25 @@ const CUSTOMER_SELECT =
 
 export function InternalView() {
   const router = useRouter();
-  const { userType, loading, isEmployee, profile } = useBuddy();
-  const [tab, setTab] = useState<"forfragningar" | "uppsagningar" | "saknade" | "radering" | "kundsok">("forfragningar");
+  const { userType, loading, isEmployee, profile, userId } = useBuddy();
+  const [tab, setTab] = useState<"forfragningar" | "uppsagningar" | "saknade" | "radering" | "kundsok" | "profil">(
+    "forfragningar"
+  );
   const [selectedCustomer, setSelectedCustomer] = useState<InternalCustomerProfile | null>(null);
 
   useEffect(() => {
     if (!loading && (!userType || !isEmployee)) router.replace("/dashboard");
   }, [loading, userType, isEmployee, router]);
+
+  // En rad per gång internverktyget öppnas — se Inloggningshistorik i
+  // EmployeeProfile.tsx. loggedRef förhindrar en dubblettrad om den här
+  // effekten skulle köra om (t.ex. React strict mode i dev).
+  const loggedRef = useRef(false);
+  useEffect(() => {
+    if (!isEmployee || !profile?.email || loggedRef.current) return;
+    loggedRef.current = true;
+    createClient().from("employee_login_log").insert({ employee_email: profile.email }).then(() => {});
+  }, [isEmployee, profile?.email]);
 
   const fetchCustomer = useCallback(async (id: string) => {
     const supabase = createClient();
@@ -133,6 +146,17 @@ export function InternalView() {
             >
               Kundsök
             </button>
+            <button
+              onClick={() => setTab("profil")}
+              className="px-4 py-1.5 rounded-full text-xs font-semibold"
+              style={
+                tab === "profil"
+                  ? { background: "white", color: "var(--color-ink)", boxShadow: "0 1px 3px rgba(0,0,0,.08)" }
+                  : { color: "var(--color-slate)" }
+              }
+            >
+              Min profil
+            </button>
           </div>
 
           {tab === "forfragningar" && <RequestsInbox />}
@@ -178,6 +202,7 @@ export function InternalView() {
               )}
             </div>
           )}
+          {tab === "profil" && profile?.email && userId && <EmployeeProfile email={profile.email} userId={userId} />}
         </div>
       </div>
     </MfaGate>

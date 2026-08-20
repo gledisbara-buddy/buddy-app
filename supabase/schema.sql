@@ -1092,3 +1092,66 @@ begin
   return new;
 end;
 $$ language plpgsql security definer set search_path = public;
+
+-- Medarbetarprofil (internverktyget, EmployeeProfile.tsx) — nya profilfält
+-- på employees, en inloggningslogg, och en publik bucket för profilbilder.
+alter table public.employees add column if not exists avatar_path text;
+alter table public.employees add column if not exists title text;
+alter table public.employees add column if not exists phone text;
+alter table public.employees add column if not exists department text;
+alter table public.employees add column if not exists permission_level text not null default 'handlaggare';
+alter table public.employees add column if not exists hired_at date;
+alter table public.employees add column if not exists status text not null default 'aktiv';
+alter table public.employees add column if not exists responsibilities text;
+alter table public.employees add column if not exists specialties text;
+alter table public.employees add column if not exists languages text;
+alter table public.employees add column if not exists working_hours text;
+alter table public.employees add column if not exists signature text;
+-- Kalenderkoppling är en demo i det här läget (ingen riktig Teams/Outlook-
+-- integration) — se EmployeeProfile.tsx. Sparar bara vilken leverantör
+-- som "anslutits" så kopplingen består mellan sessioner.
+alter table public.employees add column if not exists calendar_connected_provider text;
+
+-- Tidigare fanns bara SELECT på sin egen rad — inget sätt för en anställd
+-- att uppdatera sin egen profil. Coarse-grained (hela raden) — appens UI
+-- håller ändå permission_level/hired_at read-only istället för att
+-- försöka spärra enskilda kolumner här (Postgres RLS gör inte
+-- kolumn-nivå-spärrning enkelt utan triggers, överkurs för det här läget).
+drop policy if exists "employees_update_own" on public.employees;
+create policy "employees_update_own" on public.employees
+  for update using (email = auth.jwt() ->> 'email')
+  with check (email = auth.jwt() ->> 'email');
+
+-- Inloggningshistorik — en rad per gång en anställd öppnar internverktyget
+-- (skrivs klientsidan i InternalView.tsx, inte ett riktigt auth-event-
+-- register — manipulerbart av klienten om man verkligen ville, samma
+-- avvägning som appens övriga simulerade integrationer).
+create table if not exists public.employee_login_log (
+  id uuid primary key default gen_random_uuid(),
+  employee_email text not null references public.employees(email),
+  logged_in_at timestamptz not null default now()
+);
+alter table public.employee_login_log enable row level security;
+
+drop policy if exists "employee_login_log_insert_own" on public.employee_login_log;
+create policy "employee_login_log_insert_own" on public.employee_login_log
+  for insert with check (employee_email = auth.jwt() ->> 'email');
+
+drop policy if exists "employee_login_log_select_own" on public.employee_login_log;
+create policy "employee_login_log_select_own" on public.employee_login_log
+  for select using (employee_email = auth.jwt() ->> 'email');
+
+-- Profilbilder — en fil per anställd (skrivs över vid ny uppladdning, till
+-- skillnad från fullmakter där historik är poängen). Publik bucket
+-- eftersom en profilbild är lågkänslig, till skillnad från
+-- fullmakts-PDF:er — så en enkel getPublicUrl räcker.
+insert into storage.buckets (id, name, public) values ('employee-avatars', 'employee-avatars', true)
+  on conflict (id) do nothing;
+
+drop policy if exists "employee_avatar_write_own" on storage.objects;
+create policy "employee_avatar_write_own" on storage.objects
+  for insert with check (bucket_id = 'employee-avatars' and (storage.foldername(name))[1] = auth.uid()::text);
+
+drop policy if exists "employee_avatar_update_own" on storage.objects;
+create policy "employee_avatar_update_own" on storage.objects
+  for update using (bucket_id = 'employee-avatars' and (storage.foldername(name))[1] = auth.uid()::text);
