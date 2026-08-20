@@ -20,11 +20,13 @@ export function CustomerItemsTab({
   actorEmail,
   customerEmail,
   customerNotifyEmail,
+  canDelete,
 }: {
   customerId: string;
   actorEmail: string;
   customerEmail: string | null;
   customerNotifyEmail: boolean;
+  canDelete: boolean;
 }) {
   const [items, setItems] = useState<InsuranceItem[]>([]);
   const [policies, setPolicies] = useState<Record<string, Quote>>({});
@@ -189,12 +191,14 @@ export function CustomerItemsTab({
                   <CircleSlash size={13} /> Annullera{signed.forfallodatum ? ` från ${signed.forfallodatum}` : ""}
                 </button>
               )}
-              <button
-                onClick={() => setConfirmAction({ kind: "delete", itemId: item.id, title: itemTitle(item) })}
-                className="flex items-center gap-1.5 text-xs font-semibold px-3 py-2 rounded-full text-red-600 border border-line ml-auto"
-              >
-                <Trash2 size={13} /> Ta bort
-              </button>
+              {canDelete && (
+                <button
+                  onClick={() => setConfirmAction({ kind: "delete", itemId: item.id, title: itemTitle(item) })}
+                  className="flex items-center gap-1.5 text-xs font-semibold px-3 py-2 rounded-full text-red-600 border border-line ml-auto"
+                >
+                  <Trash2 size={13} /> Ta bort
+                </button>
+              )}
             </div>
           </div>
         );

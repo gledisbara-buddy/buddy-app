@@ -20,11 +20,14 @@ function formatDate(iso: string): string {
 // MissingInsuranceQueue.tsx/CancellationQueue.tsx.
 export function AccountDeletionQueue({
   actorEmail,
+  myPermissionLevel,
   onOpenCustomer,
 }: {
   actorEmail: string;
+  myPermissionLevel: string | null;
   onOpenCustomer: (customerId: string) => void;
 }) {
+  const canApprove = myPermissionLevel === "admin" || myPermissionLevel === "teamledare";
   const [requests, setRequests] = useState<RequestRow[]>([]);
   const [profilesById, setProfilesById] = useState<Record<string, ProfileLookup>>({});
   const [loading, setLoading] = useState(true);
@@ -91,13 +94,15 @@ export function AccountDeletionQueue({
               <button onClick={() => onOpenCustomer(row.user_id)} className="flex items-center gap-1.5 text-sm font-semibold text-forest">
                 Öppna kund <ArrowRight size={14} />
               </button>
-              <button
-                onClick={() => markHandled(row)}
-                disabled={handlingId === row.id}
-                className="flex items-center gap-1.5 px-4 py-2 rounded-full text-sm font-semibold text-white bg-forest disabled:opacity-40"
-              >
-                <Check size={14} /> Konto raderat
-              </button>
+              {canApprove && (
+                <button
+                  onClick={() => markHandled(row)}
+                  disabled={handlingId === row.id}
+                  className="flex items-center gap-1.5 px-4 py-2 rounded-full text-sm font-semibold text-white bg-forest disabled:opacity-40"
+                >
+                  <Check size={14} /> Konto raderat
+                </button>
+              )}
             </div>
           </div>
         );

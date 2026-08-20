@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { ClipboardSignature, Mail, MessageSquare, X } from "lucide-react";
+import { ClipboardSignature, Download, Mail, MessageSquare, X } from "lucide-react";
 import { EditableField } from "@/components/internal/EditableField";
 import { CustomerItemsTab } from "@/components/internal/CustomerItemsTab";
 import { CustomerCasesTab } from "@/components/internal/CustomerCasesTab";
@@ -28,14 +28,18 @@ const SEGMENT_LABELS: Record<CustomerSegment, string> = { ny: "Ny kund", etabler
 export function CustomerWorkspace({
   customer,
   actorEmail,
+  myPermissionLevel,
   onFieldSave,
   onClassificationSave,
 }: {
   customer: InternalCustomerProfile;
   actorEmail: string;
+  myPermissionLevel: string | null;
   onFieldSave: (field: "personnummer" | "phone" | "address", value: string) => Promise<boolean>;
   onClassificationSave: (field: "customer_status" | "segment" | "tags", value: string | string[] | null) => Promise<boolean>;
 }) {
+  const canDelete = myPermissionLevel === "admin" || myPermissionLevel === "teamledare";
+  const isKundservice = myPermissionLevel === "kundservice";
   const [tab, setTab] = useState<Tab>("saker");
   const [tagDraft, setTagDraft] = useState("");
   // Isolerad från customer-frågan i InternalView.tsx (CUSTOMER_SELECT) med
@@ -79,6 +83,35 @@ export function CustomerWorkspace({
     }
   };
 
+  // GDPR-export, anställd-triggad — samma exportformat som kundens egen
+  // SettingsPage.tsx redan erbjuder, men här för en anställd som behöver
+  // lämna ut eller granska en kunds uppgifter.
+  const handleExport = async () => {
+    const supabase = createClient();
+    const [{ data: items }, { data: policies }, { data: bookings }, { data: claims }] = await Promise.all([
+      supabase.from("items").select("data").eq("user_id", customer.id),
+      supabase.from("policies").select("item_id, data").eq("user_id", customer.id),
+      supabase.from("bookings").select("*").eq("user_id", customer.id),
+      supabase.from("claims").select("*").eq("user_id", customer.id),
+    ]);
+    const exportData = {
+      exporterat: new Date().toISOString(),
+      exporteratAv: actorEmail,
+      kund: customer,
+      saker: items,
+      avtal: policies,
+      bokningar: bookings,
+      skadeanmalningar: claims,
+    };
+    const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `kunddata-${customer.id}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
   const addTag = () => {
     const value = tagDraft.trim();
     if (!value || customer.tags.includes(value)) {
@@ -114,24 +147,40 @@ export function CustomerWorkspace({
               )}
             </div>
           </div>
-          {customer.fullmakt_signed_at ? (
-            <span className="text-xs font-semibold px-2.5 py-1 rounded-full flex items-center gap-1 bg-frost-2 text-forest">
-              <ClipboardSignature size={12} /> Fullmakt signerad
-            </span>
-          ) : (
-            <span className="text-xs font-semibold px-2.5 py-1 rounded-full border border-line text-slate">
-              Fullmakt ej signerad
-            </span>
-          )}
+          <div className="flex items-center gap-2 flex-none">
+            {customer.fullmakt_signed_at ? (
+              <span className="text-xs font-semibold px-2.5 py-1 rounded-full flex items-center gap-1 bg-frost-2 text-forest">
+                <ClipboardSignature size={12} /> Fullmakt signerad
+              </span>
+            ) : (
+              <span className="text-xs font-semibold px-2.5 py-1 rounded-full border border-line text-slate">
+                Fullmakt ej signerad
+              </span>
+            )}
+            <button
+              onClick={handleExport}
+              className="flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1 rounded-full border border-line text-slate hover:text-ink"
+            >
+              <Download size={12} /> Exportera
+            </button>
+          </div>
         </div>
 
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 pt-4 border-t border-line mb-4">
-          <EditableField
-            label="Personnummer"
-            value={customer.personnummer}
-            placeholder="ÅÅÅÅMMDD-XXXX"
-            onSave={(v) => onFieldSave("personnummer", v)}
-          />
+          {isKundservice ? (
+            <div>
+              <div className="text-xs mb-1 text-slate uppercase tracking-wide">Personnummer</div>
+              <div className="text-sm font-medium min-h-[28px] flex items-center">{customer.personnummer || "–"}</div>
+              <p className="text-xs mt-1 text-slate">Maskerat och skrivskyddat för din roll.</p>
+            </div>
+          ) : (
+            <EditableField
+              label="Personnummer"
+              value={customer.personnummer}
+              placeholder="ÅÅÅÅMMDD-XXXX"
+              onSave={(v) => onFieldSave("personnummer", v)}
+            />
+          )}
           <div>
             <div className="text-xs mb-1 text-slate uppercase tracking-wide">E-post</div>
             <div className="text-sm font-medium min-h-[28px] flex items-center">{customer.email || "–"}</div>
@@ -242,6 +291,7 @@ export function CustomerWorkspace({
           actorEmail={actorEmail}
           customerEmail={customer.email}
           customerNotifyEmail={customerNotifyEmail}
+          canDelete={canDelete}
         />
       )}
       {tab === "arenden" && (
@@ -250,6 +300,7 @@ export function CustomerWorkspace({
           actorEmail={actorEmail}
           customerEmail={customer.email}
           customerNotifyEmail={customerNotifyEmail}
+          canDelete={canDelete}
         />
       )}
       {tab === "dokument" && <CustomerDocumentsTab customerId={customer.id} />}

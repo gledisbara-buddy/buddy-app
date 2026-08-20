@@ -1218,3 +1218,154 @@ alter table public.claims add column if not exists checklist jsonb not null defa
 
 alter table public.bookings add column if not exists escalated_at timestamptz;
 alter table public.claims add column if not exists escalated_at timestamptz;
+
+-- ============================================================
+-- Behörigheter & säkerhet + Notiser (internverktyget)
+-- ============================================================
+
+-- Behörigheter & säkerhet — kör i Supabase SQL Editor.
+--
+-- Riktigt genomdrivna roller (inte bara en etikett): admin, teamledare,
+-- specialist, kundservice. Konkret vad som skiljer dem åt i det här
+-- läget:
+--   - Radera permanent (bookings/claims/items/policies) — bara admin
+--     och teamledare.
+--   - Godkänna en GDPR-raderingsbegäran — bara admin och teamledare.
+--   - Personnummer i klartext — kundservice ser maskerat
+--     (ÅÅÅÅMM-XXXX), övriga roller ser fullt. Kundservice kan heller
+--     inte SPARA en ändring av personnummer (blockeras av en trigger,
+--     inte bara dold i UI:t).
+-- "Läsbehörighet"/"redigeringsbehörighet" byggs inte som ett separat
+-- generellt fält-för-fält-system den här omgången — ovanstående är de
+-- konkreta, verkligt genomdrivna skillnaderna.
+
+-- Migrera bort det gamla defaultvärdet innan en check-constraint läggs
+-- till (annars bryter constraint:en mot befintliga rader).
+update public.employees set permission_level = 'specialist' where permission_level = 'handlaggare';
+alter table public.employees drop constraint if exists employees_permission_level_check;
+alter table public.employees add constraint employees_permission_level_check
+  check (permission_level in ('admin', 'teamledare', 'specialist', 'kundservice'));
+alter table public.employees alter column permission_level set default 'specialist';
+
+-- Läser den inloggade ANSTÄLLDES egen roll — SECURITY DEFINER eftersom
+-- employees bara har select på sin egen rad, men den här funktionen
+-- behöver kunna anropas från RLS-policyer och vyer på andra tabeller.
+create or replace function public.employee_permission_level()
+returns text
+language sql
+security definer
+set search_path = public
+stable
+as $$
+  select permission_level from public.employees where email = auth.jwt() ->> 'email';
+$$;
+
+-- Maskerad kundvy — CustomerWorkspace.tsx hämtar kundens fält via den
+-- här vyn istället för att selecta profiles direkt, så maskeringen
+-- faktiskt sker på servern (en ren UI-döljning hade varit lika lätt
+-- att kringgå som dagens etikett).
+create or replace view public.customer_profile_view as
+select
+  p.id,
+  p.name,
+  p.email,
+  case
+    when public.employee_permission_level() in ('admin', 'teamledare', 'specialist') then p.personnummer
+    when p.personnummer is not null then left(p.personnummer, 6) || '-XXXX'
+    else null
+  end as personnummer,
+  p.phone,
+  p.address,
+  p.household_id,
+  p.household_relation,
+  p.fullmakt_signed_at,
+  p.created_at,
+  p.customer_status,
+  p.segment,
+  p.tags
+from public.profiles p
+where exists (select 1 from public.employees where email = auth.jwt() ->> 'email');
+
+grant select on public.customer_profile_view to authenticated;
+
+-- Blockerar kundservice från att SPARA en ändring av personnummer —
+-- kundens egen redigering av sitt eget personnummer (t.ex. ProfilePage)
+-- påverkas aldrig, bara ändringar en ANNAN användare (en anställd) gör.
+create or replace function public.enforce_personnummer_edit_permission()
+returns trigger
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+  if auth.uid() = new.id then
+    return new;
+  end if;
+  if new.personnummer is distinct from old.personnummer then
+    if public.employee_permission_level() = 'kundservice' then
+      raise exception 'Kundservice saknar behörighet att ändra personnummer';
+    end if;
+  end if;
+  return new;
+end;
+$$;
+
+drop trigger if exists trg_enforce_personnummer_edit on public.profiles;
+create trigger trg_enforce_personnummer_edit
+before update on public.profiles
+for each row execute function public.enforce_personnummer_edit_permission();
+
+-- Radera permanent — bara admin och teamledare.
+drop policy if exists "bookings_delete_employee" on public.bookings;
+create policy "bookings_delete_employee" on public.bookings
+  for delete using (public.employee_permission_level() in ('admin', 'teamledare'));
+
+drop policy if exists "claims_delete_employee" on public.claims;
+create policy "claims_delete_employee" on public.claims
+  for delete using (public.employee_permission_level() in ('admin', 'teamledare'));
+
+drop policy if exists "items_delete_employee" on public.items;
+create policy "items_delete_employee" on public.items
+  for delete using (public.employee_permission_level() in ('admin', 'teamledare'));
+
+drop policy if exists "policies_delete_employee" on public.policies;
+create policy "policies_delete_employee" on public.policies
+  for delete using (public.employee_permission_level() in ('admin', 'teamledare'));
+
+-- Godkänna en GDPR-raderingsbegäran — bara admin och teamledare.
+drop policy if exists "account_deletion_requests_update_employee" on public.account_deletion_requests;
+create policy "account_deletion_requests_update_employee" on public.account_deletion_requests
+  for update using (public.employee_permission_level() in ('admin', 'teamledare'));
+
+-- Valfritt: sätt din egen roll manuellt för att testa de olika nivåerna,
+-- t.ex.:
+-- update public.employees set permission_level = 'admin' where email = 'din@epost.se';
+
+-- ============================================================
+-- Notiser
+-- ============================================================
+
+-- Notisklockan räknar "nytt sen sist" mot den här tidsstämpeln istället
+-- för en riktig läst/oläst-tabell per notis — samma lätta princip som
+-- redan används för "Kommande deadlines" på Dashboarden.
+alter table public.employees add column if not exists notifications_checked_at timestamptz not null default now();
+
+-- ============================================================
+-- Säkerhet: logg över vem som tittat på kunddata
+-- ============================================================
+
+create table if not exists public.customer_view_log (
+  id uuid primary key default gen_random_uuid(),
+  customer_id uuid not null references auth.users(id) on delete cascade,
+  viewer_email text not null references public.employees(email),
+  viewed_at timestamptz not null default now()
+);
+alter table public.customer_view_log enable row level security;
+
+drop policy if exists "customer_view_log_insert_employee" on public.customer_view_log;
+create policy "customer_view_log_insert_employee" on public.customer_view_log
+  for insert with check (exists (select 1 from public.employees where email = auth.jwt() ->> 'email'));
+
+drop policy if exists "customer_view_log_select_employee" on public.customer_view_log;
+create policy "customer_view_log_select_employee" on public.customer_view_log
+  for select using (exists (select 1 from public.employees where email = auth.jwt() ->> 'email'));

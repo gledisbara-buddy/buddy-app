@@ -13,6 +13,8 @@ type ActivityRow = {
   created_at: string;
 };
 
+type ViewRow = { id: string; viewer_email: string; viewed_at: string };
+
 const FIELD_LABELS: Record<string, string> = {
   personnummer: "personnummer",
   phone: "telefon",
@@ -35,42 +37,70 @@ function formatDateTime(iso: string): string {
 // ingen update/delete-policy, bara insert (från saveField()) + select.
 export function CustomerActivityTab({ customerId }: { customerId: string }) {
   const [rows, setRows] = useState<ActivityRow[]>([]);
+  const [views, setViews] = useState<ViewRow[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const supabase = createClient();
     (async () => {
       setLoading(true);
-      const { data } = await supabase
-        .from("activity_log")
-        .select("id, actor_email, table_name, field, old_value, new_value, created_at")
-        .eq("target_user_id", customerId)
-        .order("created_at", { ascending: false });
+      const [{ data }, { data: viewRows }] = await Promise.all([
+        supabase
+          .from("activity_log")
+          .select("id, actor_email, table_name, field, old_value, new_value, created_at")
+          .eq("target_user_id", customerId)
+          .order("created_at", { ascending: false }),
+        supabase
+          .from("customer_view_log")
+          .select("id, viewer_email, viewed_at")
+          .eq("customer_id", customerId)
+          .order("viewed_at", { ascending: false })
+          .limit(10),
+      ]);
       setRows((data ?? []) as ActivityRow[]);
+      setViews((viewRows ?? []) as ViewRow[]);
       setLoading(false);
     })();
   }, [customerId]);
 
   if (loading) return <p className="text-sm text-slate">Laddar…</p>;
-  if (rows.length === 0) return <p className="text-sm text-slate">Ingen aktivitet loggad än.</p>;
 
   return (
-    <div className="bg-white rounded-2xl border border-line p-4">
-      {rows.map((r) => (
-        <div key={r.id} className="flex items-start gap-3 py-2.5 border-b border-line last:border-0 last:pb-0">
-          <div className="flex-1 min-w-0 text-sm">
-            <span className="font-semibold">{r.actor_email}</span> ändrade {describeField(r.field)}
-            {r.old_value != null && (
-              <>
-                {" "}
-                från <span className="text-slate">{r.old_value}</span>
-              </>
-            )}{" "}
-            till <span className="font-medium">{r.new_value ?? "–"}</span>
+    <div className="flex flex-col gap-4">
+      {views.length > 0 && (
+        <div className="bg-white rounded-2xl border border-line p-4">
+          <div className="text-xs mb-2 text-slate uppercase tracking-wide">Vem har tittat</div>
+          <div className="flex flex-wrap gap-x-4 gap-y-1 text-sm text-slate">
+            {views.map((v) => (
+              <span key={v.id}>
+                {v.viewer_email} · {formatDateTime(v.viewed_at)}
+              </span>
+            ))}
           </div>
-          <span className="text-xs text-slate flex-none whitespace-nowrap">{formatDateTime(r.created_at)}</span>
         </div>
-      ))}
+      )}
+
+      {rows.length === 0 ? (
+        <p className="text-sm text-slate">Ingen aktivitet loggad än.</p>
+      ) : (
+        <div className="bg-white rounded-2xl border border-line p-4">
+          {rows.map((r) => (
+            <div key={r.id} className="flex items-start gap-3 py-2.5 border-b border-line last:border-0 last:pb-0">
+              <div className="flex-1 min-w-0 text-sm">
+                <span className="font-semibold">{r.actor_email}</span> ändrade {describeField(r.field)}
+                {r.old_value != null && (
+                  <>
+                    {" "}
+                    från <span className="text-slate">{r.old_value}</span>
+                  </>
+                )}{" "}
+                till <span className="font-medium">{r.new_value ?? "–"}</span>
+              </div>
+              <span className="text-xs text-slate flex-none whitespace-nowrap">{formatDateTime(r.created_at)}</span>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

@@ -13,6 +13,7 @@ import { CustomerSearchRail } from "@/components/internal/CustomerSearchRail";
 import { CustomerWorkspace } from "@/components/internal/CustomerWorkspace";
 import { EmployeeDashboard } from "@/components/internal/EmployeeDashboard";
 import { EmployeeProfile } from "@/components/internal/EmployeeProfile";
+import { InternalNotificationBell } from "@/components/internal/InternalNotificationBell";
 import { MfaGate } from "@/components/internal/MfaGate";
 import { useBuddy } from "@/lib/buddy-context";
 import { createClient } from "@/lib/supabase/client";
@@ -63,11 +64,32 @@ export function InternalView() {
     createClient().from("employee_login_log").insert({ employee_email: profile.email }).then(() => {});
   }, [isEmployee, profile?.email]);
 
-  const fetchCustomer = useCallback(async (id: string) => {
-    const supabase = createClient();
-    const { data } = await supabase.from("profiles").select(CUSTOMER_SELECT).eq("id", id).single();
-    if (data) setSelectedCustomer(data as InternalCustomerProfile);
-  }, []);
+  const [myPermissionLevel, setMyPermissionLevel] = useState<string | null>(null);
+  useEffect(() => {
+    if (!isEmployee || !profile?.email) return;
+    createClient()
+      .from("employees")
+      .select("permission_level")
+      .eq("email", profile.email)
+      .single()
+      .then(({ data }) => setMyPermissionLevel((data as { permission_level: string } | null)?.permission_level ?? null));
+  }, [isEmployee, profile?.email]);
+
+  // customer_profile_view istället för profiles direkt — maskerar
+  // personnummer på servern för kundservice-rollen, se
+  // schema.sql/customer_profile_view. Loggar samtidigt att kunden
+  // visats (customer_view_log), se Aktivitet-fliken i CustomerWorkspace.
+  const fetchCustomer = useCallback(
+    async (id: string) => {
+      const supabase = createClient();
+      const { data } = await supabase.from("customer_profile_view").select(CUSTOMER_SELECT).eq("id", id).single();
+      if (data) setSelectedCustomer(data as InternalCustomerProfile);
+      if (profile?.email) {
+        supabase.from("customer_view_log").insert({ customer_id: id, viewer_email: profile?.email }).then(() => {});
+      }
+    },
+    [profile?.email]
+  );
 
   const handleFieldSave = useCallback(
     async (field: "personnummer" | "phone" | "address", value: string): Promise<boolean> => {
@@ -115,7 +137,23 @@ export function InternalView() {
   return (
     <MfaGate>
       <div className="min-h-screen w-full">
-        <TopBar onBack={() => router.push("/dashboard")} right={<ProfileMenu />} />
+        <TopBar
+          onBack={() => router.push("/dashboard")}
+          right={
+            <div className="flex items-center gap-2">
+              {profile?.email && (
+                <InternalNotificationBell
+                  myEmail={profile.email}
+                  onOpenCustomer={(id) => {
+                    fetchCustomer(id);
+                    setTab("kundsok");
+                  }}
+                />
+              )}
+              <ProfileMenu />
+            </div>
+          }
+        />
         <div className={`mx-auto px-5 md:px-10 py-10 bd-fade ${tab === "kundsok" ? "max-w-6xl" : "max-w-3xl"}`}>
           <span className="bd-eyebrow">Internt</span>
           <h1 className="bd-display text-3xl mt-2 mb-6">Anställdvy</h1>
@@ -231,6 +269,7 @@ export function InternalView() {
           {tab === "radering" && (
             <AccountDeletionQueue
               actorEmail={profile?.email ?? ""}
+              myPermissionLevel={myPermissionLevel}
               onOpenCustomer={(id) => {
                 fetchCustomer(id);
                 setTab("kundsok");
@@ -248,6 +287,7 @@ export function InternalView() {
                 <CustomerWorkspace
                   customer={selectedCustomer}
                   actorEmail={profile?.email ?? ""}
+                  myPermissionLevel={myPermissionLevel}
                   onFieldSave={handleFieldSave}
                   onClassificationSave={handleClassificationSave}
                 />

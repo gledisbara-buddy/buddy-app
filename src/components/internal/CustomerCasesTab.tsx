@@ -216,11 +216,13 @@ export function CustomerCasesTab({
   actorEmail,
   customerEmail,
   customerNotifyEmail,
+  canDelete,
 }: {
   customerId: string;
   actorEmail: string;
   customerEmail: string | null;
   customerNotifyEmail: boolean;
+  canDelete: boolean;
 }) {
   const [bookings, setBookings] = useState<BookingRow[]>([]);
   const [claims, setClaims] = useState<ClaimRow[]>([]);
@@ -619,7 +621,7 @@ export function CustomerCasesTab({
                       <Ban size={13} /> Avboka
                     </button>
                   )}
-                  {otherSameKind.length > 0 && (
+                  {canDelete && otherSameKind.length > 0 && (
                     <button
                       onClick={() => setMergePickerFor({ kind: "booking", id: row.id })}
                       className="flex items-center gap-1.5 text-xs font-semibold px-3 py-2 rounded-full text-ink border border-line"
@@ -627,12 +629,14 @@ export function CustomerCasesTab({
                       <GitMerge size={13} /> Slå ihop
                     </button>
                   )}
-                  <button
-                    onClick={() => setConfirmDelete({ kind: "booking", id: row.id })}
-                    className="flex items-center gap-1.5 text-xs font-semibold px-3 py-2 rounded-full text-red-600 border border-line ml-auto"
-                  >
-                    <Trash2 size={13} /> Radera permanent
-                  </button>
+                  {canDelete && (
+                    <button
+                      onClick={() => setConfirmDelete({ kind: "booking", id: row.id })}
+                      className="flex items-center gap-1.5 text-xs font-semibold px-3 py-2 rounded-full text-red-600 border border-line ml-auto"
+                    >
+                      <Trash2 size={13} /> Radera permanent
+                    </button>
+                  )}
                 </div>
 
                 <CaseMetaSection caseType="booking" meta={row} myEmail={actorEmail} onSave={(field, value) => saveBookingField(row, field, value)} />
@@ -699,7 +703,7 @@ export function CustomerCasesTab({
                 </div>
 
                 <div className="flex flex-wrap gap-2 pt-2 border-t border-line">
-                  {otherSameKind.length > 0 && (
+                  {canDelete && otherSameKind.length > 0 && (
                     <button
                       onClick={() => setMergePickerFor({ kind: "claim", id: row.id })}
                       className="flex items-center gap-1.5 text-xs font-semibold px-3 py-2 rounded-full text-ink border border-line"
@@ -707,12 +711,14 @@ export function CustomerCasesTab({
                       <GitMerge size={13} /> Slå ihop
                     </button>
                   )}
-                  <button
-                    onClick={() => setConfirmDelete({ kind: "claim", id: row.id })}
-                    className="flex items-center gap-1.5 text-xs font-semibold px-3 py-2 rounded-full text-red-600 border border-line ml-auto"
-                  >
-                    <Trash2 size={13} /> Radera permanent
-                  </button>
+                  {canDelete && (
+                    <button
+                      onClick={() => setConfirmDelete({ kind: "claim", id: row.id })}
+                      className="flex items-center gap-1.5 text-xs font-semibold px-3 py-2 rounded-full text-red-600 border border-line ml-auto"
+                    >
+                      <Trash2 size={13} /> Radera permanent
+                    </button>
+                  )}
                 </div>
 
                 <CaseMetaSection caseType="claim" meta={row} myEmail={actorEmail} onSave={(field, value) => saveClaimField(row, field, value)} />

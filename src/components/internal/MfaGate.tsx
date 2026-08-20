@@ -1,16 +1,23 @@
 "use client";
 
 import { useEffect, useState, type ReactNode } from "react";
+import { useRouter } from "next/navigation";
 import { ShieldCheck } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
+import { useBuddy } from "@/lib/buddy-context";
 
 type Status = "checking" | "enroll" | "challenge" | "ready";
+
+const IDLE_LIMIT_MS = 15 * 60 * 1000;
+const IDLE_EVENTS = ["mousemove", "mousedown", "keydown", "scroll", "touchstart"] as const;
 
 // Internverktyget har full åtkomst till personnummer, signerade
 // fullmakts-PDF:er och kunddata för alla kunder — därför krävs en
 // verifierad TOTP-faktor (Supabase Auths inbyggda MFA) innan innehållet
 // visas, oavsett hur många anställda kontot i övrigt delas mellan.
 export function MfaGate({ children }: { children: ReactNode }) {
+  const router = useRouter();
+  const { logout } = useBuddy();
   const [status, setStatus] = useState<Status>("checking");
   const [qrSvg, setQrSvg] = useState<string | null>(null);
   const [secret, setSecret] = useState<string | null>(null);
@@ -56,6 +63,26 @@ export function MfaGate({ children }: { children: ReactNode }) {
       setStatus("enroll");
     })();
   }, []);
+
+  // Automatisk utloggning efter 15 min inaktivitet — internverktyget
+  // hanterar kunddata och lämnas ibland öppet på en delad arbetsstation.
+  useEffect(() => {
+    if (status !== "ready") return;
+    let timer: ReturnType<typeof setTimeout>;
+    const reset = () => {
+      clearTimeout(timer);
+      timer = setTimeout(() => {
+        logout();
+        router.replace("/kom-igang");
+      }, IDLE_LIMIT_MS);
+    };
+    IDLE_EVENTS.forEach((event) => window.addEventListener(event, reset));
+    reset();
+    return () => {
+      clearTimeout(timer);
+      IDLE_EVENTS.forEach((event) => window.removeEventListener(event, reset));
+    };
+  }, [status, logout, router]);
 
   const submitEnrollCode = async () => {
     if (!factorId || code.trim().length < 6) return;
