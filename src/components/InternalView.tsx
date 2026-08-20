@@ -90,10 +90,10 @@ export function InternalView() {
           <span className="bd-eyebrow">Internt</span>
           <h1 className="bd-display text-3xl mt-2 mb-6">Anställdvy</h1>
 
-          <div className="flex items-center gap-1 mb-6 p-1 rounded-full w-fit bg-frost-2">
+          <div className="flex items-center gap-1 mb-6 p-1 rounded-full max-w-full overflow-x-auto bg-frost-2">
             <button
               onClick={() => setTab("forfragningar")}
-              className="px-4 py-1.5 rounded-full text-xs font-semibold"
+              className="px-4 py-1.5 rounded-full text-xs font-semibold flex-none whitespace-nowrap"
               style={
                 tab === "forfragningar"
                   ? { background: "white", color: "var(--color-ink)", boxShadow: "0 1px 3px rgba(0,0,0,.08)" }
@@ -104,7 +104,7 @@ export function InternalView() {
             </button>
             <button
               onClick={() => setTab("uppsagningar")}
-              className="px-4 py-1.5 rounded-full text-xs font-semibold"
+              className="px-4 py-1.5 rounded-full text-xs font-semibold flex-none whitespace-nowrap"
               style={
                 tab === "uppsagningar"
                   ? { background: "white", color: "var(--color-ink)", boxShadow: "0 1px 3px rgba(0,0,0,.08)" }
@@ -115,7 +115,7 @@ export function InternalView() {
             </button>
             <button
               onClick={() => setTab("saknade")}
-              className="px-4 py-1.5 rounded-full text-xs font-semibold"
+              className="px-4 py-1.5 rounded-full text-xs font-semibold flex-none whitespace-nowrap"
               style={
                 tab === "saknade"
                   ? { background: "white", color: "var(--color-ink)", boxShadow: "0 1px 3px rgba(0,0,0,.08)" }
@@ -126,7 +126,7 @@ export function InternalView() {
             </button>
             <button
               onClick={() => setTab("radering")}
-              className="px-4 py-1.5 rounded-full text-xs font-semibold"
+              className="px-4 py-1.5 rounded-full text-xs font-semibold flex-none whitespace-nowrap"
               style={
                 tab === "radering"
                   ? { background: "white", color: "var(--color-ink)", boxShadow: "0 1px 3px rgba(0,0,0,.08)" }
@@ -137,7 +137,7 @@ export function InternalView() {
             </button>
             <button
               onClick={() => setTab("kundsok")}
-              className="px-4 py-1.5 rounded-full text-xs font-semibold"
+              className="px-4 py-1.5 rounded-full text-xs font-semibold flex-none whitespace-nowrap"
               style={
                 tab === "kundsok"
                   ? { background: "white", color: "var(--color-ink)", boxShadow: "0 1px 3px rgba(0,0,0,.08)" }
@@ -148,7 +148,7 @@ export function InternalView() {
             </button>
             <button
               onClick={() => setTab("profil")}
-              className="px-4 py-1.5 rounded-full text-xs font-semibold"
+              className="px-4 py-1.5 rounded-full text-xs font-semibold flex-none whitespace-nowrap"
               style={
                 tab === "profil"
                   ? { background: "white", color: "var(--color-ink)", boxShadow: "0 1px 3px rgba(0,0,0,.08)" }

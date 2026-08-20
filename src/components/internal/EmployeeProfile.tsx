@@ -322,8 +322,8 @@ export function EmployeeProfile({ email, userId }: { email: string; userId: stri
           <span className="text-xs flex items-center gap-1 text-forest">Aktiverad</span>
         </div>
         <p className="text-xs text-slate mb-3">
-          {mfaVerifiedAt ? `Aktiverad ${formatDate(mfaVerifiedAt)}.` : "Aktiverad."} Krävs för hela internverktyget, se{" "}
-          {row.name ? "din" : "en"} inloggning.
+          {mfaVerifiedAt ? `Aktiverad ${formatDate(mfaVerifiedAt)}.` : "Aktiverad."} Krävs varje gång du loggar in i
+          internverktyget.
         </p>
         <button onClick={() => setConfirmResetMfa(true)} className="text-xs font-semibold text-red-600">
           Nollställ och registrera om
