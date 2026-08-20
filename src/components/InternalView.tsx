@@ -8,6 +8,7 @@ import { RequestsInbox } from "@/components/internal/RequestsInbox";
 import { CancellationQueue } from "@/components/internal/CancellationQueue";
 import { MissingInsuranceQueue } from "@/components/internal/MissingInsuranceQueue";
 import { AccountDeletionQueue } from "@/components/internal/AccountDeletionQueue";
+import { CustomerListView } from "@/components/internal/CustomerListView";
 import { CustomerSearchRail } from "@/components/internal/CustomerSearchRail";
 import { CustomerWorkspace } from "@/components/internal/CustomerWorkspace";
 import { EmployeeDashboard } from "@/components/internal/EmployeeDashboard";
@@ -17,6 +18,9 @@ import { useBuddy } from "@/lib/buddy-context";
 import { createClient } from "@/lib/supabase/client";
 import { saveField } from "@/lib/activity-log";
 import type { HouseholdRelation } from "@/lib/household";
+
+export type CustomerStatus = "aktiv" | "vilande" | "avslutad";
+export type CustomerSegment = "ny" | "etablerad" | "vip" | "risk";
 
 export type InternalCustomerProfile = {
   id: string;
@@ -29,10 +33,13 @@ export type InternalCustomerProfile = {
   household_relation: HouseholdRelation | null;
   fullmakt_signed_at: string | null;
   created_at: string;
+  customer_status: CustomerStatus;
+  segment: CustomerSegment | null;
+  tags: string[];
 };
 
 const CUSTOMER_SELECT =
-  "id, name, email, personnummer, phone, address, household_id, household_relation, fullmakt_signed_at, created_at";
+  "id, name, email, personnummer, phone, address, household_id, household_relation, fullmakt_signed_at, created_at, customer_status, segment, tags";
 
 export function InternalView() {
   const router = useRouter();
@@ -76,6 +83,28 @@ export function InternalView() {
         newValue: value || null,
       });
       if (ok) setSelectedCustomer((prev) => (prev ? { ...prev, [field]: value || null } : prev));
+      return ok;
+    },
+    [selectedCustomer, profile]
+  );
+
+  // Bredare variant för de nya klassificeringsfälten (status/segment/
+  // taggar) — samma saveField-mönster, men värdet kan vara en array
+  // (tags) eller null (segment), inte bara en sträng.
+  const handleClassificationSave = useCallback(
+    async (field: "customer_status" | "segment" | "tags", value: string | string[] | null): Promise<boolean> => {
+      if (!selectedCustomer || !profile?.email) return false;
+      const ok = await saveField(createClient(), {
+        table: "profiles",
+        idColumn: "id",
+        id: selectedCustomer.id,
+        targetUserId: selectedCustomer.id,
+        actorEmail: profile.email,
+        field,
+        oldValue: selectedCustomer[field],
+        newValue: value,
+      });
+      if (ok) setSelectedCustomer((prev) => (prev ? { ...prev, [field]: value } : prev));
       return ok;
     },
     [selectedCustomer, profile]
@@ -216,11 +245,14 @@ export function InternalView() {
                 onHouseholdChanged={() => selectedCustomer && fetchCustomer(selectedCustomer.id)}
               />
               {selectedCustomer ? (
-                <CustomerWorkspace customer={selectedCustomer} actorEmail={profile?.email ?? ""} onFieldSave={handleFieldSave} />
+                <CustomerWorkspace
+                  customer={selectedCustomer}
+                  actorEmail={profile?.email ?? ""}
+                  onFieldSave={handleFieldSave}
+                  onClassificationSave={handleClassificationSave}
+                />
               ) : (
-                <div className="flex-1 flex items-center justify-center text-sm text-slate py-20">
-                  Sök upp en kund till vänster för att komma igång.
-                </div>
+                <CustomerListView onSelectCustomer={fetchCustomer} />
               )}
             </div>
           )}

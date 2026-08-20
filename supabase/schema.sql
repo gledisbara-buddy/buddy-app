@@ -1170,3 +1170,28 @@ from public.employees
 where exists (select 1 from public.employees e2 where e2.email = auth.jwt() ->> 'email');
 
 grant select on public.employee_directory to authenticated;
+
+-- Kundhantering (internverktyget) — kundstatus/segment/taggar på
+-- profiles, samt interna kommentarer PER ÄRENDE (skiljer sig från
+-- customer_notes som är skopat till hela kunden).
+alter table public.profiles add column if not exists customer_status text not null default 'aktiv';
+alter table public.profiles add column if not exists segment text;
+alter table public.profiles add column if not exists tags text[] not null default '{}';
+
+create table if not exists public.case_comments (
+  id uuid primary key default gen_random_uuid(),
+  case_type text not null check (case_type in ('booking', 'claim')),
+  case_id uuid not null,
+  author_email text not null references public.employees(email),
+  comment text not null,
+  created_at timestamptz not null default now()
+);
+alter table public.case_comments enable row level security;
+
+drop policy if exists "case_comments_insert_employee" on public.case_comments;
+create policy "case_comments_insert_employee" on public.case_comments
+  for insert with check (exists (select 1 from public.employees where email = auth.jwt() ->> 'email'));
+
+drop policy if exists "case_comments_select_employee" on public.case_comments;
+create policy "case_comments_select_employee" on public.case_comments
+  for select using (exists (select 1 from public.employees where email = auth.jwt() ->> 'email'));

@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { Ban, Calendar, Check, ChevronDown, ChevronUp, ShieldAlert, Trash2 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { ConfirmDialog } from "@/components/Overlay";
+import { CaseComments } from "@/components/internal/CaseComments";
 import { EditableField } from "@/components/internal/EditableField";
 import { saveField } from "@/lib/activity-log";
 import { sendTransactionalEmail } from "@/lib/email";
@@ -287,6 +288,10 @@ export function CustomerCasesTab({
                     <Trash2 size={13} /> Radera permanent
                   </button>
                 </div>
+
+                <div className="pt-4 border-t border-line">
+                  <CaseComments caseType="booking" caseId={row.id} actorEmail={actorEmail} />
+                </div>
               </div>
             ) : (
               <div className="mt-4 pt-4 border-t border-line flex flex-col gap-4">
@@ -352,6 +357,10 @@ export function CustomerCasesTab({
                   >
                     <Trash2 size={13} /> Radera permanent
                   </button>
+                </div>
+
+                <div className="pt-4 border-t border-line">
+                  <CaseComments caseType="claim" caseId={row.id} actorEmail={actorEmail} />
                 </div>
               </div>
             )}
