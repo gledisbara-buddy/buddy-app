@@ -1155,3 +1155,18 @@ create policy "employee_avatar_write_own" on storage.objects
 drop policy if exists "employee_avatar_update_own" on storage.objects;
 create policy "employee_avatar_update_own" on storage.objects
   for update using (bucket_id = 'employee-avatars' and (storage.foldername(name))[1] = auth.uid()::text);
+
+-- Dashboard (internverktyget, EmployeeDashboard.tsx) — en vy som låter
+-- anställda se varandras namn/titel/avdelning/status/profilbild för
+-- "Teamets status". Avsiktlig ändring av tidigare beslut: employees hade
+-- innan bara "employees_select_own", specifikt för att en anställd
+-- ALDRIG skulle kunna räkna upp vilka andra som är anställda. Bekräftat
+-- 2026-08-20 att det är okej att vända på det för den här funktionen —
+-- vyn exponerar medvetet INTE phone/hired_at/permission_level/signature
+-- m.m., bara det som behövs för en teamöversikt.
+create or replace view public.employee_directory as
+select email, name, title, department, status, avatar_path
+from public.employees
+where exists (select 1 from public.employees e2 where e2.email = auth.jwt() ->> 'email');
+
+grant select on public.employee_directory to authenticated;

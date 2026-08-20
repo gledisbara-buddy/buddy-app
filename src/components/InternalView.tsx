@@ -10,6 +10,7 @@ import { MissingInsuranceQueue } from "@/components/internal/MissingInsuranceQue
 import { AccountDeletionQueue } from "@/components/internal/AccountDeletionQueue";
 import { CustomerSearchRail } from "@/components/internal/CustomerSearchRail";
 import { CustomerWorkspace } from "@/components/internal/CustomerWorkspace";
+import { EmployeeDashboard } from "@/components/internal/EmployeeDashboard";
 import { EmployeeProfile } from "@/components/internal/EmployeeProfile";
 import { MfaGate } from "@/components/internal/MfaGate";
 import { useBuddy } from "@/lib/buddy-context";
@@ -36,9 +37,9 @@ const CUSTOMER_SELECT =
 export function InternalView() {
   const router = useRouter();
   const { userType, loading, isEmployee, profile, userId } = useBuddy();
-  const [tab, setTab] = useState<"forfragningar" | "uppsagningar" | "saknade" | "radering" | "kundsok" | "profil">(
-    "forfragningar"
-  );
+  const [tab, setTab] = useState<
+    "dashboard" | "forfragningar" | "uppsagningar" | "saknade" | "radering" | "kundsok" | "profil"
+  >("dashboard");
   const [selectedCustomer, setSelectedCustomer] = useState<InternalCustomerProfile | null>(null);
 
   useEffect(() => {
@@ -91,6 +92,17 @@ export function InternalView() {
           <h1 className="bd-display text-3xl mt-2 mb-6">Anställdvy</h1>
 
           <div className="flex items-center gap-1 mb-6 p-1 rounded-full max-w-full overflow-x-auto bg-frost-2">
+            <button
+              onClick={() => setTab("dashboard")}
+              className="px-4 py-1.5 rounded-full text-xs font-semibold flex-none whitespace-nowrap"
+              style={
+                tab === "dashboard"
+                  ? { background: "white", color: "var(--color-ink)", boxShadow: "0 1px 3px rgba(0,0,0,.08)" }
+                  : { color: "var(--color-slate)" }
+              }
+            >
+              Översikt
+            </button>
             <button
               onClick={() => setTab("forfragningar")}
               className="px-4 py-1.5 rounded-full text-xs font-semibold flex-none whitespace-nowrap"
@@ -159,6 +171,16 @@ export function InternalView() {
             </button>
           </div>
 
+          {tab === "dashboard" && profile?.email && (
+            <EmployeeDashboard
+              email={profile.email}
+              onOpenCustomer={(id) => {
+                fetchCustomer(id);
+                setTab("kundsok");
+              }}
+              onNavigateTab={(t) => setTab(t)}
+            />
+          )}
           {tab === "forfragningar" && <RequestsInbox />}
           {tab === "uppsagningar" && (
             <CancellationQueue
