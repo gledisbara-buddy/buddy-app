@@ -210,7 +210,7 @@ export function InternalView() {
               onNavigateTab={(t) => setTab(t)}
             />
           )}
-          {tab === "forfragningar" && <RequestsInbox />}
+          {tab === "forfragningar" && <RequestsInbox actorEmail={profile?.email ?? ""} />}
           {tab === "uppsagningar" && (
             <CancellationQueue
               onOpenCustomer={(id) => {

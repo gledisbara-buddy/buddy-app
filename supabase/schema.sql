@@ -1195,3 +1195,26 @@ create policy "case_comments_insert_employee" on public.case_comments
 drop policy if exists "case_comments_select_employee" on public.case_comments;
 create policy "case_comments_select_employee" on public.case_comments
   for select using (exists (select 1 from public.employees where email = auth.jwt() ->> 'email'));
+
+-- Ärendehantering (internverktyget) — tilldelning, prioritet, deadline,
+-- taggar, checklista och eskalering på bookings + claims. Ingen ny RLS
+-- behövs — employees har redan en generell update-policy på båda
+-- tabellerna. Checklistans FRÅGOR lever i koden (case-checklist.ts),
+-- bara vilka som är ikryssade sparas här.
+alter table public.bookings add column if not exists assigned_to text references public.employees(email);
+alter table public.claims add column if not exists assigned_to text references public.employees(email);
+
+alter table public.bookings add column if not exists priority text not null default 'normal' check (priority in ('lag', 'normal', 'hog'));
+alter table public.claims add column if not exists priority text not null default 'normal' check (priority in ('lag', 'normal', 'hog'));
+
+alter table public.bookings add column if not exists deadline date;
+alter table public.claims add column if not exists deadline date;
+
+alter table public.bookings add column if not exists tags text[] not null default '{}';
+alter table public.claims add column if not exists tags text[] not null default '{}';
+
+alter table public.bookings add column if not exists checklist jsonb not null default '{}';
+alter table public.claims add column if not exists checklist jsonb not null default '{}';
+
+alter table public.bookings add column if not exists escalated_at timestamptz;
+alter table public.claims add column if not exists escalated_at timestamptz;

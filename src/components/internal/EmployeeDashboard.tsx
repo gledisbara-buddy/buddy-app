@@ -5,9 +5,11 @@ import {
   AlertTriangle,
   ArrowRight,
   Calendar,
+  CalendarClock,
   ClipboardList,
   ShieldAlert,
   TrendingUp,
+  UserCheck,
   UserRound,
   Users,
 } from "lucide-react";
@@ -22,6 +24,8 @@ type BookingRow = {
   time: string;
   status: "ny" | "hanterad" | "avbokad";
   created_at: string;
+  assigned_to: string | null;
+  deadline: string | null;
 };
 
 type ClaimRow = {
@@ -30,6 +34,8 @@ type ClaimRow = {
   skadetyp: string | null;
   status: ClaimStatus;
   created_at: string;
+  assigned_to: string | null;
+  deadline: string | null;
 };
 
 type ProfileLookup = { id: string; name: string };
@@ -50,7 +56,11 @@ type OpenItem = {
   createdAt: string;
   label: string;
   isFresh: boolean;
+  assignedTo: string | null;
+  deadline: string | null;
 };
+
+const todayIso = () => new Date().toISOString().slice(0, 10);
 
 const STATUS_DOT: Record<EmployeeDirectoryRow["status"], string> = {
   aktiv: "bg-forest",
@@ -112,8 +122,8 @@ export function EmployeeDashboard({
 
       const [{ data: bookingRows }, { data: claimRows }, { data: directoryRows }, { count: activityCount }] =
         await Promise.all([
-          supabase.from("bookings").select("id, user_id, meeting_type, day, time, status, created_at"),
-          supabase.from("claims").select("id, user_id, skadetyp, status, created_at"),
+          supabase.from("bookings").select("id, user_id, meeting_type, day, time, status, created_at, assigned_to, deadline"),
+          supabase.from("claims").select("id, user_id, skadetyp, status, created_at, assigned_to, deadline"),
           supabase.from("employee_directory").select("*"),
           supabase
             .from("activity_log")
@@ -128,7 +138,16 @@ export function EmployeeDashboard({
       const open: OpenItem[] = [
         ...bRows
           .filter((b) => b.status === "ny")
-          .map((b) => ({ kind: "booking" as const, id: b.id, userId: b.user_id, createdAt: b.created_at, label: "Boka specialist", isFresh: true })),
+          .map((b) => ({
+            kind: "booking" as const,
+            id: b.id,
+            userId: b.user_id,
+            createdAt: b.created_at,
+            label: "Boka specialist",
+            isFresh: true,
+            assignedTo: b.assigned_to,
+            deadline: b.deadline,
+          })),
         ...cRows
           .filter((c) => c.status === "mottagen" || c.status === "under_utredning")
           .map((c) => ({
@@ -138,6 +157,8 @@ export function EmployeeDashboard({
             createdAt: c.created_at,
             label: `Skadeanmälan${c.skadetyp ? ` — ${c.skadetyp}` : ""}`,
             isFresh: c.status === "mottagen",
+            assignedTo: c.assigned_to,
+            deadline: c.deadline,
           })),
       ].sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
       setOpenItems(open);
@@ -164,6 +185,10 @@ export function EmployeeDashboard({
 
   const freshCount = openItems.filter((o) => o.isFresh).length;
   const urgentCount = openItems.filter((o) => ageDays(o.createdAt) >= 3).length;
+  const myAssigned = openItems.filter((o) => o.assignedTo === email);
+  const upcomingDeadlines = openItems
+    .filter((o) => o.deadline)
+    .sort((a, b) => (a.deadline as string).localeCompare(b.deadline as string));
 
   return (
     <div className="flex flex-col gap-4">
@@ -227,6 +252,84 @@ export function EmployeeDashboard({
             })}
           </div>
         )}
+      </div>
+
+      <div className="bg-white rounded-2xl border border-line p-5">
+        <div className="flex items-center gap-2 mb-4">
+          <UserCheck size={16} className="text-forest" />
+          <div className="text-sm font-semibold">Mina tilldelade ärenden</div>
+        </div>
+        {myAssigned.length === 0 ? (
+          <p className="text-sm text-slate">Inget tilldelat dig just nu.</p>
+        ) : (
+          <div className="flex flex-col gap-2">
+            {myAssigned.map((item) => {
+              const requester = profilesById[item.userId];
+              return (
+                <button
+                  key={`${item.kind}-${item.id}`}
+                  onClick={() => onOpenCustomer(item.userId)}
+                  className="flex items-center gap-3 rounded-xl border border-line p-3 text-left hover:bg-frost"
+                >
+                  <div className="w-9 h-9 rounded-lg flex items-center justify-center flex-none bg-frost-2">
+                    {item.kind === "booking" ? (
+                      <Calendar size={15} className="text-forest" />
+                    ) : (
+                      <ShieldAlert size={15} className="text-forest" />
+                    )}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="text-sm font-medium truncate">{item.label}</div>
+                    <div className="text-xs text-slate truncate">{requester?.name ?? "Okänd kund"}</div>
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+        )}
+      </div>
+
+      <div className="bg-white rounded-2xl border border-line p-5">
+        <div className="flex items-center gap-2 mb-4">
+          <CalendarClock size={16} className="text-forest" />
+          <div className="text-sm font-semibold">Kommande deadlines</div>
+        </div>
+        {upcomingDeadlines.length === 0 ? (
+          <p className="text-sm text-slate">Inga deadlines satta just nu.</p>
+        ) : (
+          <div className="flex flex-col gap-2">
+            {upcomingDeadlines.map((item) => {
+              const requester = profilesById[item.userId];
+              const overdue = (item.deadline as string) < todayIso();
+              return (
+                <button
+                  key={`${item.kind}-${item.id}`}
+                  onClick={() => onOpenCustomer(item.userId)}
+                  className="flex items-center gap-3 rounded-xl border border-line p-3 text-left hover:bg-frost"
+                >
+                  <div className="w-9 h-9 rounded-lg flex items-center justify-center flex-none bg-frost-2">
+                    {item.kind === "booking" ? (
+                      <Calendar size={15} className="text-forest" />
+                    ) : (
+                      <ShieldAlert size={15} className="text-forest" />
+                    )}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="text-sm font-medium truncate">{item.label}</div>
+                    <div className="text-xs text-slate truncate">{requester?.name ?? "Okänd kund"}</div>
+                  </div>
+                  <span className={`text-xs font-medium px-2 py-1 rounded-full flex-none ${overdue ? "text-red-600 bg-red-50" : "text-forest bg-frost-2"}`}>
+                    {formatDate(item.deadline as string)}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+        )}
+        <p className="text-xs text-slate mt-3">
+          Ingen riktig automatisk avisering (inga bakgrundsjobb i appen) — den här listan är den närmsta rimliga
+          versionen, synlig varje gång du öppnar Anställdvyn.
+        </p>
       </div>
 
       <div className="bg-white rounded-2xl border border-line p-5">
@@ -308,9 +411,9 @@ export function EmployeeDashboard({
       </div>
 
       <p className="text-xs text-slate">
-        &quot;Väntar på svar&quot;, &quot;Prioriterade ärenden&quot; och tidsmärkningen ovan är baserade på hur länge
-        ett ärende legat öppet — inte ett formellt SLA-mål. Statistiken över egna ändringar räknas från
-        aktivitetsloggen, inte från tilldelade ärenden (inget ägarskap finns ännu).
+        &quot;Väntar på svar&quot; och &quot;Prioriterade ärenden&quot; är baserade på hur länge ett ärende legat
+        öppet, inte ett formellt SLA-mål. Statistiken över egna ändringar räknas fortfarande från
+        aktivitetsloggen, inte tilldelning — den fångar allt du ändrat, inte bara det som är tilldelat dig.
       </p>
     </div>
   );

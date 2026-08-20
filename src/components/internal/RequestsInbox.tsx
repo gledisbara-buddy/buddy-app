@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { Calendar, Check, ShieldAlert, ShieldCheck } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
+import { CaseAssignment } from "@/components/internal/CaseAssignment";
 import { itemTitle, type InsuranceItem } from "@/lib/items";
 import { CLAIM_STATUS_LABELS, claimStatusColor, type ChatMessage, type ClaimStatus } from "@/lib/claim";
 
@@ -17,6 +18,7 @@ type BookingRow = {
   contact: string;
   status: "ny" | "hanterad" | "avbokad";
   created_at: string;
+  assigned_to: string | null;
 };
 
 type ClaimRow = {
@@ -29,6 +31,7 @@ type ClaimRow = {
   allvarlighetsgrad: string | null;
   status: ClaimStatus;
   created_at: string;
+  assigned_to: string | null;
 };
 
 type ProfileLookup = { id: string; email: string | null; name: string };
@@ -42,7 +45,7 @@ function formatDate(iso: string): string {
 // Global inkorg för alla nya förfrågningar (bokningar + skadeanmälningar),
 // oavsett kund — inte skopad till en öppen kund, se CustomerCasesTab.tsx
 // för den kund-specifika motsvarigheten i den nya arbetsytan.
-export function RequestsInbox() {
+export function RequestsInbox({ actorEmail }: { actorEmail: string }) {
   const [bookings, setBookings] = useState<BookingRow[]>([]);
   const [claims, setClaims] = useState<ClaimRow[]>([]);
   const [profilesById, setProfilesById] = useState<Record<string, ProfileLookup>>({});
@@ -111,6 +114,18 @@ export function RequestsInbox() {
     const supabase = createClient();
     await supabase.from("claims").update({ status: nextStatus }).eq("id", row.id);
     setClaims((prev) => prev.map((c) => (c.id === row.id ? { ...c, status: nextStatus } : c)));
+  };
+
+  const assignBooking = async (id: string, email: string | null) => {
+    const supabase = createClient();
+    await supabase.from("bookings").update({ assigned_to: email }).eq("id", id);
+    setBookings((prev) => prev.map((b) => (b.id === id ? { ...b, assigned_to: email } : b)));
+  };
+
+  const assignClaim = async (id: string, email: string | null) => {
+    const supabase = createClient();
+    await supabase.from("claims").update({ assigned_to: email }).eq("id", id);
+    setClaims((prev) => prev.map((c) => (c.id === id ? { ...c, assigned_to: email } : c)));
   };
 
   const requests = [
@@ -189,17 +204,26 @@ export function RequestsInbox() {
               </div>
             )}
 
-            {row.status !== "avbokad" && (
-              <button
-                onClick={() => (kind === "booking" ? toggleBookingStatus(row) : toggleClaimStatus(row))}
-                className="text-sm font-semibold flex items-center gap-1 text-forest"
-              >
-                <Check size={14} />{" "}
-                {kind === "booking"
-                  ? `Markera som ${row.status === "ny" ? "hanterad" : "ny"}`
-                  : `Markera som ${row.status === "mottagen" ? "under utredning" : "mottagen"}`}
-              </button>
-            )}
+            <div className="flex flex-wrap items-center gap-2">
+              {row.status !== "avbokad" && (
+                <button
+                  onClick={() => (kind === "booking" ? toggleBookingStatus(row) : toggleClaimStatus(row))}
+                  className="text-sm font-semibold flex items-center gap-1 text-forest"
+                >
+                  <Check size={14} />{" "}
+                  {kind === "booking"
+                    ? `Markera som ${row.status === "ny" ? "hanterad" : "ny"}`
+                    : `Markera som ${row.status === "mottagen" ? "under utredning" : "mottagen"}`}
+                </button>
+              )}
+              <div className="ml-auto">
+                <CaseAssignment
+                  assignedTo={row.assigned_to}
+                  myEmail={actorEmail}
+                  onAssign={(email) => (kind === "booking" ? assignBooking(row.id, email) : assignClaim(row.id, email))}
+                />
+              </div>
+            </div>
           </div>
         );
       })}

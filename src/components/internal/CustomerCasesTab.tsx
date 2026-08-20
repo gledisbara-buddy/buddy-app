@@ -1,16 +1,41 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Ban, Calendar, Check, ChevronDown, ChevronUp, ShieldAlert, Trash2 } from "lucide-react";
+import {
+  AlertTriangle,
+  Ban,
+  Calendar,
+  Check,
+  ChevronDown,
+  ChevronUp,
+  GitMerge,
+  Plus,
+  ShieldAlert,
+  Trash2,
+  X,
+} from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { ConfirmDialog } from "@/components/Overlay";
+import { CaseAssignment } from "@/components/internal/CaseAssignment";
+import { CaseChecklist } from "@/components/internal/CaseChecklist";
 import { CaseComments } from "@/components/internal/CaseComments";
 import { EditableField } from "@/components/internal/EditableField";
 import { saveField } from "@/lib/activity-log";
 import { sendTransactionalEmail } from "@/lib/email";
 import { CLAIM_STATUS_LABELS, CLAIM_STATUS_STEPS, claimStatusColor, type ChatMessage, type ClaimStatus } from "@/lib/claim";
 
-type BookingRow = {
+type Priority = "lag" | "normal" | "hog";
+
+type CaseMeta = {
+  assigned_to: string | null;
+  priority: Priority;
+  deadline: string | null;
+  tags: string[];
+  checklist: Record<string, boolean>;
+  escalated_at: string | null;
+};
+
+type BookingRow = CaseMeta & {
   id: string;
   topics: string[];
   extra_note: string | null;
@@ -22,7 +47,7 @@ type BookingRow = {
   created_at: string;
 };
 
-type ClaimRow = {
+type ClaimRow = CaseMeta & {
   id: string;
   transcript: ChatMessage[];
   photo_count: number;
@@ -32,6 +57,9 @@ type ClaimRow = {
   status: ClaimStatus;
   created_at: string;
 };
+
+const PRIORITY_LABELS: Record<Priority, string> = { lag: "Låg", normal: "Normal", hog: "Hög" };
+const todayIso = () => new Date().toISOString().slice(0, 10);
 
 function formatDate(iso: string): string {
   return new Date(iso).toLocaleDateString("sv-SE", { day: "numeric", month: "short", year: "numeric" });
@@ -47,6 +75,135 @@ function bookingStatusColor(status: BookingRow["status"]): string {
   if (status === "ny") return "text-amber-deep";
   if (status === "avbokad") return "text-slate";
   return "text-forest";
+}
+
+function isBookingOpen(status: BookingRow["status"]): boolean {
+  return status === "ny";
+}
+function isClaimOpen(status: ClaimStatus): boolean {
+  return status !== "utbetald" && status !== "nekad";
+}
+
+// Delad meta-sektion (tilldelning, prioritet, deadline, taggar,
+// checklista, eskalering) — identisk för bokningar och skador, så den
+// byggs en gång och används i båda expanderade grenarna nedan istället
+// för att duplicera samma UI två gånger.
+function CaseMetaSection({
+  caseType,
+  meta,
+  myEmail,
+  onSave,
+}: {
+  caseType: "booking" | "claim";
+  meta: CaseMeta;
+  myEmail: string;
+  onSave: (field: keyof CaseMeta, value: unknown) => void;
+}) {
+  const [tagDraft, setTagDraft] = useState("");
+
+  const addTag = () => {
+    const value = tagDraft.trim();
+    if (!value || meta.tags.includes(value)) {
+      setTagDraft("");
+      return;
+    }
+    onSave("tags", [...meta.tags, value]);
+    setTagDraft("");
+  };
+
+  return (
+    <div className="flex flex-col gap-4 pt-4 border-t border-line">
+      <div className="flex flex-wrap items-center gap-2">
+        <CaseAssignment assignedTo={meta.assigned_to} myEmail={myEmail} onAssign={(email) => onSave("assigned_to", email)} />
+        {meta.escalated_at ? (
+          <span className="flex items-center gap-1.5 text-xs font-semibold px-3 py-2 rounded-full bg-red-50 text-red-600">
+            <AlertTriangle size={13} /> Eskalerad
+            <button onClick={() => onSave("escalated_at", null)} aria-label="Ta bort eskalering">
+              <X size={12} />
+            </button>
+          </span>
+        ) : (
+          <button
+            onClick={() => {
+              onSave("escalated_at", new Date().toISOString());
+              onSave("priority", "hog");
+            }}
+            className="flex items-center gap-1.5 text-xs font-semibold px-3 py-2 rounded-full border border-line text-red-600"
+          >
+            <AlertTriangle size={13} /> Eskalera
+          </button>
+        )}
+      </div>
+
+      <div>
+        <div className="text-xs mb-1.5 text-slate uppercase tracking-wide">Prioritet</div>
+        <div className="flex gap-2">
+          {(["lag", "normal", "hog"] as const).map((p) => (
+            <button
+              key={p}
+              onClick={() => onSave("priority", p)}
+              className="px-3.5 py-1.5 rounded-full border text-xs font-medium"
+              style={{
+                borderColor: meta.priority === p ? "var(--color-forest)" : "var(--color-line)",
+                background: meta.priority === p ? "var(--color-frost-2)" : "white",
+                color: meta.priority === p ? "var(--color-forest)" : "var(--color-ink)",
+              }}
+            >
+              {PRIORITY_LABELS[p]}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <div>
+        <div className="flex items-center justify-between mb-1.5">
+          <div className="text-xs text-slate uppercase tracking-wide">Deadline</div>
+          {meta.deadline && (
+            <button onClick={() => onSave("deadline", null)} className="text-xs font-semibold text-slate hover:text-ink">
+              Rensa
+            </button>
+          )}
+        </div>
+        <input
+          type="date"
+          value={meta.deadline ?? ""}
+          onChange={(e) => onSave("deadline", e.target.value || null)}
+          className="px-3 py-2 rounded-xl border border-line text-sm"
+          style={meta.deadline && meta.deadline < todayIso() ? { borderColor: "#dc2626", color: "#dc2626" } : undefined}
+        />
+        {meta.deadline && meta.deadline < todayIso() && (
+          <span className="ml-2 text-xs font-semibold text-red-600">Passerad</span>
+        )}
+      </div>
+
+      <div>
+        <div className="text-xs mb-1.5 text-slate uppercase tracking-wide">Taggar</div>
+        <div className="flex flex-wrap items-center gap-1.5">
+          {meta.tags.map((t) => (
+            <span key={t} className="flex items-center gap-1 text-xs font-medium px-2.5 py-1 rounded-full bg-frost-2 text-forest">
+              {t}
+              <button onClick={() => onSave("tags", meta.tags.filter((x) => x !== t))} aria-label={`Ta bort taggen ${t}`}>
+                <X size={11} />
+              </button>
+            </span>
+          ))}
+          <input
+            value={tagDraft}
+            onChange={(e) => setTagDraft(e.target.value)}
+            onKeyDown={(e) => e.key === "Enter" && addTag()}
+            placeholder="+ Lägg till tagg"
+            className="text-xs px-2.5 py-1 rounded-full border border-line w-28 focus:w-40 transition-all"
+          />
+        </div>
+      </div>
+
+      <CaseChecklist
+        caseType={caseType}
+        checked={meta.checklist}
+        onToggle={(itemId, value) => onSave("checklist", { ...meta.checklist, [itemId]: value })}
+      />
+    </div>
+  );
 }
 
 // Samma bokningar/skadeanmälningar som Förfrågningar-fliken, men skopat
@@ -70,6 +227,10 @@ export function CustomerCasesTab({
   const [loading, setLoading] = useState(true);
   const [expandedKey, setExpandedKey] = useState<string | null>(null);
   const [confirmDelete, setConfirmDelete] = useState<{ kind: "booking" | "claim"; id: string } | null>(null);
+  const [mergePickerFor, setMergePickerFor] = useState<{ kind: "booking" | "claim"; id: string } | null>(null);
+  const [creating, setCreating] = useState<"booking" | "claim" | null>(null);
+  const [newBookingDraft, setNewBookingDraft] = useState({ day: "", time: "", contact: customerEmail ?? "" });
+  const [newClaimDraft, setNewClaimDraft] = useState({ skadetyp: "", allvarlighetsgrad: "" });
 
   useEffect(() => {
     const supabase = createClient();
@@ -120,7 +281,7 @@ export function CustomerCasesTab({
     }
   };
 
-  const saveBookingField = async (row: BookingRow, field: keyof BookingRow, value: string) => {
+  const saveBookingField = async (row: BookingRow, field: keyof BookingRow, value: unknown) => {
     const supabase = createClient();
     const ok = await saveField(supabase, {
       table: "bookings",
@@ -136,7 +297,7 @@ export function CustomerCasesTab({
     return ok;
   };
 
-  const saveClaimField = async (row: ClaimRow, field: keyof ClaimRow, value: string) => {
+  const saveClaimField = async (row: ClaimRow, field: keyof ClaimRow, value: unknown) => {
     const supabase = createClient();
     const ok = await saveField(supabase, {
       table: "claims",
@@ -184,19 +345,190 @@ export function CustomerCasesTab({
     setExpandedKey(null);
   };
 
+  const runMerge = async (duplicateId: string) => {
+    if (!mergePickerFor) return;
+    const { kind, id: targetId } = mergePickerFor;
+    const supabase = createClient();
+    await supabase.from("case_comments").update({ case_id: targetId }).eq("case_type", kind).eq("case_id", duplicateId);
+    const table = kind === "booking" ? "bookings" : "claims";
+    await supabase.from(table).delete().eq("id", duplicateId);
+    if (kind === "booking") setBookings((prev) => prev.filter((b) => b.id !== duplicateId));
+    else setClaims((prev) => prev.filter((c) => c.id !== duplicateId));
+    await supabase.from("activity_log").insert({
+      target_user_id: customerId,
+      actor_email: actorEmail,
+      table_name: table,
+      field: "sammanslagen",
+      old_value: duplicateId,
+      new_value: targetId,
+    });
+    setMergePickerFor(null);
+  };
+
+  const createBooking = async () => {
+    if (!newBookingDraft.day || !newBookingDraft.time || !newBookingDraft.contact) return;
+    const supabase = createClient();
+    const { data, error } = await supabase
+      .from("bookings")
+      .insert({
+        user_id: customerId,
+        topics: [],
+        extra_note: null,
+        meeting_type: "video",
+        day: newBookingDraft.day,
+        time: newBookingDraft.time,
+        contact: newBookingDraft.contact,
+        status: "ny",
+        assigned_to: actorEmail,
+      })
+      .select("*")
+      .single();
+    if (!error && data) {
+      setBookings((prev) => [data as BookingRow, ...prev]);
+      await supabase.from("activity_log").insert({
+        target_user_id: customerId,
+        actor_email: actorEmail,
+        table_name: "bookings",
+        field: "skapad",
+        old_value: null,
+        new_value: "Skapad manuellt av anställd",
+      });
+      setCreating(null);
+      setNewBookingDraft({ day: "", time: "", contact: customerEmail ?? "" });
+    }
+  };
+
+  const createClaim = async () => {
+    const supabase = createClient();
+    const { data, error } = await supabase
+      .from("claims")
+      .insert({
+        user_id: customerId,
+        transcript: [],
+        photo_count: 0,
+        receipt_count: 0,
+        skadetyp: newClaimDraft.skadetyp || null,
+        allvarlighetsgrad: newClaimDraft.allvarlighetsgrad || null,
+        status: "mottagen",
+        assigned_to: actorEmail,
+      })
+      .select("*")
+      .single();
+    if (!error && data) {
+      setClaims((prev) => [data as ClaimRow, ...prev]);
+      await supabase.from("activity_log").insert({
+        target_user_id: customerId,
+        actor_email: actorEmail,
+        table_name: "claims",
+        field: "skapad",
+        old_value: null,
+        new_value: "Skapad manuellt av anställd",
+      });
+      setCreating(null);
+      setNewClaimDraft({ skadetyp: "", allvarlighetsgrad: "" });
+    }
+  };
+
   const requests = [
     ...bookings.map((row) => ({ kind: "booking" as const, row })),
     ...claims.map((row) => ({ kind: "claim" as const, row })),
   ].sort((a, b) => new Date(b.row.created_at).getTime() - new Date(a.row.created_at).getTime());
 
   if (loading) return <p className="text-sm text-slate">Laddar…</p>;
-  if (requests.length === 0) return <p className="text-sm text-slate">Inga ärenden än.</p>;
 
   return (
     <div className="flex flex-col gap-3">
+      <div className="flex justify-end gap-2">
+        {creating === null ? (
+          <>
+            <button
+              onClick={() => setCreating("booking")}
+              className="flex items-center gap-1.5 text-xs font-semibold px-3 py-2 rounded-full border border-line text-forest"
+            >
+              <Plus size={13} /> Boka specialist
+            </button>
+            <button
+              onClick={() => setCreating("claim")}
+              className="flex items-center gap-1.5 text-xs font-semibold px-3 py-2 rounded-full border border-line text-forest"
+            >
+              <Plus size={13} /> Skadeanmälan
+            </button>
+          </>
+        ) : null}
+      </div>
+
+      {creating === "booking" && (
+        <div className="bg-white rounded-2xl border border-line p-4 flex flex-col gap-3">
+          <div className="text-sm font-semibold">Nytt möte</div>
+          <div className="grid grid-cols-2 gap-3">
+            <input
+              type="date"
+              value={newBookingDraft.day}
+              onChange={(e) => setNewBookingDraft((d) => ({ ...d, day: e.target.value }))}
+              className="px-3 py-2 rounded-xl border border-line text-sm"
+            />
+            <input
+              type="time"
+              value={newBookingDraft.time}
+              onChange={(e) => setNewBookingDraft((d) => ({ ...d, time: e.target.value }))}
+              className="px-3 py-2 rounded-xl border border-line text-sm"
+            />
+          </div>
+          <input
+            value={newBookingDraft.contact}
+            onChange={(e) => setNewBookingDraft((d) => ({ ...d, contact: e.target.value }))}
+            placeholder="Kontaktuppgift"
+            className="px-3 py-2 rounded-xl border border-line text-sm"
+          />
+          <div className="flex gap-2">
+            <button
+              onClick={createBooking}
+              disabled={!newBookingDraft.day || !newBookingDraft.time || !newBookingDraft.contact}
+              className="bd-btn flex-1 py-2 rounded-full text-xs font-semibold text-white bg-forest disabled:opacity-40"
+            >
+              Skapa
+            </button>
+            <button onClick={() => setCreating(null)} className="flex-1 py-2 rounded-full text-xs font-semibold text-slate">
+              Avbryt
+            </button>
+          </div>
+        </div>
+      )}
+
+      {creating === "claim" && (
+        <div className="bg-white rounded-2xl border border-line p-4 flex flex-col gap-3">
+          <div className="text-sm font-semibold">Ny skadeanmälan</div>
+          <input
+            value={newClaimDraft.skadetyp}
+            onChange={(e) => setNewClaimDraft((d) => ({ ...d, skadetyp: e.target.value }))}
+            placeholder="Skadetyp"
+            className="px-3 py-2 rounded-xl border border-line text-sm"
+          />
+          <input
+            value={newClaimDraft.allvarlighetsgrad}
+            onChange={(e) => setNewClaimDraft((d) => ({ ...d, allvarlighetsgrad: e.target.value }))}
+            placeholder="Allvarlighetsgrad"
+            className="px-3 py-2 rounded-xl border border-line text-sm"
+          />
+          <div className="flex gap-2">
+            <button onClick={createClaim} className="bd-btn flex-1 py-2 rounded-full text-xs font-semibold text-white bg-forest">
+              Skapa
+            </button>
+            <button onClick={() => setCreating(null)} className="flex-1 py-2 rounded-full text-xs font-semibold text-slate">
+              Avbryt
+            </button>
+          </div>
+        </div>
+      )}
+
+      {requests.length === 0 && <p className="text-sm text-slate">Inga ärenden än.</p>}
+
       {requests.map(({ kind, row }) => {
         const key = `${kind}-${row.id}`;
         const expanded = expandedKey === key;
+        const overdue = row.deadline && row.deadline < todayIso() && (kind === "booking" ? isBookingOpen(row.status as BookingRow["status"]) : isClaimOpen(row.status as ClaimStatus));
+        const otherSameKind = kind === "booking" ? bookings.filter((b) => b.id !== row.id) : claims.filter((c) => c.id !== row.id);
+
         return (
           <div key={key} className="bg-white rounded-2xl border border-line p-4">
             <button onClick={() => setExpandedKey(expanded ? null : key)} className="w-full flex items-start justify-between gap-3 text-left">
@@ -206,7 +538,13 @@ export function CustomerCasesTab({
                 </div>
                 <div>
                   <div className="text-sm font-semibold">{kind === "booking" ? "Boka specialist" : "Skadeanmälan"}</div>
-                  <div className="text-xs text-slate">{formatDate(row.created_at)}</div>
+                  <div className="text-xs text-slate flex items-center gap-1.5 flex-wrap">
+                    {formatDate(row.created_at)}
+                    {row.priority === "hog" && <span className="text-red-600 font-semibold">· Hög prioritet</span>}
+                    {row.escalated_at && <span className="text-red-600 font-semibold">· Eskalerad</span>}
+                    {overdue && <span className="text-red-600 font-semibold">· Deadline passerad</span>}
+                    {row.assigned_to && <span>· {row.assigned_to === actorEmail ? "Tilldelad dig" : `Tilldelad ${row.assigned_to}`}</span>}
+                  </div>
                 </div>
               </div>
               <div className="flex items-center gap-2 flex-none">
@@ -281,6 +619,14 @@ export function CustomerCasesTab({
                       <Ban size={13} /> Avboka
                     </button>
                   )}
+                  {otherSameKind.length > 0 && (
+                    <button
+                      onClick={() => setMergePickerFor({ kind: "booking", id: row.id })}
+                      className="flex items-center gap-1.5 text-xs font-semibold px-3 py-2 rounded-full text-ink border border-line"
+                    >
+                      <GitMerge size={13} /> Slå ihop
+                    </button>
+                  )}
                   <button
                     onClick={() => setConfirmDelete({ kind: "booking", id: row.id })}
                     className="flex items-center gap-1.5 text-xs font-semibold px-3 py-2 rounded-full text-red-600 border border-line ml-auto"
@@ -288,6 +634,8 @@ export function CustomerCasesTab({
                     <Trash2 size={13} /> Radera permanent
                   </button>
                 </div>
+
+                <CaseMetaSection caseType="booking" meta={row} myEmail={actorEmail} onSave={(field, value) => saveBookingField(row, field, value)} />
 
                 <div className="pt-4 border-t border-line">
                   <CaseComments caseType="booking" caseId={row.id} actorEmail={actorEmail} />
@@ -351,6 +699,14 @@ export function CustomerCasesTab({
                 </div>
 
                 <div className="flex flex-wrap gap-2 pt-2 border-t border-line">
+                  {otherSameKind.length > 0 && (
+                    <button
+                      onClick={() => setMergePickerFor({ kind: "claim", id: row.id })}
+                      className="flex items-center gap-1.5 text-xs font-semibold px-3 py-2 rounded-full text-ink border border-line"
+                    >
+                      <GitMerge size={13} /> Slå ihop
+                    </button>
+                  )}
                   <button
                     onClick={() => setConfirmDelete({ kind: "claim", id: row.id })}
                     className="flex items-center gap-1.5 text-xs font-semibold px-3 py-2 rounded-full text-red-600 border border-line ml-auto"
@@ -359,9 +715,34 @@ export function CustomerCasesTab({
                   </button>
                 </div>
 
+                <CaseMetaSection caseType="claim" meta={row} myEmail={actorEmail} onSave={(field, value) => saveClaimField(row, field, value)} />
+
                 <div className="pt-4 border-t border-line">
                   <CaseComments caseType="claim" caseId={row.id} actorEmail={actorEmail} />
                 </div>
+              </div>
+            )}
+
+            {mergePickerFor && mergePickerFor.id === row.id && (
+              <div className="mt-4 pt-4 border-t border-line">
+                <div className="text-xs mb-2 text-slate uppercase tracking-wide">Slå ihop med</div>
+                <div className="flex flex-col gap-1.5">
+                  {otherSameKind.map((other) => (
+                    <button
+                      key={other.id}
+                      onClick={() => runMerge(other.id)}
+                      className="flex items-center justify-between px-3 py-2 rounded-xl border border-line text-left text-sm hover:bg-frost"
+                    >
+                      <span>{formatDate(other.created_at)}</span>
+                      <span className="text-xs text-slate">
+                        {kind === "booking" ? bookingStatusLabel((other as BookingRow).status) : CLAIM_STATUS_LABELS[(other as ClaimRow).status]}
+                      </span>
+                    </button>
+                  ))}
+                </div>
+                <button onClick={() => setMergePickerFor(null)} className="text-xs font-semibold text-slate mt-2">
+                  Avbryt
+                </button>
               </div>
             )}
           </div>
