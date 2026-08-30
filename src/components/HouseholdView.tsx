@@ -262,7 +262,7 @@ export function HouseholdView() {
 
             {memberItems && memberItems.length > 0 && (
               <div className="bg-white rounded-2xl border border-line p-5 mb-4">
-                <div className="text-xs mb-3 text-slate">FAMILJENS SAKER</div>
+                <div className="text-xs mb-3 text-slate">HUSHÅLLETS SAKER</div>
                 <div className="flex flex-col gap-4">
                   {Object.entries(
                     memberItems.reduce<Record<string, MemberItem[]>>((acc, mi) => {
@@ -299,7 +299,7 @@ export function HouseholdView() {
             )}
 
             <div className="bg-white rounded-2xl border border-line p-5 mb-3">
-              <div className="text-xs mb-3 text-slate">LÄGG TILL FAMILJEMEDLEM</div>
+              <div className="text-xs mb-3 text-slate">LÄGG TILL HUSHÅLLSMEDLEM</div>
               <Field label="Personnummer">
                 <input
                   className={inputClass}

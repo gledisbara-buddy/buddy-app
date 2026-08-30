@@ -127,7 +127,7 @@ export function ReferralView() {
             <div className="h-full rounded-full bg-forest" style={{ width: `${progress * 100}%` }} />
           </div>
           <p className="text-xs mt-2 text-slate">
-            En värvning räknas när vännen lagt till minst en sak och nått sitt jämförelseresultat.
+            En värvning räknas när vännen lagt till minst en sak och klickat på &quot;Nu jämför vi allt&quot;.
           </p>
         </div>
 

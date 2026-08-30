@@ -9,6 +9,7 @@ import { PageSkeleton } from "@/components/PageSkeleton";
 import { Field, inputClass, PasswordField } from "@/components/onboarding/shared";
 import { useBuddy } from "@/lib/buddy-context";
 import { createClient } from "@/lib/supabase/client";
+import { isValidPersonnummer } from "@/lib/personnummer";
 
 export function ProfilePage() {
   const router = useRouter();
@@ -23,6 +24,7 @@ export function ProfilePage() {
   const [phone, setPhone] = useState(profile?.phone ?? "");
   const [saved, setSaved] = useState(false);
   const [savedLabel, setSavedLabel] = useState("Sparat");
+  const [personnummerError, setPersonnummerError] = useState<string | null>(null);
   const [syncedLoading, setSyncedLoading] = useState(loading);
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -49,6 +51,11 @@ export function ProfilePage() {
   const idLabel = userType === "foretag" ? "Organisationsnummer" : "Personnummer";
 
   const handleSave = () => {
+    setPersonnummerError(null);
+    if (personnummer.trim() && !isValidPersonnummer(personnummer)) {
+      setPersonnummerError(`Det där ser inte ut som ett giltigt ${idLabel.toLowerCase()}.`);
+      return;
+    }
     // Berättar vad som faktiskt ändrades istället för ett generiskt "Sparat"
     // — jämför mot profile (kontextens senast sparade värden).
     const changed: string[] = [];
@@ -115,9 +122,13 @@ export function ProfilePage() {
             <input
               className={inputClass}
               value={personnummer}
-              onChange={(e) => setPersonnummer(e.target.value)}
+              onChange={(e) => {
+                setPersonnummer(e.target.value);
+                setPersonnummerError(null);
+              }}
               placeholder={userType === "foretag" ? "556677-8899" : "ÅÅÅÅMMDD-XXXX"}
             />
+            {personnummerError && <p className="text-sm mt-1.5 text-red-600">{personnummerError}</p>}
           </Field>
           <Field label="E-post">
             <input

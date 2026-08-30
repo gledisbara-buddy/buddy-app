@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { PiggyBank, ShieldCheck, Sparkles, Users } from "lucide-react";
 import { TopBar } from "@/components/TopBar";
 import { ProfileMenu } from "@/components/ProfileMenu";
+import { PageSkeleton } from "@/components/PageSkeleton";
 import { useBuddy } from "@/lib/buddy-context";
 import { createClient } from "@/lib/supabase/client";
 import { buildTodoList } from "@/lib/todo";
@@ -79,7 +80,7 @@ export function AnnualReportView() {
       });
   }, [household]);
 
-  if (loading || !userType || history === null) return null;
+  if (loading || !userType || history === null) return <PageSkeleton />;
 
   // Samma härledning som Dashboard.tsx: registrerat telefonnummer utan en
   // riktig mobilpost räknas som en ofullständig sak för Att göra-listan.

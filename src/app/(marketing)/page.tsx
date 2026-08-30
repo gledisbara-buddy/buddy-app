@@ -7,7 +7,6 @@ import {
   Check,
   Clock,
   FileX,
-  Fingerprint,
   Layers,
   LifeBuoy,
   MessageCircle,
@@ -16,6 +15,7 @@ import {
   ShieldCheck,
   Sparkles,
   Star,
+  UserPlus,
   Users,
 } from "lucide-react";
 import { FaqAccordion } from "@/components/marketing/FaqAccordion";
@@ -42,7 +42,7 @@ const PILLARS = [
   {
     icon: Layers,
     title: "Samla",
-    desc: "Logga in med BankID och se allt du redan betalar för på under en minut — försäkring, mobil, kreditkort, el. Eller lägg till för hand, i din egen takt.",
+    desc: "Skapa ett konto och hämta in allt du redan betalar för med BankID på under en minut — försäkring, mobil, kreditkort, el. Eller lägg till för hand, i din egen takt.",
   },
   {
     icon: Scale,
@@ -65,7 +65,7 @@ const TESTIMONIALS = [
   {
     pillar: "Samla",
     quote:
-      "Jag loggade in med BankID en söndagskväll och såg allt jag har på under en minut — sånt jag hade glömt att jag ens betalade för.",
+      "Jag hämtade in allt med BankID en söndagskväll och såg vad jag har på under en minut — sånt jag hade glömt att jag ens betalade för.",
     name: "Sara L.",
     place: "Göteborg",
   },
@@ -92,9 +92,9 @@ const TESTIMONIALS = [
 
 const STEPS = [
   {
-    icon: Fingerprint,
-    title: "Logga in med BankID",
-    desc: "Se allt du redan har hämtat automatiskt — eller skapa konto och lägg till för hand om du hellre vill.",
+    icon: UserPlus,
+    title: "Skapa ditt konto",
+    desc: "Registrera dig med e-post och lösenord, sen hämtar du in allt du redan har med BankID — eller lägger till för hand.",
   },
   {
     n: "2",
@@ -111,7 +111,7 @@ const STEPS = [
 const COMPARISON = [
   {
     label: "Tid till samlad överblick",
-    buddy: "Under en minut med BankID",
+    buddy: "Under en minut med BankID, efter registrering",
     self: "Flera timmar, utspritt på olika hemsidor",
   },
   {
@@ -164,7 +164,7 @@ export default function MarketingHome() {
               på ett ställe.
             </h1>
             <p className="text-base md:text-lg mb-9 max-w-xl mx-auto md:mx-0 text-slate">
-              Logga in med BankID och se allt på under en minut. Jämför, säg upp det gamla och
+              Skapa ett konto och hämta in allt med BankID på under en minut. Jämför, säg upp det gamla och
               få hjälp direkt om något händer — allt på ett ställe.
             </p>
             <div className="flex flex-col sm:flex-row gap-3 justify-center md:justify-start">
