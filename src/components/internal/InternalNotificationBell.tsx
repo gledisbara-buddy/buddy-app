@@ -187,6 +187,15 @@ export function InternalNotificationBell({ myEmail, onOpenCustomer }: { myEmail:
     })();
   }, [loadNotifications]);
 
+  useEffect(() => {
+    if (!open) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setOpen(false);
+    };
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, [open]);
+
   const unreadCount = items.filter((i) => i.isNew).length;
 
   return (

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 import { Loader2 } from "lucide-react";
 import { searchAddress, type AddressMatch } from "@/lib/address-lookup";
 import { Field, inputClass } from "@/components/onboarding/shared";
@@ -20,6 +20,7 @@ export function AddressField({
   const [loading, setLoading] = useState(false);
   const [open, setOpen] = useState(false);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const addressInputId = useId();
 
   useEffect(() => () => {
     if (debounceRef.current) clearTimeout(debounceRef.current);
@@ -50,9 +51,10 @@ export function AddressField({
 
   return (
     <>
-      <Field label={addressLabel}>
+      <Field label={addressLabel} inputId={addressInputId}>
         <div className="relative">
           <input
+            id={addressInputId}
             className={inputClass}
             value={value.adress}
             onChange={(e) => onAdressChange(e.target.value)}

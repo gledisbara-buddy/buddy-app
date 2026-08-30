@@ -23,14 +23,22 @@ export function NotificationBell() {
 
   // mousedown-utanför istället för onBlur — se TabBar.tsx:s Mer-knapp för
   // samma fix och varför (onBlur kunde stänga panelen direkt vid
-  // öppningsklicket i vissa webbläsare).
+  // öppningsklicket i vissa webbläsare). Escape-stängning matchar samma
+  // Mer-panel och Overlay.tsx.
   useEffect(() => {
     if (!open) return;
     const onMouseDown = (e: MouseEvent) => {
       if (!rootRef.current?.contains(e.target as Node)) setOpen(false);
     };
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setOpen(false);
+    };
     document.addEventListener("mousedown", onMouseDown);
-    return () => document.removeEventListener("mousedown", onMouseDown);
+    document.addEventListener("keydown", onKey);
+    return () => {
+      document.removeEventListener("mousedown", onMouseDown);
+      document.removeEventListener("keydown", onKey);
+    };
   }, [open]);
 
   if (todoList.length === 0) return null;

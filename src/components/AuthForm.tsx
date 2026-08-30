@@ -150,6 +150,7 @@ export function AuthForm({ userType, initialReferralCode }: { userType: UserType
                 value={code}
                 onChange={(e) => setCode(e.target.value)}
                 placeholder="6 siffror"
+                aria-label="Bekräftelsekod"
                 inputMode="numeric"
                 className={`${inputClass} mb-4 text-center tracking-widest`}
               />

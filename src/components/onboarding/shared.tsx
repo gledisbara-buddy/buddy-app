@@ -1,7 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { Children, cloneElement, isValidElement, useId, useState, type ReactElement } from "react";
 import { Check, Eye, EyeOff } from "lucide-react";
+
+const LABELABLE_TAGS = new Set(["input", "textarea", "select"]);
 
 export function PillGroup<T extends string>({
   options,
@@ -157,11 +159,33 @@ export function BoolPill({
   );
 }
 
-export function Field({ label, children }: { label: string; children: React.ReactNode }) {
+// Kopplar label till fältet med htmlFor/id (skärmläsarstöd) när barnet är
+// ett enda vanligt formulärelement (input/textarea/select) — det täcker
+// stora majoriteten av alla ~40 användningsställen automatiskt utan att
+// varje anropsplats behöver ändras. Barn som inte matchar (t.ex. en
+// input inlindad i en relativ div för en spinner, eller en PillGroup)
+// lämnas orörda precis som förut — ingen regression, bara ofixat kvar.
+export function Field({
+  label,
+  children,
+  inputId,
+}: {
+  label: string;
+  children: React.ReactNode;
+  // Sätt bara om barnet INTE är ett direkt input/textarea/select (t.ex.
+  // PasswordField, som lindar sitt input i en div för visa/dölj-knappen) —
+  // ge samma id till det faktiska fältet själv då, se PasswordField nedan.
+  inputId?: string;
+}) {
+  const generatedId = useId();
+  const only = Children.count(children) === 1 ? Children.only(children) : null;
+  const canAutoLabel = isValidElement(only) && typeof only.type === "string" && LABELABLE_TAGS.has(only.type);
   return (
     <div className="mb-4">
-      <label className="text-sm font-medium mb-2 block">{label}</label>
-      {children}
+      <label htmlFor={inputId ?? (canAutoLabel ? generatedId : undefined)} className="text-sm font-medium mb-2 block">
+        {label}
+      </label>
+      {inputId ? children : canAutoLabel ? cloneElement(only as ReactElement<{ id?: string }>, { id: generatedId }) : children}
     </div>
   );
 }
@@ -183,10 +207,12 @@ export function PasswordField({
   placeholder?: string;
 }) {
   const [visible, setVisible] = useState(false);
+  const id = useId();
   return (
-    <Field label={label}>
+    <Field label={label} inputId={id}>
       <div className="relative">
         <input
+          id={id}
           type={visible ? "text" : "password"}
           className={`${inputClass} pr-11`}
           value={value}
