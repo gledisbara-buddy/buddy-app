@@ -47,7 +47,7 @@ async function loginAndReachDashboard(page: Page) {
 test.describe("Marknadssida", () => {
   test("startsidan laddar med förväntat innehåll", async ({ page }) => {
     await page.goto("/");
-    await expect(page.getByRole("heading", { name: /Allt du betalar för/i })).toBeVisible();
+    await expect(page.getByRole("heading", { name: /Allt du betalar för/i }).first()).toBeVisible();
     await expect(page.getByRole("link", { name: "Kom igång" }).first()).toBeVisible();
   });
 
@@ -67,12 +67,15 @@ test.describe("Marknadssida", () => {
 });
 
 test.describe("Konto och inloggning", () => {
-  test("signup-knappen kräver förnamn och ett giltigt telefonnummer", async ({ page }) => {
+  test("signup-formuläret varnar tydligt om vad som saknas innan det går att skicka", async ({ page }) => {
     // Verifierar bara gate-logiken (A1-A3), inte hela signup-till-kod-resan
     // — att faktiskt skicka formuläret skulle skapa ett nytt konto och
     // trigga ett e-postutskick vid varje testkörning, och @example.com-
     // adresser (den enda typ som är säker att använda i ett automatiskt
     // test) avvisas direkt av Resend eftersom domänen inte kan ta emot post.
+    // Knappen är aldrig disabled — ett medvetet UX-val (se AuthForm.tsx: en
+    // enda gråmarkerad knapp förklarar inte VAD som saknas) — så testet
+    // klickar Skapa konto och läser av varningstexten istället.
     const email = uniqueEmail("smoke.signup");
     await page.goto("/login?type=privat");
     await page.locator('input[type="email"]').fill(email);
@@ -82,16 +85,17 @@ test.describe("Konto och inloggning", () => {
     await page.locator('input[placeholder="ÅÅÅÅMMDD-XXXX"]').fill("19900101-1234");
 
     const submit = page.getByRole("button", { name: "Skapa konto" });
-    await expect(submit).toBeDisabled();
-
-    await page.locator('input[type="tel"]').fill("0701234567");
-    await expect(submit).toBeDisabled();
-
-    await page.locator('input[placeholder="T.ex. Sam"]').fill("Sam");
-    await expect(submit).toBeEnabled();
+    await submit.click();
+    await expect(page.getByText(/Du behöver ange.*förnamn/i)).toBeVisible();
+    await expect(page.getByText(/Du behöver ange.*giltigt mobilnummer/i)).toBeVisible();
 
     await page.locator('input[type="tel"]').fill("123");
-    await expect(submit).toBeDisabled();
+    await submit.click();
+    await expect(page.getByText(/Du behöver ange.*giltigt mobilnummer/i)).toBeVisible();
+
+    await page.locator('input[placeholder="T.ex. Sam"]').fill("Sam");
+    await page.locator('input[type="tel"]').fill("0701234567");
+    await expect(page.getByText(/Du behöver ange/i)).toHaveCount(0);
   });
 
   test("felaktigt lösenord vid inloggning visar tydligt fel", async ({ page }) => {
@@ -102,7 +106,7 @@ test.describe("Konto och inloggning", () => {
     await page.locator('input[type="email"]').fill(LOGIN_EMAIL!);
     await page.locator('input[type="password"]').fill("FelLosenord123!");
     await page.getByRole("button", { name: "Logga in" }).click();
-    await expect(page.getByText(/Invalid login credentials|Felaktiga inloggningsuppgifter/i)).toBeVisible();
+    await expect(page.getByText(/Fel e-post eller lösenord/i)).toBeVisible();
   });
 });
 
