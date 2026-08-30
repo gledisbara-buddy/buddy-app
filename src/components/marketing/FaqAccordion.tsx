@@ -15,6 +15,7 @@ export function FaqAccordion({ items }: { items: FaqItem[] }) {
           <div key={i} className="bg-white rounded-2xl border border-line">
             <button
               onClick={() => setOpenIndex(isOpen ? null : i)}
+              aria-expanded={isOpen}
               className="w-full flex items-center justify-between gap-4 p-5 text-left"
             >
               <span className="font-medium text-[15px]">{item.question}</span>
@@ -24,9 +25,10 @@ export function FaqAccordion({ items }: { items: FaqItem[] }) {
                 <ChevronDown size={16} className="text-slate flex-none" />
               )}
             </button>
-            {isOpen && (
-              <div className="px-5 pb-5 text-sm bd-fade text-slate">{item.answer}</div>
-            )}
+            {/* Alltid i DOM:en (bara visuellt dold när stängd) istället för
+                villkorligt monterad — annars finns bara första svaret i
+                sidans initiala markup, dåligt för SEO och Ctrl+F. */}
+            <div className={isOpen ? "px-5 pb-5 text-sm bd-fade text-slate" : "hidden"}>{item.answer}</div>
           </div>
         );
       })}
