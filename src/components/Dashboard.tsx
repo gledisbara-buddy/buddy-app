@@ -55,7 +55,7 @@ type HouseholdMemberItem = { memberUserId: string; memberName: string; item: Ins
 // leverantör/elbolag) — täcker abonnemang som lagts till manuellt och
 // aldrig fått en Quote. Försäkringsposter utan vare sig Quote eller ett
 // sånt fält har inget känt bolag att säga upp hos, så knappen döljs då.
-function getCancelTarget(item: InsuranceItem, signed?: Quote): { name: string; price?: number } | null {
+export function getCancelTarget(item: InsuranceItem, signed?: Quote): { name: string; price?: number } | null {
   if (signed) return { name: signed.name, price: signed.price };
   if (item.kind === "telekom") {
     if (item.typ === "tv_streaming") return { name: item.tjanst, price: item.prisPerManad };
@@ -707,7 +707,11 @@ export function Dashboard({ showIntro: initialShowIntro }: { showIntro?: boolean
                             return <Icon size={18} className="text-forest" />;
                           })()}
                         </div>
-                        <button onClick={() => setConfirmDeleteId(item.id)} className="opacity-40 hover:opacity-100">
+                        <button
+                          onClick={() => setConfirmDeleteId(item.id)}
+                          className="opacity-40 hover:opacity-100"
+                          aria-label="Ta bort"
+                        >
                           <Trash2 size={15} />
                         </button>
                       </div>
@@ -939,7 +943,11 @@ export function Dashboard({ showIntro: initialShowIntro }: { showIntro?: boolean
                 ? "bra start — lägg till fler saker, eller klicka på \"Nu jämför vi allt\" ovan när du är redo."
                 : (() => {
                     const comparableCount = items.filter(isComparableItem).length;
-                    const signedCount = Object.keys(policies).length;
+                    // Måste räkna på samma sätt som Trygghetspoäng-kortet ovan
+                    // (bara source === "compared", inte alla policies-rader —
+                    // en auto-hämtad/"fetched" offert är inte jämförd än),
+                    // annars kan de två motsäga varandra på samma skärm.
+                    const signedCount = trustScore?.comparedCount ?? 0;
                     if (comparableCount === 0) {
                       return "bra jobbat! Fortsätt lägga till fler saker så får du en komplett bild av vad du betalar för.";
                     }
