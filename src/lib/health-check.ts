@@ -11,6 +11,7 @@ export type HealthCheck = {
   potentialSavings: number;
   missingCategories: { kind: ItemKind; label: string }[];
   upcomingRenewals: number;
+  unusedStreamingCost: number;
 };
 
 const RENEWAL_WINDOW_DAYS = 60;
@@ -36,6 +37,16 @@ export function buildHealthCheck(items: InsuranceItem[], policies: Record<string
 
   const totalMonthlySpend = Object.values(policies).reduce((sum, q) => sum + q.price, 0);
 
+  // TE-4 i produktträds-underlaget: skillnaden mellan vad du betalar för
+  // och vad du faktiskt använt ÄR insikten, inte bara ett fält bland andra.
+  // Bara räknat om kunden faktiskt svarat (false) — ovarat/true bidrar inte.
+  let unusedStreamingCost = 0;
+  for (const item of items) {
+    if (item.kind === "telekom" && item.typ === "tv_streaming" && item.harAnvantsSenasteManaden === false) {
+      unusedStreamingCost += item.prisPerManad;
+    }
+  }
+
   const presentKinds = new Set(items.map((item) => item.kind));
   const missingCategories = COMPARABLE_KINDS.filter((kind) => !presentKinds.has(kind)).map((kind) => ({
     kind,
@@ -50,5 +61,6 @@ export function buildHealthCheck(items: InsuranceItem[], policies: Record<string
     potentialSavings,
     missingCategories,
     upcomingRenewals,
+    unusedStreamingCost,
   };
 }

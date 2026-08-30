@@ -309,6 +309,10 @@ export type TvStreamingItem = {
   prisPerManad: number;
   delatKonto: boolean;
   forfallodatum?: string;
+  // TE-4 i produktträds-underlaget: skillnaden mellan "vad betalar du för"
+  // och "vad har du faktiskt använt" ÄR hela poängen med kategorin, inte
+  // bara en till fråga — se health-check.ts:s onusedSubscriptionsCost.
+  harAnvantsSenasteManaden?: boolean;
 };
 
 export type TelekomItem = MobilAbonnemangItem | BredbandItem | TvStreamingItem;

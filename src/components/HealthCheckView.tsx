@@ -2,7 +2,7 @@
 
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowRight, CalendarClock, PhoneCall, PiggyBank, Plus } from "lucide-react";
+import { ArrowRight, CalendarClock, PhoneCall, PiggyBank, Plus, Tv } from "lucide-react";
 import { TopBar } from "@/components/TopBar";
 import { ProfileMenu } from "@/components/ProfileMenu";
 import { PageSkeleton } from "@/components/PageSkeleton";
@@ -85,6 +85,18 @@ export function HealthCheckView() {
             </div>
             <p className="text-sm text-ink">
               Du kan uppskattningsvis spara {check.potentialSavings} kr/mån genom att jämföra det du redan hämtat in.
+            </p>
+          </div>
+        )}
+
+        {check.unusedStreamingCost > 0 && (
+          <div className="bg-white rounded-2xl border border-line p-4 mb-6 flex items-center gap-3">
+            <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-none bg-frost-2">
+              <Tv size={16} className="text-amber-deep" />
+            </div>
+            <p className="text-sm text-ink">
+              Du betalar {check.unusedStreamingCost} kr/mån för streamingtjänster du sagt att du inte använt senaste
+              månaden.
             </p>
           </div>
         )}

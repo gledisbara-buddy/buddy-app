@@ -136,6 +136,9 @@ export function TelekomForm({
   const [tjanst, setTjanst] = useState(initialTv?.tjanst ?? "");
   const [prisTv, setPrisTv] = useState(initialTv?.prisPerManad ? String(initialTv.prisPerManad) : "");
   const [delatKonto, setDelatKonto] = useState<boolean | null>(initialTv?.delatKonto ?? null);
+  const [harAnvantsSenasteManaden, setHarAnvantsSenasteManaden] = useState<boolean | null>(
+    initialTv?.harAnvantsSenasteManaden ?? null
+  );
 
   const backToTypePicker = () => setTyp(null);
 
@@ -383,6 +386,9 @@ export function TelekomForm({
       <Field label="Delar du kontot med någon?">
         <BoolPill value={delatKonto} onChange={setDelatKonto} />
       </Field>
+      <Field label="Har du faktiskt använt den senaste månaden? (valfritt)">
+        <BoolPill value={harAnvantsSenasteManaden} onChange={setHarAnvantsSenasteManaden} />
+      </Field>
       <FormActions
         valid={valid}
         onCancel={onCancel}
@@ -394,6 +400,7 @@ export function TelekomForm({
             tjanst: tjanst.trim(),
             prisPerManad: Number(prisTv),
             delatKonto: !!delatKonto,
+            harAnvantsSenasteManaden: harAnvantsSenasteManaden ?? undefined,
           })
         }
       />
