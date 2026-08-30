@@ -113,7 +113,7 @@ export function LifeEventsView({ initialEvent }: { initialEvent?: LifeEventId })
             </div>
           ) : (
             <button
-              onClick={() => router.push("/onboarding?mode=add&kind=person")}
+              onClick={() => router.push("/onboarding?kind=person")}
               className="bg-white rounded-2xl border border-dashed border-line p-4 flex items-center justify-between w-full text-left"
             >
               <span className="text-sm font-medium text-slate">

@@ -544,7 +544,7 @@ export function Dashboard({ showIntro: initialShowIntro }: { showIntro?: boolean
             </button>
             <div className="mt-3">
               <button
-                onClick={() => router.push("/onboarding?mode=add")}
+                onClick={() => router.push("/onboarding")}
                 className="text-sm font-medium text-white/70 hover:text-white"
               >
                 Eller lägg in det du har manuellt
@@ -683,7 +683,7 @@ export function Dashboard({ showIntro: initialShowIntro }: { showIntro?: boolean
                       <ItemStatusBadge status="pending" />
                     </div>
                     <button
-                      onClick={() => router.push("/onboarding?mode=add&kind=telekom&typ=mobil")}
+                      onClick={() => router.push("/onboarding?kind=telekom&typ=mobil")}
                       className="text-sm font-semibold flex items-center gap-1 text-forest"
                     >
                       Komplettera <ArrowRight size={14} />
@@ -830,7 +830,7 @@ export function Dashboard({ showIntro: initialShowIntro }: { showIntro?: boolean
               <div className="grid md:grid-cols-3 gap-4">
                 {active.addTargets.map((target) => {
                   const Icon = target.icon;
-                  const href = `/onboarding?mode=add&kind=${target.kind}${target.typ ? `&typ=${target.typ}` : ""}`;
+                  const href = `/onboarding?kind=${target.kind}${target.typ ? `&typ=${target.typ}` : ""}`;
                   return (
                     <button
                       key={`${target.kind}-${target.typ ?? ""}`}

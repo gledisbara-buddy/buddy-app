@@ -11,7 +11,7 @@ export const LIFE_EVENTS: Record<LifeEventId, { title: string; intro: string; st
     steps: [
       {
         text: "Lägg till ditt nya boende — du kan ha kvar den gamla adressen tills du sagt upp den, eller ta bort den direkt.",
-        cta: { label: "Lägg till boende", href: "/onboarding?mode=add&kind=boende" },
+        cta: { label: "Lägg till boende", href: "/onboarding?kind=boende" },
       },
       {
         text: "Så snart den nya adressen är inlagd kan du jämföra hemförsäkring för den mot andra bolag.",
@@ -19,7 +19,7 @@ export const LIFE_EVENTS: Record<LifeEventId, { title: string; intro: string; st
       },
       {
         text: "Kolla om ditt elavtal följer med till den nya adressen eller behöver bytas.",
-        cta: { label: "Lägg till el & energi", href: "/onboarding?mode=add&kind=el" },
+        cta: { label: "Lägg till el & energi", href: "/onboarding?kind=el" },
       },
       {
         text: "Uppdatera bilförsäkringen om du får ny gatuadress eller parkering — det kan påverka priset.",
@@ -34,7 +34,7 @@ export const LIFE_EVENTS: Record<LifeEventId, { title: string; intro: string; st
     steps: [
       {
         text: "Lägg till ditt barn som en försäkrad person så snart personnumret finns.",
-        cta: { label: "Lägg till person", href: "/onboarding?mode=add&kind=person" },
+        cta: { label: "Lägg till person", href: "/onboarding?kind=person" },
       },
       {
         text: "Jämför barnförsäkring — priset skiljer sig ofta mer mellan bolag än för vuxna.",
@@ -56,11 +56,11 @@ export const LIFE_EVENTS: Record<LifeEventId, { title: string; intro: string; st
     steps: [
       {
         text: "Lägg till bilen så snart du har registreringsnumret — även innan den är påställd, så hinner du jämföra i lugn och ro.",
-        cta: { label: "Lägg till bil", href: "/onboarding?mode=add&kind=bil" },
+        cta: { label: "Lägg till bil", href: "/onboarding?kind=bil" },
       },
       {
         text: "Är det istället en husvagn, mc, båt eller släp? Samma sak gäller där.",
-        cta: { label: "Lägg till övrigt fordon", href: "/onboarding?mode=add&kind=ovrigt_fordon" },
+        cta: { label: "Lägg till övrigt fordon", href: "/onboarding?kind=ovrigt_fordon" },
       },
       {
         text: "Jämför innan du tecknar via säljaren eller mäklaren — det tar bara en minut och du binder dig inte till något.",
@@ -74,7 +74,7 @@ export const LIFE_EVENTS: Record<LifeEventId, { title: string; intro: string; st
     steps: [
       {
         text: "Lägg till djuret så kan du jämföra djurförsäkring direkt.",
-        cta: { label: "Lägg till djur", href: "/onboarding?mode=add&kind=djur" },
+        cta: { label: "Lägg till djur", href: "/onboarding?kind=djur" },
       },
       {
         text: "Karenstid betyder att skador de första dagarna/veckorna oftast inte täcks — vänta inte för länge med att teckna.",

@@ -7,7 +7,7 @@ import type { ItemKind } from "@/lib/items";
 
 export function CategoryCta({ kind, label, className }: { kind: ItemKind; label: string; className: string }) {
   const { userType } = useBuddy();
-  const href = userType ? `/onboarding?mode=add&kind=${kind}` : "/kom-igang";
+  const href = userType ? `/onboarding?kind=${kind}` : "/kom-igang";
 
   return (
     <Link href={href} className={className}>

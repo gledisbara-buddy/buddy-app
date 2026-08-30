@@ -96,7 +96,7 @@ export function HealthCheckView() {
               {check.missingCategories.map((c) => (
                 <button
                   key={c.kind}
-                  onClick={() => router.push(`/onboarding?mode=add&kind=${c.kind}`)}
+                  onClick={() => router.push(`/onboarding?kind=${c.kind}`)}
                   className="bg-white rounded-2xl border border-dashed border-line p-4 flex items-center justify-between text-left"
                 >
                   <span className="text-sm font-medium">{c.label}</span>

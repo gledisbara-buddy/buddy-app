@@ -122,7 +122,7 @@ export function buildTodoList({
           icon: Smartphone,
           label: `Komplettera ditt mobilabonnemang (${pendingMobilNumber})`,
           sublabel: "Operatör & pris saknas",
-          href: "/onboarding?mode=add&kind=telekom&typ=mobil",
+          href: "/onboarding?kind=telekom&typ=mobil",
         },
       ]
     : [];
