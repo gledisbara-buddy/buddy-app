@@ -67,7 +67,11 @@ export function EditableField({
           {value ? (
             <>
               <span className="text-sm font-medium">{value}</span>
-              <button onClick={startEdit} className="opacity-0 group-hover:opacity-100 text-slate hover:text-forest">
+              <button
+                onClick={startEdit}
+                aria-label={`Redigera ${label.toLowerCase()}`}
+                className="opacity-0 group-hover:opacity-100 text-slate hover:text-forest"
+              >
                 <Pencil size={13} />
               </button>
             </>
