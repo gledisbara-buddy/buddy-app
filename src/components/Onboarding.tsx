@@ -527,6 +527,14 @@ function DjurForm({
   const [kastrerad, setKastrerad] = useState<boolean | null>(initialItem?.kastrerad ?? null);
   const [inneUte, setInneUte] = useState<InneUte | null>(initialItem?.inneUte ?? null);
   const [reserUtomlands, setReserUtomlands] = useState<boolean | null>(initialItem?.reserUtomlands ?? null);
+  const [onskatVeterinarvardsbelopp, setOnskatVeterinarvardsbelopp] = useState<string | null>(
+    initialItem?.onskatVeterinarvardsbelopp ? String(initialItem.onskatVeterinarvardsbelopp) : null
+  );
+  const vetbeloppOptions = djurtyp === "katt" ? (["20000", "40000", "60000"] as const) : (["30000", "60000", "100000", "140000"] as const);
+  const vetbeloppLabels = Object.fromEntries(vetbeloppOptions.map((v) => [v, `${Number(v).toLocaleString("sv-SE")} kr`])) as Record<
+    string,
+    string
+  >;
 
   const valid = !!djurtyp && namn.trim().length > 0;
 
@@ -560,6 +568,11 @@ function DjurForm({
       <Field label="Reser du utomlands med djuret? (valfritt)">
         <BoolPill value={reserUtomlands} onChange={setReserUtomlands} />
       </Field>
+      {(djurtyp === "hund" || djurtyp === "katt") && (
+        <Field label="Önskat veterinärvårdsbelopp (valfritt)">
+          <PillGroup options={vetbeloppOptions} labels={vetbeloppLabels} value={onskatVeterinarvardsbelopp} onChange={setOnskatVeterinarvardsbelopp} />
+        </Field>
+      )}
       <FormActions
         valid={valid}
         onCancel={onCancel}
@@ -575,6 +588,9 @@ function DjurForm({
             kastrerad: kastrerad ?? undefined,
             inneUte: inneUte ?? undefined,
             reserUtomlands: reserUtomlands ?? undefined,
+            onskatVeterinarvardsbelopp: onskatVeterinarvardsbelopp
+              ? (Number(onskatVeterinarvardsbelopp) as DjurItem["onskatVeterinarvardsbelopp"])
+              : undefined,
           })
         }
       />

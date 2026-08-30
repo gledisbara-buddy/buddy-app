@@ -173,6 +173,13 @@ export type PersonItem = {
   onskatSkydd: OnskatSkydd[];
 };
 
+// Skalan skiljer sig mellan hund/katt eftersom veterinärvårdskostnader
+// generellt är högre för hund — samma skala-istället-för-fritt-belopp-
+// princip som lösörevärdet i BoendeForm (BO-1), de flesta kan inte
+// uppskatta ett exakt kronbelopp men känner igen sig i en nivå.
+export type VeterinarvardsbeloppHund = 30000 | 60000 | 100000 | 140000;
+export type VeterinarvardsbeloppKatt = 20000 | 40000 | 60000;
+
 export type DjurItem = {
   id: string;
   kind: "djur";
@@ -184,6 +191,7 @@ export type DjurItem = {
   kastrerad?: boolean;
   inneUte?: InneUte;
   reserUtomlands?: boolean;
+  onskatVeterinarvardsbelopp?: VeterinarvardsbeloppHund | VeterinarvardsbeloppKatt;
 };
 
 export type AnslutningTyp = "fiber" | "kabel" | "mobilt" | "dsl";

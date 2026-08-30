@@ -337,7 +337,11 @@ function djurQuotes(item: Extract<ComparableItem, { kind: "djur" }>, needs: stri
   const age = item.fodelsear ? currentYear - item.fodelsear : 3;
   const ageMult = age < 3 ? 0.9 : age < 8 ? 1 : 1.2;
   const kastreradMult = item.kastrerad ? 0.95 : 1;
-  const mult = typMult * viktMult * ageMult * kastreradMult;
+  // Störst enskild prisdrivare enligt produktträds-underlaget (DJ-1/DJ-2) —
+  // skalan om via katt utgår från 40 000 kr, hund från 60 000 kr.
+  const beloppBaseline = item.djurtyp === "katt" ? 40000 : 60000;
+  const beloppMult = item.onskatVeterinarvardsbelopp ? item.onskatVeterinarvardsbelopp / beloppBaseline : 1;
+  const mult = typMult * viktMult * ageMult * kastreradMult * beloppMult;
   const extrasCost = needs.length * 12;
 
   return withMatchedNeeds(
