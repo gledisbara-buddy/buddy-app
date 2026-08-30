@@ -250,7 +250,21 @@ function bilQuotes(item: Extract<ComparableItem, { kind: "bil" }>, needs: string
 }
 
 function ovrigtFordonQuotes(item: Extract<ComparableItem, { kind: "ovrigt_fordon" }>, needs: string[]): Quote[] {
-  const typMult = { mc: 1.2, husvagn: 1.1, bat: 1.4, slap: 0.6, annat: 1 }[item.fordonstyp];
+  const typMult = {
+    mc: 1.2,
+    husvagn: 1.1,
+    bat: 1.4,
+    slap: 0.6,
+    latt_lastbil: 1.3,
+    moped: 0.5,
+    husbil: 1.5,
+    snoskoter: 0.9,
+    atv: 0.9,
+    a_traktor: 0.6,
+    veteranfordon: 0.7,
+    elsparkcykel: 0.3,
+    annat: 1,
+  }[item.fordonstyp];
   const effektMult = item.fordonstyp === "mc" && item.effektHk && item.effektHk > 80 ? 1.15 : 1;
   const mult = typMult * effektMult;
   const extrasCost = needs.length * 12;

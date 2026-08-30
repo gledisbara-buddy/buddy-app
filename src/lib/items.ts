@@ -15,7 +15,26 @@ import {
 import type { Quote } from "@/lib/quote";
 
 export type BoendeTyp = "hyresratt" | "bostadsratt" | "villa" | "fritidshus" | "fritidsbostadsratt" | "magasinering";
-export type FordonTyp = "mc" | "husvagn" | "bat" | "slap" | "annat";
+// Utökad från fem till tretton typer enligt produktträds-underlaget
+// (avsnitt 3, FO-1–FO-14) — cykel (FO-13) medvetet UTESLUTEN härifrån:
+// underlaget säger själv att de flesta redan täcks av hemförsäkringens
+// lösöretak (samma "vardefulla_saker"-fråga som redan finns i
+// BOENDE_QUESTIONS i needs.ts), så en egen fordonstyp hade motsagt
+// underlagets egen princip om att inte sälja på något användaren redan har.
+export type FordonTyp =
+  | "mc"
+  | "husvagn"
+  | "bat"
+  | "slap"
+  | "latt_lastbil"
+  | "moped"
+  | "husbil"
+  | "snoskoter"
+  | "atv"
+  | "a_traktor"
+  | "veteranfordon"
+  | "elsparkcykel"
+  | "annat";
 export type DjurTyp = "hund" | "katt" | "annat";
 export type PersonRelation = "mig-sjalv" | "partner" | "barn" | "annan";
 export type ForvaringsTyp = "forrad" | "kallarforrad" | "container" | "boxlager" | "annat";
@@ -101,6 +120,11 @@ export type BilItem = {
 
 export type BatMotorTyp = "inombordare" | "utombordare" | "segel" | "ingen";
 
+export type AnvandningTyp = "privat" | "naring";
+export type Mopedklass = "1" | "2";
+export type AtvRegistreringsklass = "terranghjuling" | "traktor_a" | "motorredskap";
+export type AgdEllerHyrd = "agd" | "hyrd";
+
 export type OvrigtFordonItem = {
   id: string;
   kind: "ovrigt_fordon";
@@ -116,6 +140,25 @@ export type OvrigtFordonItem = {
   langdM?: number;
   // bat
   motortyp?: BatMotorTyp;
+  // latt_lastbil — se OvrigtFordonForm: "naring" leder till en tydlig
+  // "Buddy jämför inte företagsförsäkring än"-text istället för att låtsas
+  // kunna det, per underlagets egen varning om den gränsdragningen.
+  anvandning?: AnvandningTyp;
+  // moped
+  mopedklass?: Mopedklass;
+  // husbil
+  permanentboende?: boolean;
+  // snoskoter
+  anvandningOffpist?: boolean;
+  // atv
+  registreringsklass?: AtvRegistreringsklass;
+  // a_traktor
+  ombyggnadsar?: number;
+  // veteranfordon
+  varderingsintyg?: boolean;
+  // elsparkcykel
+  toppfartKmh?: number;
+  agdEllerHyrd?: AgdEllerHyrd;
   // slap
   maxlastKg?: number;
 };
@@ -369,7 +412,36 @@ export const FORDON_TYP_LABELS: Record<FordonTyp, string> = {
   husvagn: "Husvagn",
   bat: "Båt",
   slap: "Släp",
+  latt_lastbil: "Lätt lastbil",
+  moped: "Moped",
+  husbil: "Husbil",
+  snoskoter: "Snöskoter",
+  atv: "Terränghjuling / ATV",
+  a_traktor: "A-traktor / EPA",
+  veteranfordon: "Veteranfordon",
+  elsparkcykel: "Elsparkcykel",
   annat: "Annat",
+};
+
+export const ANVANDNING_LABELS: Record<AnvandningTyp, string> = {
+  privat: "Privat",
+  naring: "I näringsverksamhet",
+};
+
+export const MOPEDKLASS_LABELS: Record<Mopedklass, string> = {
+  "1": "Klass I (registrerad, som EU-moped)",
+  "2": "Klass II (oregistrerad)",
+};
+
+export const ATV_REGISTRERINGSKLASS_LABELS: Record<AtvRegistreringsklass, string> = {
+  terranghjuling: "Terränghjuling",
+  traktor_a: "Traktor A",
+  motorredskap: "Motorredskap",
+};
+
+export const AGD_ELLER_HYRD_LABELS: Record<AgdEllerHyrd, string> = {
+  agd: "Egen",
+  hyrd: "Hyrd",
 };
 
 export const BAT_MOTOR_LABELS: Record<BatMotorTyp, string> = {

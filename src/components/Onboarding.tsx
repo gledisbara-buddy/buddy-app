@@ -2,7 +2,7 @@
 
 import { useEffect, useId, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, Loader2, PhoneCall } from "lucide-react";
+import { ArrowLeft, Info, Loader2, PhoneCall } from "lucide-react";
 import { Logo } from "@/components/Logo";
 import { Overlay } from "@/components/Overlay";
 import { PageSkeleton } from "@/components/PageSkeleton";
@@ -18,6 +18,9 @@ import { lookupVehicle } from "@/lib/vehicle-lookup";
 import { postnummerToElomrade } from "@/lib/address-lookup";
 import { isoToSwedishDate, swedishDateToIso } from "@/lib/dates";
 import {
+  AGD_ELLER_HYRD_LABELS,
+  ANVANDNING_LABELS,
+  ATV_REGISTRERINGSKLASS_LABELS,
   AVTALSTYP_LABELS,
   BAT_MOTOR_LABELS,
   DJUR_TYP_LABELS,
@@ -25,12 +28,16 @@ import {
   FORDON_TYP_LABELS,
   INNE_UTE_LABELS,
   ITEM_CATEGORIES,
+  MOPEDKLASS_LABELS,
   ONSKAT_SKYDD_LABELS,
   PERSON_RELATION_LABELS,
   PRENUMERATION_LEVERANTORER,
   SYSSELSATTNING_LABELS,
   createItemId,
   groupForKind,
+  type AgdEllerHyrd,
+  type AnvandningTyp,
+  type AtvRegistreringsklass,
   type Avtalstyp,
   type BatMotorTyp,
   type BilItem,
@@ -42,6 +49,7 @@ import {
   type InneUte,
   type InsuranceItem,
   type ItemKind,
+  type Mopedklass,
   type OnskatSkydd,
   type OvrigtFordonItem,
   type PersonItem,
@@ -174,6 +182,25 @@ function OvrigtFordonForm({
   const [motortyp, setMotortyp] = useState<BatMotorTyp | null>(initialItem?.motortyp ?? null);
   // slap
   const [maxlastKg, setMaxlastKg] = useState(initialItem?.maxlastKg ? String(initialItem.maxlastKg) : "");
+  // latt_lastbil
+  const [anvandning, setAnvandning] = useState<AnvandningTyp | null>(initialItem?.anvandning ?? null);
+  // moped
+  const [mopedklass, setMopedklass] = useState<Mopedklass | null>(initialItem?.mopedklass ?? null);
+  // husbil
+  const [permanentboende, setPermanentboende] = useState<boolean | null>(initialItem?.permanentboende ?? null);
+  // snoskoter
+  const [anvandningOffpist, setAnvandningOffpist] = useState<boolean | null>(initialItem?.anvandningOffpist ?? null);
+  // atv
+  const [registreringsklass, setRegistreringsklass] = useState<AtvRegistreringsklass | null>(
+    initialItem?.registreringsklass ?? null
+  );
+  // a_traktor
+  const [ombyggnadsar, setOmbyggnadsar] = useState(initialItem?.ombyggnadsar ? String(initialItem.ombyggnadsar) : "");
+  // veteranfordon
+  const [varderingsintyg, setVarderingsintyg] = useState<boolean | null>(initialItem?.varderingsintyg ?? null);
+  // elsparkcykel
+  const [toppfartKmh, setToppfartKmh] = useState(initialItem?.toppfartKmh ? String(initialItem.toppfartKmh) : "");
+  const [agdEllerHyrd, setAgdEllerHyrd] = useState<AgdEllerHyrd | null>(initialItem?.agdEllerHyrd ?? null);
 
   const valid = !!fordonstyp;
 
@@ -194,7 +221,23 @@ function OvrigtFordonForm({
     <>
       <Field label="Typ av fordon">
         <PillGroup
-          options={["mc", "husvagn", "bat", "slap", "annat"] as const}
+          options={
+            [
+              "mc",
+              "moped",
+              "husvagn",
+              "husbil",
+              "bat",
+              "slap",
+              "snoskoter",
+              "atv",
+              "a_traktor",
+              "latt_lastbil",
+              "veteranfordon",
+              "elsparkcykel",
+              "annat",
+            ] as const
+          }
           labels={FORDON_TYP_LABELS}
           value={fordonstyp}
           onChange={setFordonstyp}
@@ -269,6 +312,100 @@ function OvrigtFordonForm({
         </Field>
       )}
 
+      {fordonstyp === "latt_lastbil" && (
+        <>
+          <Field label="Användning">
+            <PillGroup options={["privat", "naring"] as const} labels={ANVANDNING_LABELS} value={anvandning} onChange={setAnvandning} />
+          </Field>
+          {anvandning === "naring" && (
+            <div className="rounded-2xl p-4 mb-4 flex items-start gap-3 bg-frost-2">
+              <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-none bg-white">
+                <Info size={15} className="text-forest" />
+              </div>
+              <p className="text-xs text-ink">
+                Buddy jämför i dagsläget bara privata försäkringar, inte företagsförsäkring. Du kan fortfarande lägga
+                in fordonet för att hålla koll på det, men jämförelsen blir inte anpassad för näringsverksamhet.
+              </p>
+            </div>
+          )}
+        </>
+      )}
+
+      {fordonstyp === "moped" && (
+        <Field label="Mopedklass">
+          <PillGroup options={["1", "2"] as const} labels={MOPEDKLASS_LABELS} value={mopedklass} onChange={setMopedklass} />
+        </Field>
+      )}
+
+      {fordonstyp === "husbil" && (
+        <Field label="Permanentboende (inte bara fritidsanvändning)?">
+          <BoolPill value={permanentboende} onChange={setPermanentboende} />
+        </Field>
+      )}
+
+      {fordonstyp === "snoskoter" && (
+        <Field label="Körs den utanför led (offpist)?">
+          <BoolPill value={anvandningOffpist} onChange={setAnvandningOffpist} />
+        </Field>
+      )}
+
+      {fordonstyp === "atv" && (
+        <Field label="Registreringsklass">
+          <PillGroup
+            options={["terranghjuling", "traktor_a", "motorredskap"] as const}
+            labels={ATV_REGISTRERINGSKLASS_LABELS}
+            value={registreringsklass}
+            onChange={setRegistreringsklass}
+          />
+        </Field>
+      )}
+
+      {fordonstyp === "a_traktor" && (
+        <Field label="Ombyggnadsår (valfritt)">
+          <input
+            type="number"
+            className={inputClass}
+            value={ombyggnadsar}
+            onChange={(e) => setOmbyggnadsar(e.target.value)}
+            placeholder="2023"
+          />
+        </Field>
+      )}
+
+      {fordonstyp === "veteranfordon" && (
+        <>
+          <div className="rounded-2xl p-4 mb-4 flex items-start gap-3 bg-frost-2">
+            <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-none bg-white">
+              <Info size={15} className="text-forest" />
+            </div>
+            <p className="text-xs text-ink">
+              Utan värderingsintyg blir ersättningen ofta marknadsvärde vid en skada — inte det du själv tycker
+              fordonet är värt.
+            </p>
+          </div>
+          <Field label="Finns värderingsintyg?">
+            <BoolPill value={varderingsintyg} onChange={setVarderingsintyg} />
+          </Field>
+        </>
+      )}
+
+      {fordonstyp === "elsparkcykel" && (
+        <>
+          <Field label="Egen eller hyrd?">
+            <PillGroup options={["agd", "hyrd"] as const} labels={AGD_ELLER_HYRD_LABELS} value={agdEllerHyrd} onChange={setAgdEllerHyrd} />
+          </Field>
+          <Field label="Toppfart (km/h, valfritt)">
+            <input
+              type="number"
+              className={inputClass}
+              value={toppfartKmh}
+              onChange={(e) => setToppfartKmh(e.target.value)}
+              placeholder="20"
+            />
+          </Field>
+        </>
+      )}
+
       <FormActions
         valid={valid}
         onCancel={onCancel}
@@ -286,6 +423,15 @@ function OvrigtFordonForm({
             langdM: langdM ? Number(langdM) : undefined,
             motortyp: motortyp ?? undefined,
             maxlastKg: maxlastKg ? Number(maxlastKg) : undefined,
+            anvandning: anvandning ?? undefined,
+            mopedklass: mopedklass ?? undefined,
+            permanentboende: permanentboende ?? undefined,
+            anvandningOffpist: anvandningOffpist ?? undefined,
+            registreringsklass: registreringsklass ?? undefined,
+            ombyggnadsar: ombyggnadsar ? Number(ombyggnadsar) : undefined,
+            varderingsintyg: varderingsintyg ?? undefined,
+            toppfartKmh: toppfartKmh ? Number(toppfartKmh) : undefined,
+            agdEllerHyrd: agdEllerHyrd ?? undefined,
           })
         }
       />
