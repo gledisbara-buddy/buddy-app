@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { ArrowLeft, Trash2 } from "lucide-react";
+import { ArrowLeft, Info, Trash2 } from "lucide-react";
 import { AddressField, type AddressValue } from "@/components/onboarding/AddressField";
 import { BoolPill, Field, FormActions, inputClass } from "@/components/onboarding/shared";
 import { useBuddy } from "@/lib/buddy-context";
@@ -327,9 +327,21 @@ export function BoendeForm({
           <BoolPill value={larm} onChange={setLarm} />
         </Field>
         {needsTillagg && (
-          <Field label="Finns bostadsrättstillägg via föreningen?">
-            <BoolPill value={bostadsrattstillagg} onChange={setBostadsrattstillagg} />
-          </Field>
+          <>
+            <div className="rounded-2xl p-4 mb-4 flex items-start gap-3 bg-frost-2">
+              <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-none bg-white">
+                <Info size={15} className="text-forest" />
+              </div>
+              <p className="text-xs text-ink">
+                Det här är det vanligaste hålet i svenska hemförsäkringar. Föreningens fastighetsförsäkring täcker
+                bara byggnaden i grunden — inte det du själv bekostat i lägenheten (kök, golv, badrum). Många tror
+                att föreningen redan täcker det.
+              </p>
+            </div>
+            <Field label="Finns bostadsrättstillägg via föreningen?">
+              <BoolPill value={bostadsrattstillagg} onChange={setBostadsrattstillagg} />
+            </Field>
+          </>
         )}
         <FormActions valid={valid} onCancel={onCancel} onSave={() => onSave(item)} />
       </>

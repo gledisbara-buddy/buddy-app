@@ -280,6 +280,13 @@ const TELEKOM_QUESTIONS: NeedQuestion[] = [
     prompt: "Är ni flera i hushållet som delar på det här abonnemanget?",
   },
   {
+    id: "familjerabatt",
+    label: "Fler i hushållet har egna abonnemang",
+    type: "yesno",
+    prompt:
+      "Har ni fler i hushållet med egna, separata mobilabonnemang? Flera operatörer ger rabatt om man tecknar dem tillsammans — den besparingen missas ofta.",
+  },
+  {
     id: "bindningstid",
     label: "Ingen bindningstid",
     type: "yesno",
