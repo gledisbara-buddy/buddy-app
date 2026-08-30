@@ -1282,7 +1282,9 @@ select
   p.created_at,
   p.customer_status,
   p.segment,
-  p.tags
+  p.tags,
+  p.notify_email,
+  p.notify_sms
 from public.profiles p
 where exists (select 1 from public.employees where email = auth.jwt() ->> 'email');
 
@@ -1415,3 +1417,36 @@ set
   new_value = case when new_value is null then null else left(new_value, 6) || '-XXXX' end
 where field = 'personnummer'
   and (old_value !~ '^\d{6}-XXXX$' or new_value !~ '^\d{6}-XXXX$');
+
+-- ============================================================
+-- SÄKERHETSFIX (2026-08-31): profiles_select_employee kringgick maskeringen
+-- ============================================================
+--
+-- customer_profile_view (ovan) maskerar personnummer korrekt för
+-- kundservice — MEN profiles_select_employee (RLS-policyn på själva
+-- profiles-tabellen, satt tidigt i den här filen) gav ALLA anställda,
+-- oavsett roll, rå SELECT på hela tabellen. Appens UI har alltid gått
+-- via customer_profile_view eller frågat efter specifika kolumner utan
+-- personnummer (bekräftat genom att läsa varje internal-komponent), så
+-- det här har aldrig läckt genom UI:t — men en kundservice-anställd
+-- kunde ändå läsa personnummer i klartext genom att köra
+--   supabase.from('profiles').select('*').eq('id', kundId)
+-- direkt i devtools, helt förbi vyns maskering.
+--
+-- Fixen: profiles_select_employee kräver nu INTE kundservice. Kundservice
+-- måste gå via customer_profile_view (som redan har sin egen, oberoende
+-- behörighetskoll och därför inte påverkas av den här åtstramningen — se
+-- kommentaren ovanför vyn). Admin/teamledare/specialist är opåverkade,
+-- de hade redan rätt att se personnummer i klartext.
+--
+-- Kräver att src/components/internal/*.tsx:s raka `.from("profiles")`-
+-- LÄSNINGAR (inte skrivningar) är omskrivna till `.from("customer_profile_view")`
+-- innan den här policyn körs, annars slutar kundservice kunna se kundlistor/
+-- sökresultat helt. Se commit-meddelandet för vilka filer som ändrades
+-- samtidigt.
+drop policy if exists "profiles_select_employee" on public.profiles;
+create policy "profiles_select_employee" on public.profiles
+  for select using (
+    exists (select 1 from public.employees where email = auth.jwt() ->> 'email')
+    and public.employee_permission_level() <> 'kundservice'
+  );

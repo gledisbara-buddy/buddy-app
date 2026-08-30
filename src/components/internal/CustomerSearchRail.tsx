@@ -25,7 +25,7 @@ async function searchCustomers(supabase: Supabase, query: string): Promise<Profi
   if (trimmed.length < 2) return [];
 
   if (trimmed.includes("@")) {
-    const { data } = await supabase.from("profiles").select("id, name, email").ilike("email", `%${trimmed}%`).limit(10);
+    const { data } = await supabase.from("customer_profile_view").select("id, name, email").ilike("email", `%${trimmed}%`).limit(10);
     return (data ?? []) as ProfileLookup[];
   }
 
@@ -33,7 +33,7 @@ async function searchCustomers(supabase: Supabase, query: string): Promise<Profi
   if (/^\d{10,12}$/.test(digitsOnly)) {
     const withDash = `${digitsOnly.slice(0, -4)}-${digitsOnly.slice(-4)}`;
     const { data } = await supabase
-      .from("profiles")
+      .from("customer_profile_view")
       .select("id, name, email")
       .or(`personnummer.eq.${digitsOnly},personnummer.eq.${withDash}`)
       .limit(10);
@@ -41,7 +41,7 @@ async function searchCustomers(supabase: Supabase, query: string): Promise<Profi
   }
 
   const { data } = await supabase
-    .from("profiles")
+    .from("customer_profile_view")
     .select("id, name, email")
     .or(`name.ilike.%${trimmed}%,email.ilike.%${trimmed}%`)
     .limit(10);
@@ -90,7 +90,7 @@ export function CustomerSearchRail({
       }
       const supabase = createClient();
       const { data } = await supabase
-        .from("profiles")
+        .from("customer_profile_view")
         .select("id, name, email, household_relation")
         .eq("household_id", selectedCustomer.household_id);
       setTree((data ?? []) as TreeMember[]);

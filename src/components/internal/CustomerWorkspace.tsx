@@ -62,7 +62,7 @@ export function CustomerWorkspace({
 
   useEffect(() => {
     createClient()
-      .from("profiles")
+      .from("customer_profile_view")
       .select("notify_email, notify_sms")
       .eq("id", customer.id)
       .maybeSingle()

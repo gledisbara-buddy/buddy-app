@@ -71,7 +71,7 @@ export function RequestsInbox({ actorEmail }: { actorEmail: string }) {
 
       const [{ data: profileRows }, { data: topicItemRows }] = await Promise.all([
         userIds.length > 0
-          ? supabase.from("profiles").select("id, email, name").in("id", userIds)
+          ? supabase.from("customer_profile_view").select("id, email, name").in("id", userIds)
           : Promise.resolve({ data: [] as ProfileLookup[] }),
         itemTopicIds.length > 0
           ? supabase.from("items").select("id, data").in("id", itemTopicIds)

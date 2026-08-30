@@ -173,7 +173,7 @@ export function EmployeeDashboard({
 
       const userIds = Array.from(new Set(open.map((o) => o.userId)));
       if (userIds.length > 0) {
-        const { data: profileRows } = await supabase.from("profiles").select("id, name").in("id", userIds);
+        const { data: profileRows } = await supabase.from("customer_profile_view").select("id, name").in("id", userIds);
         setProfilesById(Object.fromEntries(((profileRows ?? []) as ProfileLookup[]).map((p) => [p.id, p])));
       }
 

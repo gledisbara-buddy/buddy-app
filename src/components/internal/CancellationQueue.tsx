@@ -38,7 +38,7 @@ export function CancellationQueue({ onOpenCustomer }: { onOpenCustomer: (custome
       const itemIds = rows.map((r) => r.item_id);
       const [{ data: profileRows }, { data: itemRows }] = await Promise.all([
         userIds.length > 0
-          ? supabase.from("profiles").select("id, name, email").in("id", userIds)
+          ? supabase.from("customer_profile_view").select("id, name, email").in("id", userIds)
           : Promise.resolve({ data: [] as ProfileLookup[] }),
         itemIds.length > 0
           ? supabase.from("items").select("id, data").in("id", itemIds)

@@ -62,7 +62,7 @@ export function CustomerListView({ onSelectCustomer }: { onSelectCustomer: (id: 
     (async () => {
       setLoading(true);
       let query = supabase
-        .from("profiles")
+        .from("customer_profile_view")
         .select("id, name, email, customer_status, segment, tags, created_at")
         .order("created_at", { ascending: false })
         .range(page * PAGE_SIZE, page * PAGE_SIZE + PAGE_SIZE);

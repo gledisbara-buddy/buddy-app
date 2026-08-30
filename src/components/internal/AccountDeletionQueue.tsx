@@ -48,7 +48,7 @@ export function AccountDeletionQueue({
       const userIds = Array.from(new Set(rows.map((r) => r.user_id)));
       const { data: profileRows } =
         userIds.length > 0
-          ? await supabase.from("profiles").select("id, name, email").in("id", userIds)
+          ? await supabase.from("customer_profile_view").select("id, name, email").in("id", userIds)
           : { data: [] as ProfileLookup[] };
       setProfilesById(Object.fromEntries(((profileRows ?? []) as ProfileLookup[]).map((p) => [p.id, p])));
       setLoading(false);
