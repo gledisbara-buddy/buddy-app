@@ -21,6 +21,14 @@ const DISALLOWED = [
   "/livshandelser",
   "/rekommendation",
   "/varva-en-van",
+  "/arkiv",
+  "/arsrapport",
+  "/hushall",
+  "/identifiera-igen",
+  "/importera",
+  "/anslut-bank",
+  "/mina-arenden",
+  "/objekt",
 ];
 
 export default function robots(): MetadataRoute.Robots {
