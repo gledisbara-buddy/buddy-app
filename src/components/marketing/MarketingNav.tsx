@@ -6,15 +6,14 @@ import { Logo } from "@/components/Logo";
 import { ProfileMenu } from "@/components/ProfileMenu";
 import { useBuddy } from "@/lib/buddy-context";
 
+// Trimmad från 8 till 4 punkter — "Hem" är överflödigt när loggan
+// klickar hem, och Jobb/Vanliga frågor/Kontakt finns redan i footern
+// (se Footer.tsx), så inget blir otillgängligt.
 const LINKS = [
-  { href: "/", label: "Hem" },
   { href: "/jamfor", label: "Jämför" },
   { href: "/guider", label: "Guider" },
   { href: "/nyheter", label: "Nyheter" },
   { href: "/om-oss", label: "Om oss" },
-  { href: "/jobb", label: "Jobb" },
-  { href: "/vanliga-fragor", label: "Vanliga frågor" },
-  { href: "/kontakt", label: "Kontakt" },
 ];
 
 function NavLinks({ pathname, className }: { pathname: string; className: string }) {

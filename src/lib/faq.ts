@@ -31,4 +31,14 @@ export const FAQ_ITEMS: FaqItem[] = [
     answer:
       "Ditt konto skyddas med lösenord, och dina uppgifter används enbart för att ge dig relevanta förslag — vi säljer dem aldrig vidare. Läs mer i vår integritetspolicy.",
   },
+  {
+    question: "Vad ser Buddy när jag hämtar in mina avtal med BankID?",
+    answer:
+      "Vilka avtal du har och grundläggande uppgifter om dem — typ, ungefärligt pris och vilket bolag det gäller. Tillräckligt för en samlad överblick. Buddy ändrar, säger upp eller tecknar aldrig något automatiskt åt dig — allt du ser efter en import är en läsning av vad som redan finns.",
+  },
+  {
+    question: "Kan jag ta bort fullmakten jag skrivit under?",
+    answer:
+      "Ja, när som helst — du behöver inte ange något skäl. Kontakta kundtjänst så återkallas den. Tidigare signerade fullmakter finns alltid kvar i ditt dokumentarkiv så du kan se exakt vad du en gång skrev under på.",
+  },
 ];
