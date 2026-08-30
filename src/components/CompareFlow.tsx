@@ -337,12 +337,19 @@ export function CompareFlow({ itemId }: { itemId: string }) {
     if (!item) router.replace("/dashboard");
   }, [item, router]);
 
-  // Försäkring-gruppens fem kategorier har auto-hämtning och får tre-kolumnsvyn
-  // (Nuvarande/Billigast/Rekommendation). Behovsanalysen gäller därutöver även
-  // Telekom/Kreditkort/El — de åtta kategorier som faktiskt har en jämförelsemotor.
+  // Försäkring-gruppens fem kategorier plus kreditkort/el har alla riktig
+  // auto-hämtning (policy-fetch.ts:s FetchableKind) och får därför samma
+  // tre-kolumnsvy (Nuvarande/Billigast/Rekommendation) — det är
+  // auto-hämtningen som avgör layouten, inte gruppen i sig. Telekom är
+  // medvetet undantaget: den har sitt eget operatörsuppslag istället för
+  // ett "hämta befintligt avtal"-flöde, så en "DIN NUVARANDE"-kolumn
+  // skulle bara visa ett tomt läge med en knapp som aldrig fungerar för
+  // just den kategorin. Behovsanalysen gäller därutöver även Telekom — de
+  // åtta kategorier som faktiskt har en jämförelsemotor.
   const FORSAKRING_KINDS: NeedsKind[] = ["boende", "bil", "ovrigt_fordon", "person", "djur"];
+  const THREE_COLUMN_KINDS: NeedsKind[] = [...FORSAKRING_KINDS, "kreditkort", "el"];
   const NEEDS_KINDS: NeedsKind[] = [...FORSAKRING_KINDS, "telekom", "kreditkort", "el"];
-  const isForsakringGroup = !!item && (FORSAKRING_KINDS as string[]).includes(item.kind);
+  const hasThreeColumnLayout = !!item && (THREE_COLUMN_KINDS as string[]).includes(item.kind);
   const hasNeedsStep = !!item && (NEEDS_KINDS as string[]).includes(item.kind);
   // Tidigare sparade behov, omvaliderade mot sakens aktuella undertyp — en
   // sparad "resa"-post kan t.ex. ha blivit ogiltig om boendet ändrats till
@@ -562,13 +569,26 @@ export function CompareFlow({ itemId }: { itemId: string }) {
             </button>
           </div>
 
-          {isForsakringGroup ? (
+          {hasThreeColumnLayout ? (
             <div className="max-w-5xl mx-auto px-5 md:px-10 pb-14 bd-fade">
               <span className="bd-eyebrow">Din jämförelse</span>
               <h1 className="bd-display text-3xl mt-2 mb-2">Så ser dina alternativ ut</h1>
               <p className="text-sm mb-5 text-slate">
                 Baserat på {label.toLowerCase()} — {itemSummary(item)}.
               </p>
+
+              {item.kind === "el" && (
+                <div className="rounded-2xl p-4 mb-5 flex items-start gap-3 bg-frost-2">
+                  <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-none bg-white">
+                    <Zap size={15} className="text-amber-deep" />
+                  </div>
+                  <p className="text-xs text-ink">
+                    {item.avtalstyp === "fast"
+                      ? "Du har fast pris, så det spelar ingen roll när på dygnet du drar ström — priset är detsamma oavsett tid."
+                      : "Med rörligt pris är elen ofta billigast natt och tidig morgon (ca 02–06) och dyrast under kvällstopparna (ca 17–19). Lägg tunga sysslor som tvätt, diskmaskin och laddning på natten för att sänka snittpriset."}
+                  </p>
+                </div>
+              )}
 
               <div className="flex items-center gap-1 mb-6 p-1 rounded-full w-fit bg-frost-2">
                 <button
@@ -747,19 +767,6 @@ export function CompareFlow({ itemId }: { itemId: string }) {
               <p className="text-sm mb-8 text-slate">
                 Baserat på {label.toLowerCase()} — {itemSummary(item)}.
               </p>
-
-              {item.kind === "el" && (
-                <div className="rounded-2xl p-4 mb-6 flex items-start gap-3 bg-frost-2">
-                  <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-none bg-white">
-                    <Zap size={15} className="text-amber-deep" />
-                  </div>
-                  <p className="text-xs text-ink">
-                    {item.avtalstyp === "fast"
-                      ? "Du har fast pris, så det spelar ingen roll när på dygnet du drar ström — priset är detsamma oavsett tid."
-                      : "Med rörligt pris är elen ofta billigast natt och tidig morgon (ca 02–06) och dyrast under kvällstopparna (ca 17–19). Lägg tunga sysslor som tvätt, diskmaskin och laddning på natten för att sänka snittpriset."}
-                  </p>
-                </div>
-              )}
 
               <div
                 className="rounded-3xl p-6 md:p-7 mb-5 relative bg-ink-deep"
