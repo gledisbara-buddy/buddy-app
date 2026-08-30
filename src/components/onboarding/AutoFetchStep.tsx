@@ -154,10 +154,11 @@ export function AutoFetchStep({
   const shownItem = displayItem ?? item;
   return (
     <div className="bd-fade">
-      <div className="flex items-center gap-2 mb-4 text-forest">
+      <div className="flex items-center gap-2 mb-1 text-forest">
         <Check size={18} />
         <span className="text-sm font-semibold">Vi hittade din försäkring</span>
       </div>
+      <p className="text-xs mb-4 text-slate">Simulerad identifiering i den här prototypen — bolag och pris nedan är exempeldata.</p>
       <div className="bg-white rounded-2xl border border-line p-5 mb-6">
         <div className="font-semibold text-[15px] mb-1">{itemTitle(shownItem)}</div>
         <div className="text-xs mb-4 text-slate">{itemSummary(shownItem)}</div>

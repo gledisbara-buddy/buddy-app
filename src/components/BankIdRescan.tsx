@@ -84,6 +84,7 @@ export function BankIdRescan() {
                 <div className="text-sm text-slate">Öppna BankID-appen i din mobil</div>
               </div>
               <Loader2 size={18} className="bd-spin text-forest" />
+              <p className="text-xs text-slate">Simulerad identifiering i den här prototypen.</p>
             </div>
           )}
 
@@ -96,17 +97,19 @@ export function BankIdRescan() {
                 <div className="font-semibold text-[15px] mb-1">Letar efter nya försäkringar…</div>
                 <div className="text-sm text-slate">Jämför mot det du redan har hos Buddy</div>
               </div>
+              <p className="text-xs text-slate">Simulerad identifiering i den här prototypen.</p>
             </div>
           )}
 
           {phase === "result" && (
             <div className="text-left">
-              <div className="flex items-center gap-2 mb-4 text-forest">
+              <div className="flex items-center gap-2 mb-1 text-forest">
                 <Check size={18} />
                 <span className="text-sm font-semibold">
                   Vi hittade {found.length} {found.length === 1 ? "ny försäkring" : "nya försäkringar"}
                 </span>
               </div>
+              <p className="text-xs mb-4 text-slate">Simulerad identifiering i den här prototypen — bolag och priser nedan är exempeldata.</p>
               <div className="flex flex-col gap-3 mb-6">
                 {found.map(({ item, quote }) => (
                   <div key={item.id} className="bg-white rounded-2xl border border-line p-5">

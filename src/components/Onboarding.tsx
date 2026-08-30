@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { ArrowLeft, Loader2, PhoneCall } from "lucide-react";
 import { Logo } from "@/components/Logo";
@@ -66,6 +66,7 @@ function BilForm({
   const [forvaring, setForvaring] = useState<"garage" | "uppfart" | "gata" | null>(initialItem?.forvaring ?? null);
   const [lookingUp, setLookingUp] = useState(false);
   const lookupToken = useRef(0);
+  const regnummerId = useId();
 
   const valid = regnummer.trim().length >= 2;
 
@@ -84,9 +85,10 @@ function BilForm({
 
   return (
     <>
-      <Field label="Registreringsnummer">
+      <Field label="Registreringsnummer" inputId={regnummerId}>
         <div className="relative">
           <input
+            id={regnummerId}
             className={inputClass}
             value={regnummer}
             onChange={(e) => setRegnummer(e.target.value.toUpperCase())}
@@ -99,6 +101,7 @@ function BilForm({
         </div>
         {lookingUp && <p className="text-xs mt-1.5 text-slate">Hämtar fordonsinformation…</p>}
       </Field>
+      <p className="text-xs -mt-2 mb-4 text-slate">Simulerad fordonsuppslagning i den här prototypen.</p>
       <Field label="Märke & modell (valfritt)">
         <input className={inputClass} value={markeModell} onChange={(e) => setMarkeModell(e.target.value)} placeholder="Volvo XC60" />
       </Field>
@@ -158,6 +161,7 @@ function OvrigtFordonForm({
   const [arsmodell, setArsmodell] = useState(initialItem?.arsmodell ? String(initialItem.arsmodell) : "");
   const [lookingUp, setLookingUp] = useState(false);
   const lookupToken = useRef(0);
+  const regnummerId = useId();
 
   // mc
   const [cylindervolymCc, setCylindervolymCc] = useState(initialItem?.cylindervolymCc ? String(initialItem.cylindervolymCc) : "");
@@ -195,9 +199,10 @@ function OvrigtFordonForm({
           onChange={setFordonstyp}
         />
       </Field>
-      <Field label="Registrerings- eller ID-nummer (valfritt)">
+      <Field label="Registrerings- eller ID-nummer (valfritt)" inputId={regnummerId}>
         <div className="relative">
           <input
+            id={regnummerId}
             className={inputClass}
             value={regnummer}
             onChange={(e) => setRegnummer(e.target.value.toUpperCase())}
@@ -209,6 +214,7 @@ function OvrigtFordonForm({
           )}
         </div>
       </Field>
+      <p className="text-xs -mt-2 mb-4 text-slate">Simulerad fordonsuppslagning i den här prototypen.</p>
       <div className="grid grid-cols-2 gap-3">
         <Field label="Märke & modell (valfritt)">
           <input className={inputClass} value={markeModell} onChange={(e) => setMarkeModell(e.target.value)} />

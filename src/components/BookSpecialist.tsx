@@ -104,7 +104,9 @@ export function BookSpecialist({ initialTopic }: { initialTopic?: string } = {})
             <Logo />
           </div>
           <ProgressDots total={4} current={step} />
-          <div className="w-6" />
+          <span className="text-xs font-medium px-2.5 py-1 rounded-full bg-frost-2 text-forest whitespace-nowrap">
+            Demo-läge
+          </span>
         </div>
       )}
       <div className="flex-1 flex items-start justify-center px-5 pt-6 pb-16">
@@ -338,6 +340,9 @@ export function BookSpecialist({ initialTopic }: { initialTopic?: string } = {})
 
           {step === 4 && (
             <div className="text-center">
+              <span className="inline-block text-xs font-medium px-2.5 py-1 rounded-full bg-frost-2 text-forest whitespace-nowrap mb-4">
+                Demo-läge — ingen riktig bokning eller e-post skickas
+              </span>
               <div className="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-5 bg-forest">
                 <Check size={28} color="white" />
               </div>

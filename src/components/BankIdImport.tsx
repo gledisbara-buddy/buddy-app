@@ -124,10 +124,11 @@ export function BankIdImport() {
         </div>
         <div className="flex-1 flex items-start justify-center px-5 pb-16">
           <div className="w-full max-w-md bd-fade">
-            <div className="flex items-center gap-2 mb-4 text-forest">
+            <div className="flex items-center gap-2 mb-1 text-forest">
               <Check size={18} />
               <span className="text-sm font-semibold">Vi hittade {found.length} försäkringar</span>
             </div>
+            <p className="text-xs mb-4 text-slate">Simulerad identifiering i den här prototypen — bolag och priser nedan är exempeldata.</p>
             <div className="flex flex-col gap-3 mb-6">
               {found.map(({ item, quote }) => (
                 <div key={item.id} className="bg-white rounded-2xl border border-line p-5">
