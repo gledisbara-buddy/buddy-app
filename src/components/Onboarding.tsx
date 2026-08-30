@@ -15,6 +15,7 @@ import { useBuddy } from "@/lib/buddy-context";
 import type { Quote } from "@/lib/quote";
 import type { FetchableKind } from "@/lib/policy-fetch";
 import { lookupVehicle } from "@/lib/vehicle-lookup";
+import { postnummerToElomrade } from "@/lib/address-lookup";
 import { isoToSwedishDate, swedishDateToIso } from "@/lib/dates";
 import {
   AVTALSTYP_LABELS,
@@ -446,7 +447,12 @@ function ElForm({
 }) {
   const [elbolag, setElbolag] = useState(initialItem?.elbolag ?? "");
   const [avtalstyp, setAvtalstyp] = useState<Avtalstyp | null>(initialItem?.avtalstyp ?? null);
+  const [postnummer, setPostnummer] = useState(initialItem?.postnummer ?? "");
   const [elomrade, setElomrade] = useState<Elomrade | null>(initialItem?.elomrade ?? null);
+  // true tills användaren själv petar i elområdet — så länge den är kvar
+  // vinner postnummer-uppslaget varje gång postnumret ändras, men en
+  // manuell rättning respekteras och skrivs inte över.
+  const [elomradeTouched, setElomradeTouched] = useState(!!initialItem?.elomrade);
   const [arsforbrukningKwh, setArsforbrukningKwh] = useState(initialItem?.arsforbrukningKwh ? String(initialItem.arsforbrukningKwh) : "");
   const [bindningstidManader, setBindningstidManader] = useState(
     initialItem?.bindningstidManader ? String(initialItem.bindningstidManader) : ""
@@ -462,13 +468,38 @@ function ElForm({
       <Field label="Avtalstyp">
         <PillGroup options={["rorligt", "fast", "mix"] as const} labels={AVTALSTYP_LABELS} value={avtalstyp} onChange={setAvtalstyp} />
       </Field>
+      <Field label="Postnummer">
+        <input
+          className={inputClass}
+          value={postnummer}
+          inputMode="numeric"
+          onChange={(e) => {
+            const value = e.target.value;
+            setPostnummer(value);
+            if (!elomradeTouched) {
+              const guess = postnummerToElomrade(value);
+              if (guess) setElomrade(guess);
+            }
+          }}
+          placeholder="123 45"
+        />
+        <p className="text-xs mt-1.5 text-slate">Vi räknar fram ditt elområde utifrån postnumret — nästan ingen vet det utantill.</p>
+      </Field>
       <Field label="Elområde">
         <PillGroup
           options={["SE1", "SE2", "SE3", "SE4"] as const}
           labels={{ SE1: "SE1 (Norr)", SE2: "SE2", SE3: "SE3 (Stockholm)", SE4: "SE4 (Syd)" }}
           value={elomrade}
-          onChange={setElomrade}
+          onChange={(v) => {
+            setElomradeTouched(true);
+            setElomrade(v);
+          }}
         />
+        {postnummer && elomrade && (
+          <p className="text-xs mt-1.5 text-slate">
+            {elomradeTouched ? "Ändrat av dig — stämmer inte uppskattningen kan du alltid rätta här." : "Uppskattat från postnumret. Stämmer det inte, välj rätt område ovan."}
+          </p>
+        )}
       </Field>
       <div className="grid grid-cols-2 gap-3">
         <Field label="Årsförbrukning (kWh, valfritt)">
@@ -500,6 +531,7 @@ function ElForm({
             elbolag: elbolag.trim(),
             avtalstyp: avtalstyp!,
             elomrade: elomrade!,
+            postnummer: postnummer.trim() || undefined,
             arsforbrukningKwh: arsforbrukningKwh ? Number(arsforbrukningKwh) : undefined,
             bindningstidManader: bindningstidManader ? Number(bindningstidManader) : undefined,
           })

@@ -212,6 +212,10 @@ export type ElItem = {
   elbolag: string;
   avtalstyp: Avtalstyp;
   elomrade: Elomrade;
+  // Elområdet räknas fram från postnumret (se postnummerToElomrade i
+  // address-lookup.ts) — sparar postnumret så vi vet vad uträkningen
+  // byggde på, inte bara slutresultatet.
+  postnummer?: string;
   arsforbrukningKwh?: number;
   bindningstidManader?: number;
 };

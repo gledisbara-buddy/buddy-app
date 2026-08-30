@@ -335,6 +335,13 @@ const EL_QUESTIONS: NeedQuestion[] = [
     prompt: "Har du elbil, eller planerar att skaffa en, och behöver bra laddvillkor?",
   },
   {
+    id: "elbil_nattladdning",
+    label: "Laddar mest nattetid",
+    type: "yesno",
+    dependsOn: { needId: "elbil" },
+    prompt: "Laddar du mest nattetid? Ett timprisavtal kan bli betydligt billigare än ett fast pris om du gör det.",
+  },
+  {
     id: "fastpris_trygghet",
     label: "Fast pris för trygghet",
     type: "yesno",
