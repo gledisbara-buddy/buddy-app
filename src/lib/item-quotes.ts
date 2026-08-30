@@ -169,13 +169,84 @@ function boendeQuotes(item: Extract<ComparableItem, { kind: "boende" }>, needs: 
     );
   }
 
+  if (item.typ === "student") {
+    // Korridor/inneboende är billigast att försäkra (minst eget lösöre att
+    // täcka) — studentlägenhet något dyrare, närmare en liten hyresrätt.
+    const typMult = { korridor: 0.6, inneboende: 0.55, studentlagenhet: 0.8 }[item.studentboendeTyp];
+    return withMatchedNeeds(
+      "boende",
+      needs,
+      [
+        build("klarsaker", "Klarsäker", 99 * typMult + extrasCost, [
+          "Fullvärdesskydd för lösöre, ingen övre gräns",
+          "Drulleskydd ingår redan i grundpriset",
+          "Skadeanmälan digitalt, snittbeslut inom 2 dagar",
+        ]),
+        build("hemgrund", "Hemgrund", 89 * typMult + extrasCost, [
+          "Lägst grundpris av de tre",
+          "Bra grundskydd, färre tillägg ingår",
+          "Telefonsupport vardagar 8–17",
+        ]),
+        build("nordvakt", "Nordvakt", 105 * typMult + extrasCost, [
+          "Lägst självrisk av de tre",
+          "Extra starkt reseskydd (90 dagar)",
+          "Prisgaranti — matchar lägre pris hos annat bolag",
+        ]),
+        build("bjornskydd", "Björnskydd", 75 * typMult + extrasCost, [
+          "Billigast av de fyra, tecknas och hanteras helt i app",
+          "Högre självrisk (2200 kr) och lägre ersättningstak (800 000 kr)",
+          "Telefonsupport ingår ej — endast chatt och app",
+        ]),
+      ].sort((a, b) => a.price - b.price)
+    );
+  }
+
+  if (item.typ === "andrahandsuthyrning") {
+    const boytaMult = item.boyta < 50 ? 0.9 : item.boyta < 100 ? 1.15 : 1.35;
+    // Korttid via plattform (t.ex. Airbnb) är högre risk för bolagen än
+    // en långtidsuthyrning — fler främmande personer i bostaden över tid.
+    const formMult = { langtid: 1, "korttid-plattform": 1.4, "rum-i-bostaden": 0.85 }[item.uthyrningsform];
+    const mult = boytaMult * formMult;
+    return withMatchedNeeds(
+      "boende",
+      needs,
+      [
+        build("klarsaker", "Klarsäker", 99 * mult + extrasCost, [
+          "Fullvärdesskydd för lösöre, ingen övre gräns",
+          "Drulleskydd ingår redan i grundpriset",
+          "Skadeanmälan digitalt, snittbeslut inom 2 dagar",
+        ]),
+        build("hemgrund", "Hemgrund", 89 * mult + extrasCost, [
+          "Lägst grundpris av de tre",
+          "Bra grundskydd, färre tillägg ingår",
+          "Telefonsupport vardagar 8–17",
+        ]),
+        build("nordvakt", "Nordvakt", 105 * mult + extrasCost, [
+          "Lägst självrisk av de tre",
+          "Extra starkt reseskydd (90 dagar)",
+          "Prisgaranti — matchar lägre pris hos annat bolag",
+        ]),
+        build("bjornskydd", "Björnskydd", 75 * mult + extrasCost, [
+          "Billigast av de fyra, tecknas och hanteras helt i app",
+          "Högre självrisk (2200 kr) och lägre ersättningstak (800 000 kr)",
+          "Telefonsupport ingår ej — endast chatt och app",
+        ]),
+      ].sort((a, b) => a.price - b.price)
+    );
+  }
+
   const typMult = { hyresratt: 1, bostadsratt: 1.1, villa: 1.35, fritidshus: 1.3, fritidsbostadsratt: 1.15 }[item.typ];
   const boytaMult = item.boyta < 50 ? 0.9 : item.boyta < 100 ? 1.15 : item.boyta < 150 ? 1.35 : 1.6;
   const personAdd = Math.max(0, item.hushallsstorlek - 1) * 12;
   const larm = "larm" in item && item.larm;
   const larmMult = larm ? 0.95 : 1;
+  // Störst enskild prisdrivare efter boyta enligt underlaget (BO-1) — bara
+  // satt om kunden faktiskt svarat på lösörevärde-skalan, annars 1 (ingen
+  // effekt), samma "valfritt påverkar bara om ifyllt"-mönster som övriga
+  // needs-flaggor.
+  const losorevardeMult = item.onskatLosorevarde ? item.onskatLosorevarde / 1000000 : 1;
 
-  const base = (v: number) => (v * typMult * boytaMult + personAdd) * larmMult + extrasCost;
+  const base = (v: number) => (v * typMult * boytaMult * losorevardeMult + personAdd) * larmMult + extrasCost;
 
   return withMatchedNeeds(
     "boende",

@@ -14,7 +14,15 @@ import {
 } from "lucide-react";
 import type { Quote } from "@/lib/quote";
 
-export type BoendeTyp = "hyresratt" | "bostadsratt" | "villa" | "fritidshus" | "fritidsbostadsratt" | "magasinering";
+export type BoendeTyp =
+  | "hyresratt"
+  | "bostadsratt"
+  | "villa"
+  | "fritidshus"
+  | "fritidsbostadsratt"
+  | "magasinering"
+  | "andrahandsuthyrning"
+  | "student";
 // Utökad från fem till tretton typer enligt produktträds-underlaget
 // (avsnitt 3, FO-1–FO-14) — cykel (FO-13) medvetet UTESLUTEN härifrån:
 // underlaget säger själv att de flesta redan täcks av hemförsäkringens
@@ -51,6 +59,21 @@ export type OnskatSkydd = "olycksfall" | "sjukdom" | "liv" | "barnforsakring" | 
 export const HALSODEKLARATION_SKYDD: readonly OnskatSkydd[] = ["sjukdom", "liv", "sjukvard", "diagnosforsakring"];
 export type InneUte = "inne" | "ute" | "bade";
 
+// Skala istället för ett fritt kronbelopp — samma princip som
+// veterinärvårdsbeloppet i DjurItem, de flesta kan inte uppskatta ett
+// exakt värde men känner igen sig i en nivå. BO-1 i produktträds-
+// underlaget kallar det "störst enskild prisdrivare" efter boytan.
+export type LosorevardeSkala = 500000 | 1000000 | 1500000 | 2000000;
+
+export type UppvarmningsSatt =
+  | "fjarrvarme"
+  | "bergvarme"
+  | "luftvarmepump"
+  | "direktverkande_el"
+  | "pellets"
+  | "olja"
+  | "vedeldning";
+
 type BostadBase = {
   id: string;
   kind: "boende";
@@ -59,6 +82,7 @@ type BostadBase = {
   ort: string;
   boyta: number;
   hushallsstorlek: number;
+  onskatLosorevarde?: LosorevardeSkala;
 };
 
 export type HyresrattItem = BostadBase & {
@@ -95,6 +119,48 @@ export type VillaItem = BostadBase & {
   antalPlan: number;
   kallare: boolean;
   larm: boolean;
+  uppvarmningssatt?: UppvarmningsSatt;
+  poolEllerJacuzzi?: boolean;
+  solceller?: boolean;
+  // Bara relevant när typ === "fritidshus" (BO-4 i underlaget) — hur ofta
+  // huset används styr risk (frysskador, tillsyn) mer än själva ytan gör.
+  anvandningManaderPerAr?: number;
+  vinterbonad?: boolean;
+  vattenAvstangtVintertid?: boolean;
+  uthyrs?: boolean;
+};
+
+export type AndrahandsuthyrningRoll = "hyr-ut-egen" | "ager-hyresfastighet";
+export type UthyrningsForm = "langtid" | "korttid-plattform" | "rum-i-bostaden";
+
+export type AndrahandsuthyrningItem = {
+  id: string;
+  kind: "boende";
+  typ: "andrahandsuthyrning";
+  adress: string;
+  postnummer: string;
+  ort: string;
+  boyta: number;
+  roll: AndrahandsuthyrningRoll;
+  uthyrningsform: UthyrningsForm;
+  mobler: boolean;
+};
+
+export type StudentBoendeTyp = "korridor" | "studentlagenhet" | "inneboende";
+
+export type StudentItem = {
+  id: string;
+  kind: "boende";
+  typ: "student";
+  adress: string;
+  postnummer: string;
+  ort: string;
+  studentboendeTyp: StudentBoendeTyp;
+  // Den viktigaste frågan i hela BO-7 enligt underlaget — om svaret är ja
+  // kan föräldrarnas hemförsäkring redan täcka, och rätt svar är ibland
+  // "du behöver inget", inte en ny försäkring. Se HealthCheckView-liknande
+  // "du behöver inget"-mönster i needs.ts/HealthCheckView.tsx.
+  skrivenHosForalder?: boolean;
 };
 
 export type MagasineringItem = {
@@ -115,7 +181,9 @@ export type BoendeItem =
   | BostadsrattItem
   | FritidsbostadsrattItem
   | VillaItem
-  | MagasineringItem;
+  | MagasineringItem
+  | AndrahandsuthyrningItem
+  | StudentItem;
 
 export type BilItem = {
   id: string;
@@ -414,6 +482,35 @@ export const BOENDE_TYP_LABELS: Record<BoendeTyp, string> = {
   fritidshus: "Fritidshus",
   fritidsbostadsratt: "Fritidsbostadsrätt",
   magasinering: "Magasinering",
+  andrahandsuthyrning: "Andrahandsuthyrning",
+  student: "Studentboende / inneboende",
+};
+
+export const UPPVARMNING_LABELS: Record<UppvarmningsSatt, string> = {
+  fjarrvarme: "Fjärrvärme",
+  bergvarme: "Bergvärme",
+  luftvarmepump: "Luftvärmepump",
+  direktverkande_el: "Direktverkande el",
+  pellets: "Pellets",
+  olja: "Olja",
+  vedeldning: "Vedeldning",
+};
+
+export const ANDRAHANDSUTHYRNING_ROLL_LABELS: Record<AndrahandsuthyrningRoll, string> = {
+  "hyr-ut-egen": "Jag hyr ut min egen bostad",
+  "ager-hyresfastighet": "Jag äger en hyresfastighet",
+};
+
+export const UTHYRNINGSFORM_LABELS: Record<UthyrningsForm, string> = {
+  langtid: "Långtid",
+  "korttid-plattform": "Korttid (t.ex. Airbnb)",
+  "rum-i-bostaden": "Rum i bostaden",
+};
+
+export const STUDENTBOENDE_TYP_LABELS: Record<StudentBoendeTyp, string> = {
+  korridor: "Studentkorridor",
+  studentlagenhet: "Studentlägenhet",
+  inneboende: "Inneboende",
 };
 
 export const FORVARINGS_TYP_LABELS: Record<ForvaringsTyp, string> = {
@@ -566,6 +663,12 @@ export function itemSummary(item: InsuranceItem): string {
     case "boende":
       if (item.typ === "magasinering") {
         return `${FORVARINGS_TYP_LABELS[item.forvaringstyp]}, ${item.ort} · ${item.storlekM2} m²`;
+      }
+      if (item.typ === "student") {
+        return `${STUDENTBOENDE_TYP_LABELS[item.studentboendeTyp]}, ${item.ort}`;
+      }
+      if (item.typ === "andrahandsuthyrning") {
+        return `${item.adress}, ${item.ort} · ${item.boyta} m²`;
       }
       return `${item.adress}, ${item.ort} · ${item.boyta} m²`;
     case "bil":

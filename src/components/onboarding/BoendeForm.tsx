@@ -6,14 +6,36 @@ import { AddressField, type AddressValue } from "@/components/onboarding/Address
 import { BoolPill, Field, FormActions, inputClass } from "@/components/onboarding/shared";
 import { useBuddy } from "@/lib/buddy-context";
 import { BOENDE_TYP_LABELS, createItemId } from "@/lib/items";
-import type { BoendeItem, BoendeTyp, ForvaringsTyp, InsuranceItem, OvrigByggnad } from "@/lib/items";
-import { FORVARINGS_TYP_LABELS } from "@/lib/items";
+import type {
+  AndrahandsuthyrningRoll,
+  BoendeItem,
+  BoendeTyp,
+  ForvaringsTyp,
+  InsuranceItem,
+  LosorevardeSkala,
+  OvrigByggnad,
+  StudentBoendeTyp,
+  UppvarmningsSatt,
+  UthyrningsForm,
+} from "@/lib/items";
+import {
+  ANDRAHANDSUTHYRNING_ROLL_LABELS,
+  FORVARINGS_TYP_LABELS,
+  STUDENTBOENDE_TYP_LABELS,
+  UPPVARMNING_LABELS,
+  UTHYRNINGSFORM_LABELS,
+} from "@/lib/items";
 import { PillGroup } from "@/components/onboarding/shared";
 
 const APARTMENT_TYPES: BoendeTyp[] = ["hyresratt", "bostadsratt", "fritidsbostadsratt"];
 const HOUSE_TYPES: BoendeTyp[] = ["villa", "fritidshus"];
 
 const emptyAddress: AddressValue = { adress: "", postnummer: "", ort: "" };
+
+const LOSOREVARDE_OPTIONS = ["500000", "1000000", "1500000", "2000000"] as const;
+const LOSOREVARDE_LABELS = Object.fromEntries(
+  LOSOREVARDE_OPTIONS.map((v) => [v, `${Number(v).toLocaleString("sv-SE")} kr`])
+) as Record<string, string>;
 
 export function BoendeForm({
   onSave,
@@ -51,6 +73,11 @@ export function BoendeForm({
   const [bostadsrattstillagg, setBostadsrattstillagg] = useState<boolean | null>(
     initialItem && "bostadsrattstillagg" in initialItem ? initialItem.bostadsrattstillagg : null
   );
+  const [onskatLosorevarde, setOnskatLosorevarde] = useState<string | null>(
+    initialItem && "onskatLosorevarde" in initialItem && initialItem.onskatLosorevarde
+      ? String(initialItem.onskatLosorevarde)
+      : null
+  );
 
   // House fields (villa / fritidshus)
   const [antalBadDusch, setAntalBadDusch] = useState(
@@ -72,6 +99,47 @@ export function BoendeForm({
   );
   const [kallare, setKallare] = useState<boolean | null>(
     initialItem && "kallare" in initialItem ? initialItem.kallare : null
+  );
+  const [uppvarmningssatt, setUppvarmningssatt] = useState<UppvarmningsSatt | null>(
+    initialItem && "uppvarmningssatt" in initialItem ? (initialItem.uppvarmningssatt ?? null) : null
+  );
+  const [poolEllerJacuzzi, setPoolEllerJacuzzi] = useState<boolean | null>(
+    initialItem && "poolEllerJacuzzi" in initialItem ? (initialItem.poolEllerJacuzzi ?? null) : null
+  );
+  const [solceller, setSolceller] = useState<boolean | null>(
+    initialItem && "solceller" in initialItem ? (initialItem.solceller ?? null) : null
+  );
+  // fritidshus-specifikt (BO-4)
+  const [anvandningManaderPerAr, setAnvandningManaderPerAr] = useState(
+    initialItem && "anvandningManaderPerAr" in initialItem && initialItem.anvandningManaderPerAr
+      ? String(initialItem.anvandningManaderPerAr)
+      : ""
+  );
+  const [vinterbonad, setVinterbonad] = useState<boolean | null>(
+    initialItem && "vinterbonad" in initialItem ? (initialItem.vinterbonad ?? null) : null
+  );
+  const [vattenAvstangtVintertid, setVattenAvstangtVintertid] = useState<boolean | null>(
+    initialItem && "vattenAvstangtVintertid" in initialItem ? (initialItem.vattenAvstangtVintertid ?? null) : null
+  );
+  const [uthyrs, setUthyrs] = useState<boolean | null>(
+    initialItem && "uthyrs" in initialItem ? (initialItem.uthyrs ?? null) : null
+  );
+
+  // Andrahandsuthyrning (BO-6)
+  const [roll, setRoll] = useState<AndrahandsuthyrningRoll | null>(
+    initialItem && "roll" in initialItem ? initialItem.roll : null
+  );
+  const [uthyrningsform, setUthyrningsform] = useState<UthyrningsForm | null>(
+    initialItem && "uthyrningsform" in initialItem ? initialItem.uthyrningsform : null
+  );
+  const [mobler, setMobler] = useState<boolean | null>(initialItem && "mobler" in initialItem ? initialItem.mobler : null);
+
+  // Student/inneboende (BO-7)
+  const [studentboendeTyp, setStudentboendeTyp] = useState<StudentBoendeTyp | null>(
+    initialItem && "studentboendeTyp" in initialItem ? initialItem.studentboendeTyp : null
+  );
+  const [skrivenHosForalder, setSkrivenHosForalder] = useState<boolean | null>(
+    initialItem && "skrivenHosForalder" in initialItem ? (initialItem.skrivenHosForalder ?? null) : null
   );
 
   // Magasinering fields
@@ -190,6 +258,9 @@ export function BoendeForm({
             <input type="number" min={1} className={inputClass} value={antalPlan} onChange={(e) => setAntalPlan(e.target.value)} />
           </Field>
         </div>
+        <Field label="Ungefärligt värde på ditt lösöre (valfritt)">
+          <PillGroup options={LOSOREVARDE_OPTIONS} labels={LOSOREVARDE_LABELS} value={onskatLosorevarde} onChange={setOnskatLosorevarde} />
+        </Field>
         <Field label="Skorsten?">
           <BoolPill value={skorsten} onChange={setSkorsten} />
         </Field>
@@ -202,6 +273,57 @@ export function BoendeForm({
         <Field label="Larm?">
           <BoolPill value={larm} onChange={setLarm} />
         </Field>
+        <Field label="Uppvärmningssätt (valfritt)">
+          <PillGroup
+            options={
+              ["fjarrvarme", "bergvarme", "luftvarmepump", "direktverkande_el", "pellets", "olja", "vedeldning"] as const
+            }
+            labels={UPPVARMNING_LABELS}
+            value={uppvarmningssatt}
+            onChange={setUppvarmningssatt}
+          />
+        </Field>
+        <Field label="Pool eller jacuzzi?">
+          <BoolPill value={poolEllerJacuzzi} onChange={setPoolEllerJacuzzi} />
+        </Field>
+        <Field label="Solceller?">
+          <BoolPill value={solceller} onChange={setSolceller} />
+        </Field>
+
+        {typ === "fritidshus" && (
+          <>
+            <Field label="Hur många månader per år används huset? (valfritt)">
+              <input
+                type="number"
+                min={0}
+                max={12}
+                className={inputClass}
+                value={anvandningManaderPerAr}
+                onChange={(e) => setAnvandningManaderPerAr(e.target.value)}
+                placeholder="3"
+              />
+            </Field>
+            <Field label="Vinterbonat (uppvärmt och används året runt)?">
+              <BoolPill value={vinterbonad} onChange={setVinterbonad} />
+            </Field>
+            {vinterbonad === false && (
+              <div className="rounded-2xl p-4 mb-4 flex items-start gap-3 bg-frost-2">
+                <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-none bg-white">
+                  <Info size={15} className="text-forest" />
+                </div>
+                <p className="text-xs text-ink">
+                  Är vattnet avstängt och systemet tömt när huset står tomt vintertid? Det avgör om frysskador täcks.
+                </p>
+              </div>
+            )}
+            <Field label="Är vattnet avstängt och systemet tömt vintertid? (valfritt)">
+              <BoolPill value={vattenAvstangtVintertid} onChange={setVattenAvstangtVintertid} />
+            </Field>
+            <Field label="Hyrs huset ut (t.ex. via plattform)?">
+              <BoolPill value={uthyrs} onChange={setUthyrs} />
+            </Field>
+          </>
+        )}
 
         <Field label="Övriga byggnader (t.ex. garage, förråd)">
           <div className="flex gap-2 mb-3">
@@ -262,6 +384,18 @@ export function BoendeForm({
               antalPlan: Number(antalPlan) || 1,
               kallare: !!kallare,
               larm: !!larm,
+              onskatLosorevarde: onskatLosorevarde ? (Number(onskatLosorevarde) as LosorevardeSkala) : undefined,
+              uppvarmningssatt: uppvarmningssatt ?? undefined,
+              poolEllerJacuzzi: poolEllerJacuzzi ?? undefined,
+              solceller: solceller ?? undefined,
+              ...(typ === "fritidshus"
+                ? {
+                    anvandningManaderPerAr: anvandningManaderPerAr ? Number(anvandningManaderPerAr) : undefined,
+                    vinterbonad: vinterbonad ?? undefined,
+                    vattenAvstangtVintertid: vattenAvstangtVintertid ?? undefined,
+                    uthyrs: uthyrs ?? undefined,
+                  }
+                : {}),
             })
           }
         />
@@ -287,6 +421,7 @@ export function BoendeForm({
             hushallsstorlek: Number(hushallsstorlek) || 1,
             sakerhetsdorr: !!sakerhetsdorr,
             larm: !!larm,
+            onskatLosorevarde: onskatLosorevarde ? (Number(onskatLosorevarde) as LosorevardeSkala) : undefined,
           }
         : {
             id: initialItem?.id ?? createItemId(),
@@ -301,6 +436,7 @@ export function BoendeForm({
             sakerhetsdorr: !!sakerhetsdorr,
             larm: !!larm,
             bostadsrattstillagg: !!bostadsrattstillagg,
+            onskatLosorevarde: onskatLosorevarde ? (Number(onskatLosorevarde) as LosorevardeSkala) : undefined,
           };
 
     return (
@@ -319,6 +455,9 @@ export function BoendeForm({
         </div>
         <Field label="Antal personer i hushållet">
           <input type="number" min={1} className={inputClass} value={hushallsstorlek} onChange={(e) => setHushallsstorlek(e.target.value)} />
+        </Field>
+        <Field label="Ungefärligt värde på ditt lösöre (valfritt)">
+          <PillGroup options={LOSOREVARDE_OPTIONS} labels={LOSOREVARDE_LABELS} value={onskatLosorevarde} onChange={setOnskatLosorevarde} />
         </Field>
         <Field label="Säkerhetsdörr?">
           <BoolPill value={sakerhetsdorr} onChange={setSakerhetsdorr} />
@@ -344,6 +483,106 @@ export function BoendeForm({
           </>
         )}
         <FormActions valid={valid} onCancel={onCancel} onSave={() => onSave(item)} />
+      </>
+    );
+  }
+
+  if (typ === "andrahandsuthyrning") {
+    const valid = address.adress.trim().length > 1 && address.ort.trim().length > 0 && Number(boyta) > 0 && !!roll && !!uthyrningsform;
+    return (
+      <>
+        <button onClick={backToTypePicker} className="flex items-center gap-1.5 text-sm mb-4 opacity-60 hover:opacity-100">
+          <ArrowLeft size={15} /> Annan typ
+        </button>
+        <Field label="Din roll">
+          <PillGroup
+            options={["hyr-ut-egen", "ager-hyresfastighet"] as const}
+            labels={ANDRAHANDSUTHYRNING_ROLL_LABELS}
+            value={roll}
+            onChange={setRoll}
+          />
+        </Field>
+        <AddressField value={address} onChange={setAddress} />
+        <Field label="Boyta (m²)">
+          <input type="number" className={inputClass} value={boyta} onChange={(e) => setBoyta(e.target.value)} placeholder="55" />
+        </Field>
+        <Field label="Uthyrningsform">
+          <PillGroup
+            options={["langtid", "korttid-plattform", "rum-i-bostaden"] as const}
+            labels={UTHYRNINGSFORM_LABELS}
+            value={uthyrningsform}
+            onChange={setUthyrningsform}
+          />
+        </Field>
+        <Field label="Möblerad?">
+          <BoolPill value={mobler} onChange={setMobler} />
+        </Field>
+        <FormActions
+          valid={valid}
+          onCancel={onCancel}
+          onSave={() =>
+            onSave({
+              id: initialItem?.id ?? createItemId(),
+              kind: "boende",
+              typ: "andrahandsuthyrning",
+              adress: address.adress.trim(),
+              postnummer: address.postnummer.trim(),
+              ort: address.ort.trim(),
+              boyta: Number(boyta),
+              roll: roll!,
+              uthyrningsform: uthyrningsform!,
+              mobler: !!mobler,
+            })
+          }
+        />
+      </>
+    );
+  }
+
+  if (typ === "student") {
+    const valid = address.adress.trim().length > 1 && address.ort.trim().length > 0 && !!studentboendeTyp;
+    return (
+      <>
+        <button onClick={backToTypePicker} className="flex items-center gap-1.5 text-sm mb-4 opacity-60 hover:opacity-100">
+          <ArrowLeft size={15} /> Annan typ
+        </button>
+        <AddressField value={address} onChange={setAddress} />
+        <Field label="Boendeform">
+          <PillGroup
+            options={["korridor", "studentlagenhet", "inneboende"] as const}
+            labels={STUDENTBOENDE_TYP_LABELS}
+            value={studentboendeTyp}
+            onChange={setStudentboendeTyp}
+          />
+        </Field>
+        <div className="rounded-2xl p-4 mb-4 flex items-start gap-3 bg-frost-2">
+          <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-none bg-white">
+            <Info size={15} className="text-forest" />
+          </div>
+          <p className="text-xs text-ink">
+            Är du fortfarande skriven hos en förälder kan deras hemförsäkring redan täcka dig — kolla det innan du
+            tecknar en egen. Det är den enda produkten där rätt svar ibland är att du inte behöver något alls.
+          </p>
+        </div>
+        <Field label="Är du fortfarande skriven hos en förälder?">
+          <BoolPill value={skrivenHosForalder} onChange={setSkrivenHosForalder} />
+        </Field>
+        <FormActions
+          valid={valid}
+          onCancel={onCancel}
+          onSave={() =>
+            onSave({
+              id: initialItem?.id ?? createItemId(),
+              kind: "boende",
+              typ: "student",
+              adress: address.adress.trim(),
+              postnummer: address.postnummer.trim(),
+              ort: address.ort.trim(),
+              studentboendeTyp: studentboendeTyp!,
+              skrivenHosForalder: skrivenHosForalder ?? undefined,
+            })
+          }
+        />
       </>
     );
   }
