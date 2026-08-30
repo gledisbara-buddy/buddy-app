@@ -221,6 +221,9 @@ type ProfileRow = {
   fullmakt_signed_at: string | null;
   fullmakt_pdf_path: string | null;
   created_at: string;
+  notify_email: boolean | null;
+  notify_sms: boolean | null;
+  language: string | null;
 };
 
 type ItemRow = { kind: string; data: InsuranceItem; needs: string[] | null };
@@ -432,7 +435,9 @@ export function BuddyProvider({ children }: { children: ReactNode }) {
       ] = await Promise.all([
         supabase
           .from("profiles")
-          .select("user_type, name, personnummer, phone, ready_to_compare, referral_code, fullmakt_signed_at, fullmakt_pdf_path, created_at")
+          .select(
+            "user_type, name, personnummer, phone, ready_to_compare, referral_code, fullmakt_signed_at, fullmakt_pdf_path, created_at, notify_email, notify_sms, language"
+          )
           .eq("id", uid)
           .single(),
         supabase.from("items").select("kind, data, needs").eq("user_id", uid),
@@ -478,6 +483,9 @@ export function BuddyProvider({ children }: { children: ReactNode }) {
           fullmaktSignedAt: row.fullmakt_signed_at ?? undefined,
           fullmaktPdfPath: row.fullmakt_pdf_path ?? undefined,
           memberSince: row.created_at,
+          notifyEmail: row.notify_email ?? undefined,
+          notifySms: row.notify_sms ?? undefined,
+          language: row.language === "en" ? "en" : "sv",
         });
         setReadyToCompareState(row.ready_to_compare);
         if (!row.referral_code && referralCode) {
