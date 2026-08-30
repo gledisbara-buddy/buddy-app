@@ -16,7 +16,7 @@ export default function IntegritetspolicyPage() {
       sections={[
         {
           heading: "Vem är personuppgiftsansvarig?",
-          body: "Buddy (org.nr under registrering) är personuppgiftsansvarig för behandlingen av dina personuppgifter i tjänsten. Frågor om den här policyn eller dina uppgifter skickas via vår kontaktsida.",
+          body: "Buddy är i nuläget en produkt under utveckling — bolagsnamn och organisationsnummer läggs till här den dag tjänsten lanseras skarpt. Fram tills dess är det personuppgiftsansvariga bakom Buddy den som driver projektet. Frågor om den här policyn eller dina uppgifter skickas via vår kontaktsida.",
         },
         {
           heading: "Vilka uppgifter samlar vi in?",

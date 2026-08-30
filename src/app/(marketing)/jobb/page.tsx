@@ -5,7 +5,7 @@ import { pageMetadata } from "@/lib/seo";
 
 export const metadata: Metadata = pageMetadata({
   title: "Jobba hos oss",
-  description: "Vi bygger ett enklare sätt att hantera försäkring. Se våra just nu lediga tjänster.",
+  description: "Vi bygger ett enklare sätt att hantera allt du betalar för. Se våra just nu lediga tjänster.",
 });
 
 export default function JobbPage() {
@@ -14,7 +14,7 @@ export default function JobbPage() {
       <span className="bd-eyebrow">Jobba hos oss</span>
       <h1 className="bd-display text-3xl md:text-4xl mt-3 mb-4">Lediga jobb</h1>
       <p className="text-base mb-10 max-w-xl text-slate">
-        Vi bygger ett enklare sätt att hantera försäkring. Här är våra just nu lediga tjänster.
+        Vi bygger ett enklare sätt att hantera allt du betalar för. Här är våra just nu lediga tjänster.
       </p>
 
       <div className="flex flex-col gap-4">
@@ -36,7 +36,7 @@ export default function JobbPage() {
               </span>
             </div>
             <a
-              href={`mailto:jobb@buddyforsakring.se?subject=${encodeURIComponent(`Ansökan: ${job.title}`)}`}
+              href={`mailto:jobb@minbuddy.se?subject=${encodeURIComponent(`Ansökan: ${job.title}`)}`}
               className="text-sm font-semibold flex items-center gap-1 text-forest"
             >
               Ansök via mejl →
@@ -49,8 +49,8 @@ export default function JobbPage() {
         <Briefcase size={17} className="mt-0.5 flex-none text-forest" />
         <p className="text-sm text-ink">
           Hittar du ingen tjänst som passar? Mejla oss ändå på{" "}
-          <a href="mailto:jobb@buddyforsakring.se" className="font-semibold underline">
-            jobb@buddyforsakring.se
+          <a href="mailto:jobb@minbuddy.se" className="font-semibold underline">
+            jobb@minbuddy.se
           </a>{" "}
           — vi läser alla spontanansökningar.
         </p>

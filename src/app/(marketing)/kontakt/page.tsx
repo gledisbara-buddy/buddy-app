@@ -9,7 +9,7 @@ export const metadata: Metadata = pageMetadata({
 
 const CHANNELS = [
   { icon: Phone, title: "Telefon", value: "010-123 45 67", desc: "Vardagar 8–18" },
-  { icon: Mail, title: "E-post", value: "hej@buddyforsakring.se", desc: "Svar inom 1 arbetsdag" },
+  { icon: Mail, title: "E-post", value: "hej@minbuddy.se", desc: "Svar inom 1 arbetsdag" },
   { icon: MapPin, title: "Kontor", value: "Sveavägen 44, Stockholm", desc: "Besök endast efter bokning" },
 ];
 

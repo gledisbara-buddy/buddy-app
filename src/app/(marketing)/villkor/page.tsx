@@ -32,7 +32,7 @@ export default function VillkorPage() {
         },
         {
           heading: "5. Ansvarsbegränsning",
-          body: "Buddy förmedlar information och, i förekommande fall, försäkringsdistribution, men är inte part i det försäkringsavtal som tecknas mellan dig och försäkringsbolaget.",
+          body: "Buddy förmedlar information och jämförelser, men är inte part i det försäkringsavtal som tecknas mellan dig och försäkringsbolaget. Buddy är i nuläget en produkt under utveckling och bedriver inte tillståndspliktig försäkringsdistribution — det uppdateras här den dag det blir aktuellt.",
         },
       ]}
     />
