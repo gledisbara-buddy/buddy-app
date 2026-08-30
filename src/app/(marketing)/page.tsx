@@ -78,7 +78,7 @@ const TESTIMONIALS = [
   {
     pillar: "Säg upp",
     quote:
-      "Det var uppsägningen av det gamla bolaget jag dreg mest inför. Buddy tog hela samtalet — jag behövde bara skriva under fullmakten.",
+      "Det var uppsägningen av det gamla bolaget jag bävade mest inför. Buddy tog hela samtalet — jag behövde bara skriva under fullmakten.",
     name: "Amanda K.",
     place: "Stockholm",
   },
@@ -134,6 +134,12 @@ const COMPARISON = [
     buddy: "Anmäl i appen, följ hela ärendet",
     self: "Separat kontakt per bolag, egen uppföljning",
   },
+  {
+    label: "Skräddarsy en förhandling",
+    buddy: "Jämför de villkor bolagen redan listar",
+    self: "Kan ringa och förhandla en egen lösning direkt",
+    winner: "self" as const,
+  },
 ];
 
 const SUPPORT = [
@@ -180,7 +186,7 @@ export default function MarketingHome() {
           <div>
             <ProductPreview />
             <p className="text-xs text-center mt-3 text-slate">
-              Exempelvy i den här prototypen — inte ditt riktiga konto.
+              Skiss av översikten, inte ditt riktiga konto.
             </p>
           </div>
         </div>
@@ -233,7 +239,7 @@ export default function MarketingHome() {
             ))}
           </div>
           <p className="text-xs text-center mt-6 text-slate">
-            Exempelröster i den här prototypen — inte riktiga kundcitat.
+            Rösterna ovan är påhittade exempel, inte riktiga kunder.
           </p>
         </section>
       </Reveal>
@@ -274,16 +280,26 @@ export default function MarketingHome() {
               </div>
               <div className="p-3 md:p-4 text-slate text-xs md:text-sm font-semibold">På egen hand</div>
             </div>
-            {COMPARISON.map((row) => (
-              <div key={row.label} className="grid grid-cols-[1.3fr_1fr_1fr] border-t border-line">
-                <div className="p-3 md:p-4 text-xs md:text-sm font-medium">{row.label}</div>
-                <div className="p-3 md:p-4 bg-frost-2 text-ink text-xs md:text-sm flex items-start gap-1.5">
-                  <Check size={14} className="text-forest flex-none mt-0.5" />
-                  <span>{row.buddy}</span>
+            {COMPARISON.map((row) => {
+              const selfWins = "winner" in row && row.winner === "self";
+              return (
+                <div key={row.label} className="grid grid-cols-[1.3fr_1fr_1fr] border-t border-line">
+                  <div className="p-3 md:p-4 text-xs md:text-sm font-medium">{row.label}</div>
+                  <div
+                    className={`p-3 md:p-4 text-xs md:text-sm flex items-start gap-1.5 ${selfWins ? "text-slate" : "bg-frost-2 text-ink"}`}
+                  >
+                    {!selfWins && <Check size={14} className="text-forest flex-none mt-0.5" />}
+                    <span>{row.buddy}</span>
+                  </div>
+                  <div
+                    className={`p-3 md:p-4 text-xs md:text-sm flex items-start gap-1.5 ${selfWins ? "bg-frost-2 text-ink" : "text-slate"}`}
+                  >
+                    {selfWins && <Check size={14} className="text-forest flex-none mt-0.5" />}
+                    <span>{row.self}</span>
+                  </div>
                 </div>
-                <div className="p-3 md:p-4 text-slate text-xs md:text-sm">{row.self}</div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </section>
       </Reveal>
