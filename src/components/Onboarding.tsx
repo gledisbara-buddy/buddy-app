@@ -457,7 +457,11 @@ function PersonForm({
 
   const valid = namn.trim().length > 0 && personnummer.trim().length >= 10 && relation;
   const skyddOptions: OnskatSkydd[] =
-    relation === "barn" ? ["barnforsakring", "olycksfall"] : ["olycksfall", "sjukdom", "liv"];
+    relation === "barn"
+      ? ["barnforsakring", "olycksfall", "diagnosforsakring"]
+      : relation === "mig-sjalv" || relation === "partner"
+        ? ["olycksfall", "sjukdom", "liv", "sjukvard", "inkomst", "diagnosforsakring", "gravid"]
+        : ["olycksfall", "sjukdom", "liv", "sjukvard", "inkomst", "diagnosforsakring"];
 
   return (
     <>

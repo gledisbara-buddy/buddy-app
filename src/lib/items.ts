@@ -39,7 +39,16 @@ export type DjurTyp = "hund" | "katt" | "annat";
 export type PersonRelation = "mig-sjalv" | "partner" | "barn" | "annan";
 export type ForvaringsTyp = "forrad" | "kallarforrad" | "container" | "boxlager" | "annat";
 export type Sysselsattning = "anstalld" | "egenforetagare" | "student" | "arbetssokande" | "pensionar";
-export type OnskatSkydd = "olycksfall" | "sjukdom" | "liv" | "barnforsakring";
+// gravid/sjukvard/inkomst/diagnosforsakring tillagda enligt produktträds-
+// underlagets PE-4/PE-6/PE-7/PE-8 — övriga fyra fanns redan (sjukdom
+// motsvarar redan PE-2, "Sjuk- och efterlevandeskydd").
+// HALSODEKLARATION_SKYDD (nedan) markerar vilka av dem som kräver en
+// hälsodeklaration — enligt Gledis (2026-08-30) ska den frågan ställas när
+// kunden valt bolag och ska teckna, inte i den indikativa jämförelsen, se
+// CheckoutForm i CompareFlow.tsx.
+export type OnskatSkydd = "olycksfall" | "sjukdom" | "liv" | "barnforsakring" | "gravid" | "sjukvard" | "inkomst" | "diagnosforsakring";
+
+export const HALSODEKLARATION_SKYDD: readonly OnskatSkydd[] = ["sjukdom", "liv", "sjukvard", "diagnosforsakring"];
 export type InneUte = "inne" | "ute" | "bade";
 
 type BostadBase = {
@@ -485,6 +494,10 @@ export const ONSKAT_SKYDD_LABELS: Record<OnskatSkydd, string> = {
   sjukdom: "Sjuk- och efterlevandeskydd",
   liv: "Livförsäkring",
   barnforsakring: "Barnförsäkring",
+  gravid: "Gravidförsäkring",
+  sjukvard: "Sjukvårdsförsäkring",
+  inkomst: "Inkomstförsäkring",
+  diagnosforsakring: "Diagnosförsäkring",
 };
 
 export const INNE_UTE_LABELS: Record<InneUte, string> = {

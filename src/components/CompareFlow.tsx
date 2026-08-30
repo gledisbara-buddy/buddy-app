@@ -15,7 +15,7 @@ import { createClient } from "@/lib/supabase/client";
 import { sendTransactionalEmail } from "@/lib/email";
 import { formatSwedishDate } from "@/lib/dates";
 import { computeItemQuotes } from "@/lib/item-quotes";
-import { isComparableItem, itemSummary, itemTitle } from "@/lib/items";
+import { HALSODEKLARATION_SKYDD, isComparableItem, itemSummary, itemTitle } from "@/lib/items";
 import { getAvailableNeedIds, NEED_LABELS, type NeedsKind } from "@/lib/needs";
 import type { FetchableKind } from "@/lib/policy-fetch";
 import { effectiveQuote, pickWinner, type Quote } from "@/lib/quote";
@@ -42,6 +42,15 @@ function CheckoutForm({
   setOldBolag,
   oldAvtalsnummer,
   setOldAvtalsnummer,
+  needsHalsodeklaration,
+  roker,
+  setRoker,
+  sjukskrivenSenaste5Ar,
+  setSjukskrivenSenaste5Ar,
+  pagaendeBehandling,
+  setPagaendeBehandling,
+  tidigareAvslag,
+  setTidigareAvslag,
   onSubmit,
   onBack,
 }: {
@@ -58,6 +67,15 @@ function CheckoutForm({
   setOldBolag: (v: string) => void;
   oldAvtalsnummer: string;
   setOldAvtalsnummer: (v: string) => void;
+  needsHalsodeklaration: boolean;
+  roker: boolean | null;
+  setRoker: (v: boolean) => void;
+  sjukskrivenSenaste5Ar: boolean | null;
+  setSjukskrivenSenaste5Ar: (v: boolean) => void;
+  pagaendeBehandling: boolean | null;
+  setPagaendeBehandling: (v: boolean) => void;
+  tidigareAvslag: boolean | null;
+  setTidigareAvslag: (v: boolean) => void;
   onSubmit: () => void;
   onBack: () => void;
 }) {
@@ -66,7 +84,9 @@ function CheckoutForm({
     personnummer.trim().length >= 10 &&
     !!betalningsmetod &&
     hasOldPolicy !== null &&
-    (!hasOldPolicy || oldBolag.trim().length > 0);
+    (!hasOldPolicy || oldBolag.trim().length > 0) &&
+    (!needsHalsodeklaration ||
+      (roker !== null && sjukskrivenSenaste5Ar !== null && pagaendeBehandling !== null && tidigareAvslag !== null));
 
   return (
     <>
@@ -111,6 +131,28 @@ function CheckoutForm({
           </>
         )}
       </div>
+
+      {needsHalsodeklaration && (
+        <div className="bg-white rounded-2xl border border-line p-6 mt-4">
+          <div className="text-sm font-semibold mb-1">Hälsodeklaration</div>
+          <p className="text-xs mb-4 text-slate">
+            Det här påverkar om bolaget godkänner avtalet, inte om du kan jämföra priser — därför frågar vi först nu,
+            inte tidigare i jämförelsen.
+          </p>
+          <Field label="Röker eller snusar du?">
+            <BoolPill value={roker} onChange={setRoker} />
+          </Field>
+          <Field label="Har du varit sjukskriven mer än 14 dagar i följd senaste 5 åren?">
+            <BoolPill value={sjukskrivenSenaste5Ar} onChange={setSjukskrivenSenaste5Ar} />
+          </Field>
+          <Field label="Har du någon pågående behandling, medicinering eller utredning?">
+            <BoolPill value={pagaendeBehandling} onChange={setPagaendeBehandling} />
+          </Field>
+          <Field label="Har du fått avslag eller förhöjd premie på en försäkring tidigare?">
+            <BoolPill value={tidigareAvslag} onChange={setTidigareAvslag} />
+          </Field>
+        </div>
+      )}
 
       <button
         onClick={onSubmit}
@@ -331,6 +373,13 @@ export function CompareFlow({ itemId }: { itemId: string }) {
   const [oldBolag, setOldBolag] = useState("");
   const [oldAvtalsnummer, setOldAvtalsnummer] = useState("");
   const [wantsCancellationHelp, setWantsCancellationHelp] = useState<boolean | undefined>(undefined);
+  // Bara relevant för personförsäkringar i HALSODEKLARATION_SKYDD — ställs
+  // här (vid tecknande) snarare än i den indikativa jämförelsen, se
+  // Halsodeklaration-typen i buddy-context.tsx för varför.
+  const [roker, setRoker] = useState<boolean | null>(null);
+  const [sjukskrivenSenaste5Ar, setSjukskrivenSenaste5Ar] = useState<boolean | null>(null);
+  const [pagaendeBehandling, setPagaendeBehandling] = useState<boolean | null>(null);
+  const [tidigareAvslag, setTidigareAvslag] = useState<boolean | null>(null);
 
   useEffect(() => {
     if (phase === "loading") {
@@ -353,6 +402,8 @@ export function CompareFlow({ itemId }: { itemId: string }) {
   // igen om kunden redan lagt in sitt boende.
   const homeItem = items.find((i) => i.kind === "boende");
   const homeAddress = homeItem && "adress" in homeItem ? `${homeItem.adress}, ${homeItem.ort}` : undefined;
+  const needsHalsodeklaration =
+    item.kind === "person" && item.onskatSkydd.some((s) => HALSODEKLARATION_SKYDD.includes(s));
 
   const handleSign = (quote: Quote) => {
     setPendingQuote(quote);
@@ -389,6 +440,14 @@ export function CompareFlow({ itemId }: { itemId: string }) {
       oldBolag: hasOldPolicy ? oldBolag.trim() || undefined : undefined,
       oldAvtalsnummer: hasOldPolicy ? oldAvtalsnummer.trim() || undefined : undefined,
       wantsCancellationHelp: cancellationHelp,
+      halsodeklaration: needsHalsodeklaration
+        ? {
+            roker: !!roker,
+            sjukskrivenSenaste5Ar: !!sjukskrivenSenaste5Ar,
+            pagaendeBehandling: !!pagaendeBehandling,
+            tidigareAvslag: !!tidigareAvslag,
+          }
+        : undefined,
     });
     setWantsCancellationHelp(cancellationHelp);
     setSignedQuote(pendingQuote);
@@ -807,6 +866,15 @@ export function CompareFlow({ itemId }: { itemId: string }) {
                   setOldBolag={setOldBolag}
                   oldAvtalsnummer={oldAvtalsnummer}
                   setOldAvtalsnummer={setOldAvtalsnummer}
+                  needsHalsodeklaration={needsHalsodeklaration}
+                  roker={roker}
+                  setRoker={setRoker}
+                  sjukskrivenSenaste5Ar={sjukskrivenSenaste5Ar}
+                  setSjukskrivenSenaste5Ar={setSjukskrivenSenaste5Ar}
+                  pagaendeBehandling={pagaendeBehandling}
+                  setPagaendeBehandling={setPagaendeBehandling}
+                  tidigareAvslag={tidigareAvslag}
+                  setTidigareAvslag={setTidigareAvslag}
                   onSubmit={handleCheckoutSubmit}
                   onBack={() => setPhase("results")}
                 />

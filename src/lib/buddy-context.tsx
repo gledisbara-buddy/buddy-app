@@ -42,6 +42,18 @@ export type ReferralStats = { total: number; qualified: number };
 // Uppgifterna som samlas in i CompareFlow.tsx:s teckna-flöde innan ett
 // avtal faktiskt sparas. Bara betalningstyp, aldrig kontouppgifter — se
 // CompareFlow.tsx för resonemanget.
+// Ställs bara för personförsäkringar i HALSODEKLARATION_SKYDD (items.ts) —
+// och först vid tecknande, inte i den indikativa jämförelsen, se
+// CheckoutForm i CompareFlow.tsx. Medvetet begränsad till ja/nej-svar,
+// ingen fritext om diagnoser eller liknande — bara det som faktiskt
+// behövs för att flödet ska kännas komplett i en demo, inget mer.
+export type Halsodeklaration = {
+  roker: boolean;
+  sjukskrivenSenaste5Ar: boolean;
+  pagaendeBehandling: boolean;
+  tidigareAvslag: boolean;
+};
+
 export type CheckoutInfo = {
   name: string;
   personnummer: string;
@@ -50,6 +62,7 @@ export type CheckoutInfo = {
   oldBolag?: string;
   oldAvtalsnummer?: string;
   wantsCancellationHelp?: boolean;
+  halsodeklaration?: Halsodeklaration;
 };
 
 // Hushållet är ett separat begrepp från de försäkringsobjekt av typen
