@@ -4,22 +4,23 @@ Det här dokumentet är den levande sammanfattningen av vad Buddy är och vad so
 Uppdatera det när nya funktioner läggs till eller större beslut tas — det ska alltid gå
 att läsa den här filen och förstå var projektet står, utan att gräva i commit-historiken.
 
+**Senast omskriven i sin helhet: 2026-08-30.** Föregående version var från 2026-08-08
+och saknade 80+ commits — hela internverktyget, nästan hela 21-sektionsplanen för
+kundresa v2, och en stor genomgång av jämförelsemotorn. Om något här känns inaktuellt,
+lita på `git log` och koden, inte på det här dokumentet, och uppdatera det.
+
 ## Vad är Buddy?
 
 Buddy är en digital assistent för att **lägga in, hålla koll på och jämföra allt man
-betalar för löpande** — inte bara försäkring. I dagsläget täcker appen nio kategorier
-i tre grupper:
+betalar för löpande** — inte bara försäkring. Appen täcker nio kategorier i tre grupper
+(Försäkring / Telekom & prenumerationer / Ekonomi), har en riktig backend (Supabase),
+riktig e-post/lösenord-inloggning, ett fullständigt internt admin-verktyg för
+Buddy-anställda, och ett stort antal "kundresa v2"-funktioner (hushåll, trygghetspoäng,
+dokumentarkiv, GDPR-verktyg, årsrapport). All jämförelsedata (bolagsnamn, priser, betyg,
+villkor) är fortfarande fiktiv och märkt som exempeldata där den förekommer.
 
-- **Försäkring**: Boende (hyresrätt/bostadsrätt/villa/fritidshus/magasinering), Bil,
-  Övrigt fordon (mc/husvagn/båt/släp/annat), Person, Djur.
-- **Telekom & prenumerationer**: Mobil & bredband (mobilabonnemang/bredband/TV-streaming),
-  Övriga abonnemang (fri samlingskategori, t.ex. gymkort).
-- **Ekonomi**: Kreditkort (befintligt kort eller "utforska nytt"), El & energi.
-
-Produkten har en **riktig backend** (Supabase, se nedan) sedan senaste etappen, men
-allt jämförelseinnehåll — bolagsnamn, priser, betyg, villkor — är fortfarande fiktivt
-och tydligt markerat som exempeldata där det förekommer (topplistan, testimonials,
-förtroendesiffror på /jamfor, jämförelsemotorn).
+**Investerardemo ~2026-09-08.** Prioritering fram till dess: demo-säkerhet och en
+sammanhängande kundresa väger tyngre än långsiktig arkitektonisk fullständighet.
 
 ## Snabbstart
 
@@ -32,11 +33,15 @@ npm run dev
 
 - Node hanteras via **nvm** på den här maskinen (ingen Homebrew/sudo tillgängligt) —
   kör `source ~/.nvm/nvm.sh` i ett nytt skal innan `npm`/`npx` om de inte hittas.
-- Kräver tre nycklar i `.env.local` (kopiera `.env.local.example`):
-  - `GEOAPIFY_API_KEY` — adressökning i Boende-formuläret. Utan den fungerar allt
-    annat, men adressfältet returnerar inga träffar.
+- Kräver nycklar i `.env.local` (kopiera `.env.local.example`):
+  - `GEOAPIFY_API_KEY` — adressökning i Boende-formuläret.
   - `NEXT_PUBLIC_SUPABASE_URL` och `NEXT_PUBLIC_SUPABASE_ANON_KEY` — krävs för att
-    logga in eller spara något alls. Utan dem kraschar `createClient()` direkt.
+    logga in eller spara något alls.
+  - `RESEND_API_KEY`/`RESEND_FROM_EMAIL` — riktiga transaktionsmejl (bekräftelsekod,
+    spara-sammanfattning, bokningsbekräftelse).
+- Supabase-projektet på gratisnivå kan gå in i viloläge efter långa uppehåll i
+  utveckling — om `.env.local`:s URL plötsligt inte går att slå upp (DNS-fel), vänta
+  några minuter och testa igen innan du antar att projektet är borta.
 - **Läs `AGENTS.md` innan du kodar** — Next.js 16 här har brytande ändringar mot
   standardkunskap, dokumentationen finns i `node_modules/next/dist/docs/`.
 
@@ -44,34 +49,29 @@ npm run dev
 
 - **Next.js 16.2.12** (App Router, Turbopack) + **React 19** + **TypeScript**.
 - **Tailwind CSS v4**, CSS-first config via `@theme inline` i `src/app/globals.css`
-  (ingen `tailwind.config.js`). Designtokens ("Morgonljus"-paletten): `--color-ink`
-  (mjuk marinblå text, aldrig svart), `--color-ink-deep` (djupare marinblå, hjälte-
-  kort/rekommendationskort), `--color-frost`/`--color-frost-2` (ljusa blågrå
-  bakgrunder), `--color-forest`/`--color-forest-light` (himmelsblå primäraccent —
-  namnet är kvar från en tidigare grön palett), `--color-amber`/`--color-amber-deep`
-  (honungsgul sekundär-/semantisk accent), `--color-slate` (sekundär text). Ett
-  typsnitt (Inter) för både rubriker och brödtext — Fraunces (serif) användes
-  tidigare men togs bort i omdesignen. IBM Plex Mono för `.bd-eyebrow`-etiketter.
+  (ingen `tailwind.config.js`). Designtokens ("Morgonljus"-paletten): `--color-ink`,
+  `--color-ink-deep`, `--color-frost`/`--color-frost-2`, `--color-forest`/
+  `--color-forest-light` (himmelsblå primäraccent), `--color-amber`/`--color-amber-deep`,
+  `--color-slate`. Inter för rubriker/brödtext, IBM Plex Mono för `.bd-eyebrow`.
 - **lucide-react** för alla ikoner.
-- **Supabase** — riktig backend sedan persistens-etappen:
-  - **Auth**: e-post + lösenord (`@supabase/ssr`s `createBrowserClient`, se
-    `src/lib/supabase/client.ts`). Ingen server-klient/middleware behövs — appen är
-    helt klientdriven, ingen sida beror på inloggning vid server-rendering.
-  - **Databas**: tre tabeller (`profiles`, `items`, `policies`), alla med Row Level
-    Security så en användare bara kan se/ändra sin egen data. Schema + policies +
-    en trigger som auto-skapar en `profiles`-rad vid registrering ligger i
-    `supabase/schema.sql` — måste köras manuellt i Supabase SQL Editor, är inte
-    kopplat till någon migrations-pipeline.
+- **Supabase** — riktig backend, klientdriven (ingen server-klient/middleware):
+  - **Auth**: e-post + lösenord + obligatorisk 6-siffrig e-postbekräftelse vid
+    registrering (`AuthForm.tsx`). Glömt lösenord via `ResetPasswordView.tsx`.
+  - **Databas**: 18 tabeller (se `supabase/schema.sql` — enda källan till schemat,
+    **ingen migrations-pipeline**, varje ändring körs manuellt av Gledis i Supabase
+    SQL Editor). Kärntabeller: `profiles`, `items`, `policies`, `employees`,
+    `bookings`, `claims`. Kundresa v2: `households`, `household_requests`,
+    `referral_events`, `missing_insurance_requests`, `account_deletion_requests`,
+    `policy_history`, `fullmakt_history`. Internverktyget: `customer_notes`,
+    `activity_log`, `case_comments`, `employee_login_log`, `customer_view_log`.
+    Alla med Row Level Security.
   - `BuddyProvider` (`src/lib/buddy-context.tsx`) speglar sessionen och all data
-    till/från Supabase istället för att bara hålla React-state. Alla ~15
-    komponenter som använder `useBuddy()` är opåverkade — de läser samma
-    `Profile`/`InsuranceItem[]`/`Record<string, Quote>`-former som förut.
-- Inget annat backend-API förutom `/api/address-search` (proxy mot Geoapify, håller
-  API-nyckeln server-side).
-- Repo: `github.com/gledisbara-buddy/buddy-app` (`origin`). Live på Vercel
-  (auto-deploy vid push till `main`), publik på `www.minbuddy.se` (apex
-  `minbuddy.se` redirectar dit). `buddy-app-iota.vercel.app` fungerar
-  fortfarande men är inte längre den kanoniska adressen.
+    till/från Supabase.
+- Server-routes: `/api/address-search` (Geoapify-proxy) och `/api/send-email`
+  (Resend-proxy, fasta mallar — aldrig fritt innehåll från klienten).
+- Repo: `github.com/gledisbara-buddy/buddy-app` (`origin`). Live på Vercel, publik på
+  `www.minbuddy.se` (apex redirectar dit). `buddy-app-iota.vercel.app` fungerar
+  fortfarande men är inte kanonisk.
 
 ## Mappstruktur
 
@@ -79,342 +79,296 @@ npm run dev
 src/
   app/
     (marketing)/        Publika sidor, delad nav+footer-layout
-      page.tsx           Startsida
-      jamfor/            Jämförelsesida (produktsideliknande)
-      om-oss/, jobb/, vanliga-fragor/, kontakt/, nyheter/, guider/
-      villkor/, integritetspolicy/, cookies/    Juridiska sidor (LegalPage-mall)
     kom-igang/           Val: privatperson / företag
-    login/               Riktig inloggning (e-post + lösenord via Supabase)
-    aterstall-losenord/  Glömt lösenord: begär länk + sätt nytt lösenord
-    onboarding/          mode="full": bara namn, sen rakt till /dashboard?intro=1.
-                         mode="add": lägg-till-hubben (nås från Dashboard)
-    dashboard/           Inloggad översikt (läser ?intro=1 server-side, se nedan)
-    compare/[id]/        Jämförelseflöde per sak
-    rekommendation/      Regelbaserad rekommendation baserat på allt man lagt in
-    halsokoll/           På-begäran-rapport: jämförda/ojämförda, besparingspotential,
-                         saknade kategorier
-    livshandelser/       Guidade checklistor (flytt / väntar barn) + sysselsättningstips
-    varva-en-van/        Simulerat referralprogram
-    chat/, claim/, book/ Fråga Buddy, skadeanmälan, boka specialist
+    login/                Riktig inloggning (e-post+lösenord+kod) via Supabase
+    aterstall-losenord/   Glömt lösenord
+    onboarding/           Lägg till/redigera en sak (alla nio kategorier)
+    dashboard/            Inloggad översikt
+    compare/[id]/         Jämförelseflöde per sak (fork → behov → resultat → teckna)
+    objekt/[id]/          Detaljvy per sak (villkor, historik, kalenderpåminnelse, PDF)
+    hushall/              Hushåll v2 (personnummer-baserad dubbel-consent)
+    arkiv/                Dokumentarkiv (fullmakt + historik)
+    arsrapport/           Årsrapport
+    mina-arenden/         Kundens egna bokningar/skadeärenden
+    identifiera-igen/     BankID-rescan (hitta nytecknade avtal sen sist)
+    importera/            Multi-import (BankID-liknande, flera saker samtidigt)
+    anslut-bank/          Simulerad bankkoppling för att hitta prenumerationer
+    rekommendation/       Regelbaserad rekommendation
+    halsokoll/             På-begäran-rapport
+    livshandelser/         Guidade checklistor (flytt/väntar barn) + sysselsättningstips
+    varva-en-van/          Referralprogram (riktig backend, riktig räkning)
+    chat/, claim/, book/   Fråga Buddy, skadeanmälan, boka specialist (kanned/simulerat)
     profil/, installningar/
-    api/address-search/  Server-route mot Geoapify
+    internt/               Internverktyget (kräver rad i employees + MFA)
+    api/address-search/, api/send-email/
   components/
-    marketing/           Nav, footer, StartCta, CategoryCta, FaqAccordion, LegalPage
-    onboarding/           BoendeForm, TelekomForm, KreditkortForm, AutoFetchStep,
-                           AddressField, shared UI (inkl. PillGroupWithOther)
-    Dashboard.tsx, Onboarding.tsx, CompareFlow.tsx, RecommendationView.tsx,
-    HealthCheckView.tsx, LifeEventsView.tsx, ReferralView.tsx,
-    ChatScreen.tsx, ClaimFlow.tsx, BookSpecialist.tsx, ProfileMenu.tsx,
+    marketing/             Nav, footer, StartCta, CategoryCta, FaqAccordion, LegalPage, Reveal
+    onboarding/             BoendeForm, TelekomForm, KreditkortForm, AutoFetchStep,
+                             AddressField, shared UI (PillGroup, PillGroupWithOther, Field)
+    internal/               19 komponenter — se "Internverktyget" nedan
+    Dashboard.tsx, Onboarding.tsx, CompareFlow.tsx, ItemDetail.tsx, HouseholdView.tsx,
+    ArchiveView.tsx, AnnualReportView.tsx, MyCasesView.tsx, RecommendationView.tsx,
+    HealthCheckView.tsx, LifeEventsView.tsx, ReferralView.tsx, ChatScreen.tsx,
+    ClaimFlow.tsx, BookSpecialist.tsx, BankIdImport.tsx, BankIdRescan.tsx,
+    BankConnect.tsx, FullmaktSigning.tsx, CoverageMap.tsx, ProfileMenu.tsx,
     ProfilePage.tsx, SettingsPage.tsx, AuthForm.tsx, ResetPasswordView.tsx,
-    TopBar.tsx, Logo.tsx, ProgressDots.tsx,
-    Overlay.tsx (delad modal: introduktion + samlingsrabatt-popup)
+    TopBar.tsx, TabBar.tsx, Logo.tsx, ProgressDots.tsx, PageSkeleton.tsx,
+    NotificationBell.tsx, SyncErrorToast.tsx, Overlay.tsx
   lib/
-    items.ts             Datamodellen för allt man kan lägga in (se nedan)
-    item-quotes.ts        Jämförelsemotor, fyra fiktiva bolag per kategori
-    quote.ts              Quote-typ (inkl. avancerade avtalsfält) + pickWinner()
-    needs.ts              Behovsanalys-frågebatterier för alla åtta jämförbara kategorier
-    policy-fetch.ts        Simulerad auto-hämtning av befintlig försäkring
-    recommendation.ts      Regelbaserad logik bakom /rekommendation
-    health-check.ts        Aggregerad statistik bakom /halsokoll
-    life-events.ts         Checklistor + sysselsättningstips bakom /livshandelser
-    dates.ts               Datumparsing för förfallodag-påminnelser
-    buddy-context.tsx     Global state (auth, profil, items, tecknade avtal) — Supabase-speglat
-    supabase/client.ts     Supabase browser-klient
-    address-lookup.ts, vehicle-lookup.ts   Uppslagsfunktioner (en riktig, en simulerad)
-    insurance.ts, faq.ts, guides.ts, news.ts, jobs.ts, top-list.ts, booking.ts,
-    chat.ts, claim.ts, types.ts             Statiskt/fiktivt innehåll + smådomäner
+    items.ts                Datamodellen (se nedan) — störst fil i projektet
+    item-quotes.ts           Jämförelsemotor, fyra fiktiva bolag per kategori
+    quote.ts                 Quote-typ + pickWinner()
+    needs.ts                 Behovsanalys-frågebatterier, alla åtta jämförbara kategorier
+    policy-fetch.ts           Simulerad BankID-auto-hämtning (FetchableKind: sju kategorier,
+                               telekom undantaget — se eget operatörsuppslag)
+    operator-lookup.ts, vehicle-lookup.ts, bank-fetch.ts   Simulerade uppslag
+    address-lookup.ts         Riktig Geoapify-adressökning + postnummer→elområde
+    recommendation.ts, health-check.ts, life-events.ts, trust-score.ts
+    household.ts               Hushåll v2-logik
+    referral.ts                 Värvningskod-generering
+    activity-log.ts             Internverktygets ändringslogg (maskerar personnummer)
+    case-checklist.ts           Ärendehanteringens checklistefrågor
+    coverage.ts                  Täckningskarta-logik
+    fullmakt.ts                  PDF-generering (pdf-lib) för fullmakten
+    item-pdf.ts                  PDF-generering för enskild sak-sammanfattning
+    email.ts                     Klient mot /api/send-email
+    todo.ts                      "Att göra"-listans logik
+    personnummer.ts, phone.ts    Formatvalidering + maskering
+    dates.ts, auth-errors.ts, seo.ts
+    buddy-context.tsx            Global state, Supabase-speglad
+    supabase/client.ts
+    faq.ts, guides.ts, news.ts, jobs.ts, top-list.ts, booking.ts, chat.ts, claim.ts, types.ts
 supabase/
-  schema.sql             Tabeller + RLS-policies + auto-profil-trigger (körs manuellt)
+  schema.sql               18 tabeller, RLS, RPC:er — körs manuellt, ingen migrations-pipeline
 public/
-  images/founder.jpg     Riktigt foto av grundaren (Gledis Bara)
-  images/hero-couple.jpg Riktigt foto, startsidans hero
+  images/founder.jpg, hero-couple.jpg, hero-compare.jpg   Riktiga foton
 ```
 
 ## Datamodellen (`src/lib/items.ts`)
 
 Allt en användare lägger in är ett `InsuranceItem` — en diskriminerad union över nio
-`kind`-värden (`boende`, `bil`, `ovrigt_fordon`, `person`, `djur`, `telekom`,
-`kreditkort`, `el`, `prenumeration`), med typspecifika fält per kategori (t.ex. Boende
-grenar vidare på `typ` i fem bostadsformer). Centrala byggstenar:
+`kind`-värden. Flera kategorier grenar vidare på en `typ`:
 
-- **`ITEM_CATEGORIES`** — lista över alla nio kategorier med etikett + ikon, driver
-  onboarding-hubben och dashboard-korten.
-- **`ITEM_GROUPS`** — de tre grupperna (Försäkring/Telekom & prenumerationer/Ekonomi)
-  med vilka `kind`-värden som hör till varje grupp. Delas mellan `/jamfor` och Dashboard.
-- **`ComparableItem` / `isComparableItem()` / `COMPARABLE_KINDS`** — åtta av nio
-  kategorier (boende/bil/ovrigt_fordon/person/djur/telekom/kreditkort/el) har en
-  fungerande jämförelsemotor (`item-quotes.ts`), en behovsanalys (`needs.ts`) och
-  typas separat, så TypeScript håller `computeItemQuotes` exhaustive. Bara
-  **prenumeration** är kvar som ren datainsamling — en öppen samlingskategori utan
-  naturliga "alternativ" att jämföra mot (medvetet avgränsat, upprepade gånger
-  bekräftat).
-- **`itemTitle()` / `itemSummary()`** — formaterar valfritt item till en rubrik +
-  sammanfattningsrad, används överallt items listas (Dashboard, onboarding-hub).
+- **Boende**: 8 typer — hyresrätt, bostadsrätt, fritidsbostadsrätt, villa, fritidshus,
+  magasinering, **andrahandsuthyrning**, **student/inneboende**. Lösörevärde som skala
+  (500k–2M kr) på lägenhets-/hustyperna. Villa/fritidshus har uppvärmningssätt,
+  pool/jacuzzi, solceller; fritidshus har egna fält för användningsgrad, vinterbonad,
+  uthyrning.
+- **Bil**: regnr-autofyllning (simulerad), körsträcka, förvaring.
+- **Övrigt fordon**: 13 typer — mc, husvagn, båt, släp, **lätt lastbil**, **moped
+  (klass I/II)**, **husbil**, **snöskoter**, **terränghjuling/ATV**, **A-traktor/EPA**,
+  **veteranfordon**, **elsparkcykel**, annat. Cykel medvetet inte en egen fordonstyp —
+  täcks redan av hemförsäkringens lösöretak.
+- **Person**: relation (mig själv/partner/barn/annan), sysselsättning, önskat skydd —
+  åtta värden: olycksfall, sjuk-/efterlevandeskydd, liv, barnförsäkring, **gravid**,
+  **sjukvård**, **inkomst**, **diagnosförsäkring**. Fyra av dem (sjukdom, liv, sjukvård,
+  diagnosförsäkring — se `HALSODEKLARATION_SKYDD`) kräver en hälsodeklaration, som ställs
+  **vid tecknande** (`CheckoutForm` i `CompareFlow.tsx`), inte i den indikativa
+  jämförelsen.
+- **Djur**: hund/katt/annat, med önskat veterinärvårdsbelopp som skala (hund 30–140k,
+  katt 20–60k kr).
+- **Telekom**: mobil (telefonnummer→operatör-uppslag, simulerat), bredband,
+  TV-streaming (med "faktiskt använt senaste månaden?"-fråga → syns som en
+  besparingsinsikt på Årlig hälsokoll).
+- **Kreditkort**, **El** (postnummer→elområde-uppslag), **Prenumeration** (fri
+  samlingskategori, enda kategorin utan jämförelsemotor).
+
+**`ITEM_GROUPS`** styr Dashboard-grupperingen i tre kort — **notera att gruppindelningen
+inte är intuitiv**: `mobil`-gruppen (etikett "Mobilabonnemang") visar bara
+`telekom`-poster med `typ === "mobil"`; bredband och TV-streaming hamnar under
+`prenumeration`-gruppen (etikett "Prenumerationer") tillsammans med `prenumeration`-kind.
+Kontrollera alltid `matchesItem`-predikaten i `items.ts` om du ska skriva text om var
+något visas — det här dokumentet och gammal marknadsföringskopia har båda tidigare sagt
+fel.
+
+**`ComparableItem`/`isComparableItem()`/`COMPARABLE_KINDS`** — åtta av nio kategorier har
+en fungerande jämförelsemotor. Bara **prenumeration** är ren datainsamling.
 
 ## Funktioner byggda hittills
 
 ### Marknadsföringssajt (route group `(marketing)`)
-Gemensam nav (`MarketingNav`) + footer på alla publika sidor. Nav och footer visar
-inloggningsstatus (profil-dropdown om inloggad, "Logga in"-knapp annars) — man kan
-alltså vara inloggad och ändå bläddra på startsidan/andra publika sidor utan att bli
-utloggad. Sidor: Startsida, **/jamfor** (se eget avsnitt), Om oss (med riktigt
-grundarporträtt + bio), Jobb, Vanliga frågor, Kontakt, Nyheter (lista + detaljsida),
-Guider (lista + detaljsida), samt Villkor/Integritetspolicy/Cookies via en delad
-`LegalPage`-mall.
+Startsida, /jamfor (produktsida med en "Så jämför vi"-sektion som förklarar den
+riktiga rankningsformeln — betyg 60%/pris 40%, `pickWinner()` i `quote.ts`), Om oss,
+Jobb, Vanliga frågor (16 frågor, JSON-LD FAQPage), Kontakt, Nyheter, Guider (11 st,
+korrigerade lästider, JSON-LD Article + BreadcrumbList), Villkor/Integritetspolicy/
+Cookies. Huvudmenyn har fyra punkter (Jämför/Guider/Nyheter/Om oss) — Hem/Jobb/Vanliga
+frågor/Kontakt nås via footern. Ett varumärke: **Buddy / minbuddy.se** överallt,
+inklusive kontakt-e-postadresserna.
 
-**Startsidan** är byggd i "etablerad portal"-stil (Compricer-liknande densitet):
-hero i två kolumner (text + riktigt parfoto), fyra funktionskort, en fiktiv
-topplista över "bolag", en nyheter/aktuellt-sektion, en sektion med grundarens
-porträtt + citat ("Från vår specialist"), en guider-teaser, ett "Så funkar
-det"-stegblock (steg 1 är numera "Skapa ett konto", inte BankID), inline FAQ, och
-en avslutande CTA.
-
-**/jamfor** är en produktsideliknande jämförelsetjänst: hero i två kolumner (text +
-riktigt foto) med fiktiva förtroendesiffror, en fördelsrad (gratis/ingen
-bindningstid/personlig hjälp/allt samlat), egna "så funkar det"-steg, tre
-produktsektioner (en per `ITEM_GROUPS`-grupp) med en illustrerad ikon-visual och
-kategori-kort, samt ett testimonial-avsnitt. Varje kategori-kort har en egen CTA
-(`CategoryCta`) som hoppar rakt in i rätt onboarding-formulär om man är inloggad
-(`/onboarding?mode=add&kind=X`), annars till `/kom-igang`.
+**Företaget bakom Buddy är inte formellt registrerat än** — villkor/integritetspolicy
+säger det ärligt istället för att hitta på ett org.nr eller en tillsynsstatus. Uppdatera
+de styckena den dagen det finns en riktig juridisk person.
 
 ### Inloggning & persistens
-`/kom-igang` → privatperson/företag → `/login` → **riktig** inloggning med e-post
-och lösenord via Supabase Auth (`AuthForm.tsx`, ersatte en tidigare simulerad
-BankID-flow). Två lägen på samma komponent: "Skapa konto" (registrering, skickar
-`user_type` som user-metadata så databastriggern sätter rätt värde direkt) och
-"Logga in". Glömt lösenord hanteras av `ResetPasswordView.tsx`/`/aterstall-losenord`
-(begär länk → sätter nytt lösenord, styrs av Supabase-eventet `PASSWORD_RECOVERY`).
+`/kom-igang` → `/login` → e-post + lösenord + obligatorisk 6-siffrig e-postbekräftelse.
+Huvudmenyns "Logga in"-knapp går direkt till inloggningsläget (`?mode=login`), inte
+registreringsflödet. `BuddyProvider` har en `loading`-flagga och triggar bara full
+omladdning på ett genuint `SIGNED_IN`-event.
 
-`BuddyProvider` lyssnar på Supabase-sessionen (`onAuthStateChange`) och har en
-`loading`-flagga som täcker den korta stunden innan sessionen är kontrollerad —
-guardade sidor väntar med att redirecta till `/kom-igang` tills dess. Bara ett
-genuint `SIGNED_IN`-event (färsk in-/registrering) triggar en full omladdning av
-profil/items/policies — inte `TOKEN_REFRESHED`, som annars skulle få guardade sidor
-att blinka till om vart 50:e minut.
-
-Alla mutationer (`addItem`, `removeItem`, `setPolicy`, `updateProfile`,
-`setReadyToCompare`) uppdaterar lokalt state direkt (för snabb UI-respons) och
-skriver samtidigt igenom till Supabase. `removeItem` är en riktig databas-radering.
-
-**Not:** `AutoFetchStep.tsx`s BankID-simulering (för att "hämta befintlig
-försäkring från ditt bolag") är en separat, kosmetisk grej och rör inte
-kontoinloggningen — den är fortfarande simulerad, se avsnittet om auto-hämtning
-nedan.
+**Not:** `AutoFetchStep.tsx`/`BankIdImport.tsx`/`BankIdRescan.tsx`s BankID-simulering
+(för att "hämta befintlig försäkring") är separat och rör inte kontoinloggningen.
 
 ### Onboarding / lägg till en sak (`Onboarding.tsx`)
-Två lägen: `mode="full"` (första gången — bara ett namn-steg, sen direkt till
-`/dashboard?intro=1`, se Dashboard nedan) och `mode="add"` (lägg-till-hubben, nås
-från Dashboard). Hub:en visar alla nio kategorier som kort; att klicka på en öppnar
-dess formulär (`activeCategory`-state). Stöder deep-link via `?kind=X` (satt av
-`CategoryCta`, Dashboardens gruppvy och `HealthCheckView`/`LifeEventsView`s
-förslagsknappar) som hoppar direkt till ett formulär och hoppar över hub-gridden.
-Toast-notis ("X inlagd") visas i hub-läget varje gång något läggs till, istället
-för att skicka användaren till kategori-väljaren igen.
-
-Varje kategori har ett eget formulär anpassat efter vad den faktiskt behöver veta
-(t.ex. Boende frågar helt olika saker för hyresrätt vs. villa vs. magasinering; Bil
-har regnr-autofyllning; Kreditkort grenar på "har du redan ett kort?"; Telekom visar
-uppskattad nätverkstäckning när man väljer en känd mobiloperatör). Telekom-,
-kreditkort-, el- och prenumerationsfälten (operatör/utgivare/elbolag/leverantör)
-använder `PillGroupWithOther` — en lista med vanliga svenska alternativ plus ett
-"Annat"-läge som faller tillbaka på fritext.
-
-**Auto-hämtning för Försäkring**: för de fem jämförbara kategorierna (boende/bil/
-övrigt fordon/person/djur) visas först ett val — "Hämta automatiskt från mitt bolag"
-eller "Fyll i själv". Auto-hämtning (`AutoFetchStep.tsx`) låter kunden välja bolag ur
-en rullista med 18 **riktiga** svenska försäkringsbolag (`FORSAKRINGSBOLAG` i
-`items.ts`), identifiera sig med en simulerad BankID-signering, och Buddy
-syntetiserar åt en (`lib/policy-fetch.ts`) en trovärdig post plus pris, självrisk,
-omfattning, förfallodatum **och avtalsdetaljer** (karenstid/ersättningstak/
-bindningstid/uppsägningstid/undantag, för det avancerade jämförelseläget). Detta
-markeras som `source: "fetched"` på `Quote` — inte samma sak som en riktig
-jämförelse. Fler än 3 försäkringar i samma session ger en samlingsrabatt-popup, en
-gång per session.
+Hub med alla nio kategorier. Deep-link via `?kind=X`. Varje kategori har ett eget
+formulär — se Datamodellen ovan för hur mycket varje kategori faktiskt frågar om.
+Genomgående princip (från en produktträds-genomgång 2026-08-30): fråga aldrig om något
+som kan räknas fram — postnummer→elområde, telefonnummer→operatör, regnr→fordonsdata.
 
 ### Dashboard / översikt (`Dashboard.tsx`)
-Två faser, styrda av `readyToCompare` (persisteras numera i `profiles`): en
-"lägg-in"-fas (banner uppmanar att klicka "Klar? Nu jämför vi allt" när man är
-redo) och en jämför-fas. Tre gruppkort (Försäkring / Telekom & prenumerationer /
-Ekonomi) med antal tillagda saker och jämförelsestatus. Man klickar sig in i en
-grupp för att se/lägga till just den gruppens saker; flera saker per kategori
-stöds i alla nio kategorier.
-
-En konsoliderad **"Mer att göra"**-sektion (kompakta rader, inte separata kort)
-samlar: kommande förfallodatum (från auto-hämtade offerter, badge om ≤30 dagar),
-länk till Årlig hälsokoll, de två livshändelse-checklistorna (flytt/barn), och
-Värva en vän — allt på en gång istället för utspritt över flera fulla kort (en
-medveten städning efter att fyra separata funktioner adderats en i taget).
-
-Varje jämförbart item-kort visar ett av tre lägen: **tecknad genom en riktig
-jämförelse** (`policies[id].source === "compared"`), **auto-hämtad men inte
-jämförd** (`source === "fetched"`), eller **helt ojämförd**. Icke-jämförbara
-kategorier visar "Sparad — jämförelse kommer snart".
-
-Första gången man landar här efter onboarding (`?intro=1`) visas en kort
-`Overlay`-introduktion om hur sidan fungerar.
+Två faser (`readyToCompare`). Tre gruppkort. Trygghetspoäng-mätare (`trust-score.ts`,
+60% jämförelsegrad + 20% inga brådskande förnyelser + 20% signerad fullmakt). "Att
+göra"-lista (`todo.ts`) med förfallodatum, hushållsförfrågningar, komplettera-mobilnummer,
+livshändelser, värvning. Varje sak-kort visar Jämför/Säg upp/Hjälp med skada.
 
 ### Jämförelseflöde (`CompareFlow.tsx`, `/compare/[id]`)
-Bara för `ComparableItem`-kategorierna (åtta av nio). Föregås av en behovsanalys
-(`NeedsAnalysis.tsx`, `lib/needs.ts`) för alla åtta kategorier — antingen fritext
-(tolkas mot nyckelord) eller 5 korta ja/nej- eller flervalsfrågor — som påverkar
-priset i `item-quotes.ts`.
+Börjar alltid med en fork ("bara den här" vs "hela lösningen" → bokning), sen
+behovsanalys (fritext eller 5 frågor, `needs.ts`), sen resultat. **Tre-kolumnsvyn**
+(Nuvarande/Billigast/Rekommendation + Enkel/Avancerat-växlare + fullständig tabell)
+gäller Försäkring-gruppens fem kategorier **plus kreditkort och el** — alla sju har
+riktig auto-hämtning (`policy-fetch.ts`s `FetchableKind`). Telekom har ett eget,
+enklare hjältekort+tabell-mönster eftersom det saknar en "hämta befintligt avtal"-väg
+(har istället operatörsuppslag på telefonnummer) — se `hasThreeColumnLayout` i
+CompareFlow.tsx för den exakta gränsen. Fyra fiktiva bolag per kategori.
+`handleSign`/`finalizeSign` sätter `source: "compared"`, skriver till `policies` och
+`policy_history` (append-only logg).
 
-**Försäkring-gruppen** (fem kategorier) får en tre-kolumnsvy: Din nuvarande
-(auto-hämtad, med CTA att hämta om tom), Billigast, och Vår rekommendation
-(`pickWinner()` — normaliserat pris+betyg, inte bara billigast). Fyra fiktiva
-bolag per kategori (Klarsäker/Hemgrund/Nordvakt/**Björnskydd**, det sistnämnda
-helt digitalt och billigast men med högst självrisk och lägst ersättningstak). En
-Enkel/Avancerat-växlare styr om avtalsdetaljer (karenstid, ersättningstak,
-bindningstid, uppsägningstid, undantag) visas. En expanderbar fullständig
-jämförelsetabell under korten visar alla fyra bolag samtidigt.
+**Hälsodeklaration**: för personförsäkringar med ett skydd i `HALSODEKLARATION_SKYDD`
+visas ett extra steg i `CheckoutForm` (röker, sjukskriven, pågående behandling, tidigare
+avslag — bara ja/nej, ingen fritext) precis innan avtalet sparas.
 
-**Telekom/Kreditkort/El** har fortfarande hjältekort + "Andra alternativ"-lista
-(inte tabellen ovan), nu också med fyra fiktiva bolag vardera (Klarnät/Fiberpunkt/
-Sambandet/**Surfpunkt**, Klarkort/Kontokraft/Guldkortet/**Silverkortet**,
-Klarström/Kraftpunkt/Voltec/**Solkraft**). El-kategorin visar dessutom ett infokort
-om bästa tid att använda el (olika text för rörligt/mix vs. fast avtal).
-`handleSign` sätter `source: "compared"` och sparar i `policies`.
+### Detaljvy (`ItemDetail.tsx`, `/objekt/[id]`)
+Nuvarande villkor, historik (om >1 rad i `policy_history`), kalenderpåminnelse (.ics),
+PDF-nedladdning, Jämför/Säg upp/Hjälp med skada — samma åtgärder som Dashboard-kortet.
 
-### Rekommendation (`RecommendationView.tsx`, `/rekommendation`)
-Tittar på allt kunden lagt in och ger regelbaserade rader via `lib/recommendation.ts`
-— t.ex. en jämförbar sak som inte jämförts än, med direktlänk till `/compare/[id]`.
-Räknar också fram en illustrativ "uppskattad besparing", tydligt märkt som exempel.
+### Hushåll v2 (`HouseholdView.tsx`, `/hushall`)
+Personnummer-baserad dubbel-consent (`household_requests`) — aldrig avslöjar via UI:t
+om ett personnummer redan tillhör en Buddy-kund innan den personen godkänt. Aggregerad
+vy (medlemsantal, total kostnad, saker per kategori) när >1 medlem, exponerar aldrig
+en enskild medlems poster.
 
-### Bevakning (förfallodag-påminnelser + Årlig hälsokoll)
-Förfallodag-raderna i Dashboardens "Mer att göra" (se ovan) — bara auto-hämtade
-offerter har ett förfallodatum, så bara de kan påminna om förnyelse.
+### Dokumentarkiv (`ArchiveView.tsx`, `/arkiv`)
+Fullmakts-PDF (`FullmaktSigning.tsx`, riktig `signature_pad`-signering, laddas upp till
+Supabase Storage) + fullmaktshistorik (`fullmakt_history`).
 
-**Årlig hälsokoll** (`HealthCheckView.tsx`, `/halsokoll`) är en on-demand-rapport
-(inte tidsstyrd — appen har ingen bakgrundsklocka): antal saker/jämförda,
-uppskattad total månadskostnad, uppskattad besparingspotential (fetched-pris minus
-billigaste offert för ojämförda saker), och en lista på saknade kategorier med
-snabbknapp till rätt onboarding-formulär. Explicit **inte** byggd: prisvarningar
-(price-change alerts) — avvisat av kunden.
+### Årsrapport (`AnnualReportView.tsx`, `/arsrapport`)
 
-### Livshändelser (`LifeEventsView.tsx`, `/livshandelser`)
-Guidade checklistor för "Jag ska flytta" och "Vi väntar barn" (`lib/life-events.ts`)
-— varje steg är en rad text plus en valfri CTA-knapp till ett befintligt
-lägg-till/jämför-flöde. Medvetet **inte** en automatiserad flerstegswizard som
-redigerar saker åt användaren. Samma sida visar också sysselsättningsbaserade tips
-(`getSysselsattningTips`) härledda från det redan insamlade `sysselsattning`-fältet
-på `PersonItem` — generella, ärliga råd (t.ex. dubbelförsäkring via jobbet),
-inga fiktiva bolagsnamn.
+### GDPR (`SettingsPage.tsx`)
+Dataexport (klientsidan JSON-nedladdning) + kontoraderingsbegäran
+(`account_deletion_requests` — appen har bara anon-nyckeln och kan aldrig radera
+`auth.users` själv, en anställd hanterar begäran manuellt i internverktyget).
 
 ### Värva en vän (`ReferralView.tsx`, `/varva-en-van`)
-Simulerat referralprogram: en per-session genererad kod (härledd från profilnamnet),
-en kopiera-knapp, och en belöningstext (150 kr var i "Buddy-kredit"). Statistiken
-visar ett **ärligt nolläge** (0 vänner, 0 kr — inget backend finns för att räkna
-riktig aktivitet) plus en tydligt märkt räkneexempel, snarare än att hitta på en
-falsk aktivitetshistorik om användaren. Ingångar: profilmenyn och ett kompakt kort
-på Dashboard.
+**Riktig backend** — `referral_events`-tabell, `count_referral_signups()`/
+`count_qualified_referrals()`. En värvning räknas när vännen lagt till minst en sak och
+klickat "Nu jämför vi allt" (`ready_to_compare`). Belöning: kostnadsfri hjälp av en
+specialist vid skadereglering efter fem värvningar.
+
+### Bevakning, hälsokoll, livshändelser
+Förfallodag-påminnelser i "Att göra". Årlig hälsokoll (`/halsokoll`) — antal
+saker/jämförda, månadskostnad, besparingspotential, saknade kategorier, **och sen
+2026-08-30 en rad om obetalda-men-oanvända streamingtjänster**
+(`unusedStreamingCost` i `health-check.ts`). Livshändelser (`/livshandelser`) —
+flytt/väntar barn-checklistor + sysselsättningstips.
 
 ### Chat, skadeanmälan, boka specialist
-`/chat`, `/claim`, `/book` — alla med **kanned/simulerade** svar (`lib/chat.ts`,
-`lib/claim.ts`, `lib/booking.ts`), ingen riktig AI eller backend bakom.
-`/book` (`BookSpecialist.tsx`) har ett första steg där kunden kryssar i vilka av
-sina saker samtalet gäller (eller "Övrigt"/"Total helhetslösning") plus fritext —
-sammanfattas på bekräftelsesteget.
+`/chat`, `/claim`, `/book` — kanned/simulerade, tydligt märkta "Demo-läge". `/claim`
+har ett riktigt statusspår. `/book` har en riktig avbokningsfunktion
+(`ec3af33`) och skickar en riktig bekräftelse (om `RESEND_API_KEY` finns).
 
 ### Profil & inställningar
-Profil-dropdown (`ProfileMenu.tsx`) i övre högra hörnet: Min översikt, Min profil
-(redigerbar direkt, sparas till `profiles`), Värva en vän, Inställningar, Hjälp &
-Support, Logga ut. Utloggning görs med en hård navigation
-(`window.location.href = "/"`) för att undvika en race condition mot sidans egna
-inloggningsvakt.
+Redigerbar profil, byt lösenord, notifikationsinställningar (sparas på riktigt till
+`profiles`), GDPR-verktyg. Utloggning via hård navigation.
+
+### Internverktyget (`InternalView.tsx`, `/internt`)
+För Buddy-anställda — kräver en rad i `employees`-tabellen **och** en verifierad MFA-
+faktor (`MfaGate.tsx`, TOTP via Supabase). Sex kategorier, 19 komponenter:
+
+1. **Medarbetarprofil** (`EmployeeProfile.tsx`) — egen profil, avatar, kalenderkoppling
+   (demo).
+2. **Dashboard** (`EmployeeDashboard.tsx`) — teamöversikt (`employee_directory`-vy,
+   exponerar medvetet inte permission_level/telefon).
+3. **Kundhantering** (`CustomerListView.tsx`, `CustomerWorkspace.tsx`,
+   `CustomerSearchRail.tsx` + flikar för aktivitet/ärenden/dokument/saker/anteckningar)
+   — personnummer maskeras för `kundservice`-rollen via `customer_profile_view`
+   (server-side, en vy, inte bara UI-döljning).
+4. **Ärendehantering** (`CaseAssignment.tsx`, `CaseChecklist.tsx`, `CaseComments.tsx`,
+   `CustomerCasesTab.tsx`) — på `bookings`/`claims`, tilldelning/prioritet/deadline/
+   checklista/eskalering.
+5. **Notiser** (`InternalNotificationBell.tsx`, `RequestsInbox.tsx`,
+   `MissingInsuranceQueue.tsx`, `CancellationQueue.tsx`, `AccountDeletionQueue.tsx`).
+6. **Behörigheter & säkerhet** — fyra roller (admin/teamledare/specialist/kundservice)
+   med riktigt genomdrivna skillnader (permanent radering, GDPR-godkännande,
+   personnummer-maskering och redigeringsspärr — en trigger blockerar `kundservice`
+   från att SPARA en ändring av personnummer, inte bara UI-döljning).
+
+**Kvarvarande säkerhetslucka (känd, inte fixad):** `profiles_select_employee`- och
+`activity_log_select_employee`-RLS-policyerna saknar rollfilter — en anställd kan i
+teorin läsa personnummer i klartext via en rå Supabase-fråga i devtools istället för
+via den maskerade vyn appens UI faktiskt använder. Kräver kolumn-nivå-behörigheter
+eller att flytta alla anställd-läsningar genom RPC:er/vyer — en riktig
+arkitekturändring på skydds-sidan, inte en snabbfix. Se `activity_log`-maskeringen
+(redan fixad 2026-08-30) för samma klass av problem, löst för just den tabellen.
 
 ### Externa integrationer
-- **Supabase** (auth + databas): riktig, skarp integration, se Teknikstack ovan.
-- **Geoapify** (adressökning): riktig, skarp integration via `/api/address-search`,
-  nyckel i `.env.local` (`GEOAPIFY_API_KEY`), fri nivå.
-- **Fordonsuppslagning**: fortfarande **simulerad** (`lib/vehicle-lookup.ts`) — en
-  liten inbyggd lista + deterministisk fallback. Bytpunkt är redan förberedd
-  (samma funktionssignatur), men ingen riktig biluppgifts-API är kopplad in än.
-
-### Visuell identitet / bilder
-"Morgonljus"-omdesignen (se Teknikstack) bytte hela färgpaletten och typsnittet.
-Ett riktigt foto av grundaren (`public/images/founder.jpg`) används i Om oss och på
-startsidans specialist-sektion. Ett parfoto (`public/images/hero-couple.jpg`)
-används i startsidans hero för en varmare, mer personlig känsla.
+- **Supabase** (auth + databas): riktig.
+- **Geoapify** (adressökning): riktig.
+- **Resend** (transaktionsmejl): riktig, om `RESEND_API_KEY` är satt.
+- **Fordonsuppslagning, operatörsuppslagning, bankkoppling, BankID-import/rescan**:
+  alla simulerade. Samma funktionssignatur som en riktig integration skulle ha, så
+  bytpunkten är förberedd men inget är kopplat in.
 
 ## Kända begränsningar / medvetna avgränsningar
 
-- **Ingen jämförelsemotor för Prenumeration** (Övriga abonnemang) — enda kvarvarande
-  kategorin som bara samlar in data, eftersom det är en öppen samlingskategori utan
-  naturliga alternativ att jämföra mot. Medvetet avgränsat, bekräftat flera gånger.
-- **Auto-hämtning av försäkring är helt simulerad** (`lib/policy-fetch.ts`) —
-  ingen riktig öppen-försäkring-API. Bolagen i listan är riktiga (`FORSAKRINGSBOLAG`),
-  men datan som "hämtas" är syntetiserad. Identifieringssteget i det flödet är
-  fortfarande en simulerad BankID-signering (separat från kontoinloggningen, som nu
-  är riktig e-post/lösenord).
-- **Fordonsuppslagning är simulerad**, ingen riktig biluppgifts-API.
-- **Chat/skadeanmälan/boka möte har kanned svar**, ingen AI eller riktig bokning.
-- All jämförelsedata (bolagsnamn, priser, betyg, avtalsvillkor) är **fiktiv
-  exempeldata**, tydligt markerad i UI:t där den förekommer. Att sätta riktiga
-  bolagsnamn på den fiktiva prissättningen skulle vara missvisande/en juridisk
-  risk — diskuterat och avvisat.
-- **`minbuddy.se`** är köpt men väntade senast på godkännande hos domänregistraren
-  (One.com) innan den kan kopplas till Vercel-deployen.
-- Ingen mobil- eller tillgänglighetsgenomgång har gjorts på hela sajten, bara
-  enstaka sidor punktkollade under utveckling.
+- **Ingen jämförelsemotor för Prenumeration** — medvetet, öppen samlingskategori.
+- **Auto-hämtning, fordonsuppslagning, operatörsuppslagning, bankkoppling**: alla
+  simulerade, tydligt märkta "Demo-läge" i UI:t sedan en konsekvenskoll 2026-08-30
+  (täcker BookSpecialist.tsx, BankIdImport/Rescan, AutoFetchStep-resultatskärmarna,
+  fordonsuppslagning i onboarding — inte bara chatt/skadeanmälan som tidigare).
+- **Fastighetsregister-uppslag** (byggår/boyta/taxeringsvärde från adress) — utreds
+  inte, skulle kräva en ny betald integration (Lantmäteriet-typ).
+- **Cykel och reseförsäkring som egna produkter**: medvetet uteslutna trots att en
+  produktträds-genomgång 2026-08-30 föreslog dem — båda skulle motsäga appens egen
+  "sälj inte det du redan har"-princip (hemförsäkringens lösöretak täcker de flesta
+  cyklar; reseskydd finns redan som tilläggsfråga på boende/kreditkort).
+- **Kontrast**: primärknappar (`bg-forest`+vit text) och sekundärtext (`text-slate`)
+  ligger under WCAG AA på många ställen — systemiskt, inte punktvis. Inte åtgärdat,
+  rör hela färgpaletten.
+- **Formulärfält**: `Field`-komponenten (`onboarding/shared.tsx`) kopplar nu ihop
+  label/input automatiskt för raka `<input>`-barn (fixat 2026-08-30), men fält
+  inlindade i en extra `<div>` (t.ex. PillGroup-baserade) är fortfarande utan
+  programmatisk label-koppling.
+- **`minbuddy.se`** är kopplad och publik. E-postadresserna `hej@`/`jobb@minbuddy.se`
+  används i kontaktuppgifter — inte verifierat att de brevlådorna faktiskt tar emot
+  post.
+- Ingen fullständig mobil- eller tillgänglighetsgenomgång.
 
-## Utvecklingsområden (senast diskuterade, 2026-08-08)
+## Utvecklingsområden (senast diskuterade, 2026-08-30)
 
-Nyligen klart: fjärde fiktiva bolaget per kategori + fullständig jämförelsetabell
-för Försäkring-gruppen + El-tips + Telekom-täckning, förfallodag-påminnelser +
-Årlig hälsokoll, Livshändelser-checklistor + sysselsättningstips, ett simulerat
-referralprogram, en städning av Dashboard till en konsoliderad "Mer att göra"-
-sektion, och — den stora — **riktig persistens och riktig inloggning** (Supabase,
-e-post/lösenord istället för simulerad BankID).
+Hela 21-sektions-kundresa-v2-planen (`docs/kundresa-v2-steg2-plan.md` + uppföljande
+sektioner) är klar och verifierad live. En stor del av dagens arbete var: en 30-punkters
+extern trovärdighetsgranskning av marknadssajten (mestadels åtgärdad), en
+säkerhetsgenomgång (två hål täppta, ett kvar — se ovan), och en genomgång av hela
+jämförelseflödets frågespecifikation (El/Mobil/Boende/Fordon/Djur/Person/Streaming
+byggda, se git-historiken för detaljer).
 
 Kvarstående, ungefärlig prioritetsordning:
 
-1. **`minbuddy.se`-domänen** — koppla in när One.com har godkänt beställningen.
-2. **Mobil- och tillgänglighetsgenomgång** av hela sajten (kontrast, fokusrutor,
-   aria-labels på ikonknappar) — inget av det har granskats systematiskt än.
-3. **Konsekvent jämförelsetabell för Telekom/Kreditkort/El** — de har nu fyra
-   fiktiva bolag precis som Försäkring, men visas fortfarande i det äldre
-   hjältekort+lista-mönstret istället för samma tabell.
-4. **Riktig auto-hämtning eller riktig fordonsuppslagning** — två separata
-   simulerade flöden (`policy-fetch.ts`, `vehicle-lookup.ts`), båda förberedda
-   för att byta ut mot en riktig extern API.
-5. **Riktiga bolagsnamn i jämförelsen** — skulle kräva riktig data (pris-API:er
-   eller avtal med bolagen), inte bara ett namnbyte på den fiktiva datan. Ett
-   separat och mycket större projekt än allt ovan.
-6. Mindre: SEO/metadata per sida, jämförelsehistorik, exportera sammanställning.
+1. **RLS-hålet i internverktyget** (se ovan) — det viktigaste kvarvarande
+   säkerhetsproblemet.
+2. **Kontrastgenomgång** — designbeslut, rör hela paletten.
+3. **Regnr-/fastighetsuppslagning mot en riktig extern API** — två separata simulerade
+   flöden, redan förberedda för att bytas ut.
+4. **Riktiga bolagsnamn i jämförelsen** — skulle kräva riktig data (pris-API:er eller
+   avtal med bolagen), ett separat och mycket större projekt.
+5. Mindre: nytt guide-/nyhetsinnehåll för kategorier som saknar det (djur, MC, husvagn,
+   båt), en tydlig förklaring av hur Buddy tjänar pengar (FAQ + /jamfor).
 
 ## Git-historik
 
-Fullständig historik i `git log`. De 22 första commiten (till och med
-`02c02af Add a full marketing site alongside the app`) byggde grundstommen:
-projektuppsättning, design-tokens, BankID-inloggning, item-baserad onboarding
-(boende/bil/övrigt fordon/person/djur), jämförelseflöde, chat/skadeanmälan/boka-flöden,
-och hela den publika marknadsföringssajten. Därefter (nyare commits, se `git log`
-för exakta hashar):
-
-- Koppla in riktig adressökning (Geoapify), lägga till profil-dropdown, koppla
-  om jämförelseflödet mot den nya item-modellen.
-- Göra startsidan mer etablerad/professionell (grundarporträtt, Compricer-stil).
-- Bredda datamodellen till nio kategorier i tre grupper, gruppera Dashboard-
-  översikten, göra om /jamfor till en produktsida, och lägga till riktiga hero-bilder.
-- Kataloger istället för fritext i Telekom/Ekonomi-formulären, simulerad
-  auto-hämtning av befintlig försäkring, en regelbaserad `/rekommendation`-sida,
-  och ett bokningsformulär som frågar vad samtalet gäller.
-- Städa onboarding-resan: hoppa över lägg-till-hubben och prioritetsfrågan,
-  introduktions-popup, 18 riktiga bolag i auto-hämtningen, samlingsrabatt-popup,
-  tydlig "auto-hämtad" vs "jämförd"-åtskillnad.
-- Riktig jämförelsemotor för Telekom, Kreditkort och El (`b2fc208`): breddade
-  `ComparableItem` till åtta av nio kategorier, tre fiktiva bolag per kategori,
-  `Quote.selfRisk` valfri.
-- Tre-kolumnslayout för Försäkring-gruppens jämförelse (nuvarande/billigast/
-  rekommendation, `pickWinner()`), stöd för flera saker per kategori, strikt
-  två-fas-flöde (`readyToCompare`) med toast-notiser, behovsanalys för alla åtta
-  jämförbara kategorier, Enkel/Avancerat-växlare med avtalsvillkor.
-- "Morgonljus"-omdesign (ny färgpalett, Fraunces bort), riktiga hero-/grundarbilder.
-- Fjärde fiktiva bolaget per kategori-familj, fullständig jämförelsetabell för
-  Försäkring, El-tips, Telekom-nätverkstäckning.
-- Förfallodag-påminnelser + Årlig hälsokoll, Livshändelser-checklistor +
-  sysselsättningstips, simulerat referralprogram, Dashboard-städning ("Mer att göra").
-- **Persistens**: Supabase-koppling (`profiles`/`items`/`policies`, RLS), riktig
-  e-post/lösenord-inloggning som ersätter simulerad BankID, glömt lösenord-flöde.
-  Verifierat end-to-end mot ett riktigt Supabase-projekt inklusive RLS-isolering
-  mellan konton.
+Fullständig historik i `git log`. Grundstommen (projektuppsättning, item-baserad
+onboarding, jämförelseflöde, publik marknadsföringssajt) byggdes i de första ~22
+commiten. Därefter, i grova drag: riktig adressökning, "Morgonljus"-omdesign, nio
+kategorier i tre grupper, riktig persistens (Supabase) och riktig inloggning,
+internverktyget (6 kategorier), och hela kundresa v2-planen (BankID-import,
+hushåll v2, trygghetspoäng, dokumentarkiv, GDPR, årsrapport, referral). Se `git log`
+för exakta hashar — det här dokumentet sammanfattar resultatet, inte ordningen.
