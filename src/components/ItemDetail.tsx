@@ -5,8 +5,18 @@ import { useRouter } from "next/navigation";
 import { ArrowLeft, ArrowRight, CalendarPlus, Download, Pencil, Trash2 } from "lucide-react";
 import { Logo } from "@/components/Logo";
 import { ConfirmDialog } from "@/components/Overlay";
+import { getCancelTarget } from "@/components/Dashboard";
 import { useBuddy } from "@/lib/buddy-context";
-import { isComparableItem, ITEM_CATEGORIES, itemDetailRows, itemSummary, itemTitle, type InsuranceItem } from "@/lib/items";
+import {
+  createItemId,
+  groupForKind,
+  isComparableItem,
+  ITEM_CATEGORIES,
+  itemDetailRows,
+  itemSummary,
+  itemTitle,
+  type InsuranceItem,
+} from "@/lib/items";
 import { buildIcsFile } from "@/lib/booking";
 import { buildItemSummaryPdf } from "@/lib/item-pdf";
 import { parseSwedishDate } from "@/lib/dates";
@@ -28,8 +38,9 @@ function formatHistoryDate(iso: string): string {
 // om det faktiskt finns rader — en ny post har ingen historik än.
 export function ItemDetail({ itemId }: { itemId: string }) {
   const router = useRouter();
-  const { items, policies, removeItem, household } = useBuddy();
+  const { items, policies, removeItem, household, setPolicy } = useBuddy();
   const [confirmDelete, setConfirmDelete] = useState(false);
+  const [confirmCancel, setConfirmCancel] = useState(false);
   const [history, setHistory] = useState<HistoryRow[]>([]);
   const [downloadingPdf, setDownloadingPdf] = useState(false);
   const item = items.find((i) => i.id === itemId);
@@ -127,6 +138,8 @@ export function ItemDetail({ itemId }: { itemId: string }) {
   const forfallodatum = quote?.forfallodatum ?? ("forfallodatum" in item ? item.forfallodatum : undefined);
 
   const detailRows = itemDetailRows(item, quote);
+  const cancelTarget = getCancelTarget(item, rawQuote);
+  const canClaim = groupForKind(item.kind) === "forsakring";
 
   const addRenewalToCalendar = () => {
     if (!forfallodatum) return;
@@ -173,6 +186,30 @@ export function ItemDetail({ itemId }: { itemId: string }) {
             router.push("/dashboard");
           }}
           onCancel={() => setConfirmDelete(false)}
+        />
+      )}
+      {confirmCancel && cancelTarget && (
+        <ConfirmDialog
+          title="Säg upp den här saken?"
+          body="Buddy tar kontakt med bolaget och sköter uppsägningen åt dig. Du ser status under Att göra tills den är klar."
+          confirmLabel="Säg upp åt mig"
+          onConfirm={() => {
+            const now = new Date().toISOString();
+            if (rawQuote) {
+              setPolicy(item.id, { ...rawQuote, cancellationPending: true, cancellationRequestedAt: now });
+            } else {
+              setPolicy(item.id, {
+                id: createItemId(),
+                name: cancelTarget.name,
+                price: cancelTarget.price ?? 0,
+                highlights: [],
+                cancellationPending: true,
+                cancellationRequestedAt: now,
+              });
+            }
+            setConfirmCancel(false);
+          }}
+          onCancel={() => setConfirmCancel(false)}
         />
       )}
       <div className="w-full flex items-center justify-between px-6 py-5">
@@ -253,6 +290,10 @@ export function ItemDetail({ itemId }: { itemId: string }) {
             </div>
           )}
 
+          {rawQuote?.cancellationPending && (
+            <div className="text-xs font-semibold mb-3 text-amber-deep">Uppsägning pågår hos Buddy</div>
+          )}
+
           {isComparableItem(item) && (
             <button
               onClick={() => router.push(`/compare/${item.id}`)}
@@ -260,6 +301,27 @@ export function ItemDetail({ itemId }: { itemId: string }) {
             >
               Jämför <ArrowRight size={16} />
             </button>
+          )}
+
+          {(cancelTarget || canClaim) && !rawQuote?.cancellationPending && (
+            <div className="flex flex-wrap items-center gap-x-4 gap-y-2 mt-3 justify-center">
+              {cancelTarget && (
+                <button
+                  onClick={() => setConfirmCancel(true)}
+                  className="text-sm font-medium text-slate hover:text-ink"
+                >
+                  Säg upp
+                </button>
+              )}
+              {canClaim && (
+                <button
+                  onClick={() => router.push(`/claim?item=${encodeURIComponent(itemTitle(item))}`)}
+                  className="text-sm font-medium text-slate hover:text-ink"
+                >
+                  Hjälp med skada
+                </button>
+              )}
+            </div>
           )}
 
           {forfallodatum && (
