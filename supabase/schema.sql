@@ -1369,3 +1369,49 @@ create policy "customer_view_log_insert_employee" on public.customer_view_log
 drop policy if exists "customer_view_log_select_employee" on public.customer_view_log;
 create policy "customer_view_log_select_employee" on public.customer_view_log
   for select using (exists (select 1 from public.employees where email = auth.jwt() ->> 'email'));
+
+-- ============================================================
+-- SÄKERHETSFIX (2026-08-30): privilege escalation via employees_update_own
+-- ============================================================
+--
+-- employees_update_own (se ovan) begränsar bara VILKEN rad en anställd får
+-- uppdatera (sin egen), inte VILKA kolumner — samma klass av hål som
+-- enforce_personnummer_edit_permission redan täpper till för profiles,
+-- här applicerat på employees. Utan den här triggern kan vilken inloggad
+-- anställd som helst köra
+--   supabase.from('employees').update({ permission_level: 'admin' }).eq('email', minEgenEmail)
+-- direkt i devtools och självutnämna sig till admin — UI:t (EmployeeProfile.tsx)
+-- håller permission_level read-only, men det är bara en klientspärr.
+-- Det finns i dagsläget ingen "admin ändrar en ANNAN anställds roll"-
+-- funktion i UI:t alls (görs manuellt i Supabase Studio), så EN FÖRÄNDRING
+-- av permission_level via den här self-service-policyn är aldrig legitim
+-- — triggern kan därför blockera den helt utan att påverka något
+-- existerande, fungerande flöde.
+create or replace function public.enforce_no_self_permission_change()
+returns trigger
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+  if new.permission_level is distinct from old.permission_level then
+    raise exception 'Du kan inte ändra din egen behörighetsnivå.';
+  end if;
+  return new;
+end;
+$$;
+
+drop trigger if exists trg_enforce_no_self_permission_change on public.employees;
+create trigger trg_enforce_no_self_permission_change
+before update on public.employees
+for each row execute function public.enforce_no_self_permission_change();
+
+-- Städar upp personnummer som redan hunnit skrivas i klartext till
+-- activity_log innan koden ovan maskerade dem vid skrivning (se
+-- src/lib/activity-log.ts) — körs en gång, påverkar bara befintliga rader.
+update public.activity_log
+set
+  old_value = case when old_value is null then null else left(old_value, 6) || '-XXXX' end,
+  new_value = case when new_value is null then null else left(new_value, 6) || '-XXXX' end
+where field = 'personnummer'
+  and (old_value !~ '^\d{6}-XXXX$' or new_value !~ '^\d{6}-XXXX$');

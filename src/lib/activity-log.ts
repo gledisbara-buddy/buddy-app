@@ -1,6 +1,19 @@
 import { createClient } from "@/lib/supabase/client";
+import { maskPersonnummer } from "@/lib/personnummer";
 
 type Supabase = ReturnType<typeof createClient>;
+
+// Loggraden är läsbar av VARJE anställd (activity_log_select_employee har
+// inget behörighetsfilter, till skillnad från customer_profile_view) —
+// utan den här maskeringen skulle en kundservice-anställd kunna läsa ett
+// fullt personnummer i klartext i Aktivitet-fliken så fort en admin/
+// specialist redigerar det, vilket helt kringgår maskeringen som
+// customer_profile_view annars ger. Samma format som den vyn använder.
+function redactLoggedValue(field: string, value: unknown): string | null {
+  if (value == null) return null;
+  const str = String(value);
+  return field === "personnummer" ? maskPersonnummer(str) : str;
+}
 
 // Skriver ett fält + en loggrad i samma sekvens, och räknar ett
 // misslyckat logg-skriv som ett totalt misslyckande — medvetet
@@ -33,8 +46,8 @@ export async function saveField(
     actor_email: actorEmail,
     table_name: table,
     field,
-    old_value: oldValue == null ? null : String(oldValue),
-    new_value: newValue == null ? null : String(newValue),
+    old_value: redactLoggedValue(field, oldValue),
+    new_value: redactLoggedValue(field, newValue),
   });
   return !logError;
 }

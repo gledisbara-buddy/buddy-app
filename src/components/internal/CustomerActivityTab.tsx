@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
+import { maskPersonnummer } from "@/lib/personnummer";
 
 type ActivityRow = {
   id: string;
@@ -31,6 +32,15 @@ function describeField(field: string): string {
 
 function formatDateTime(iso: string): string {
   return new Date(iso).toLocaleString("sv-SE", { dateStyle: "long", timeStyle: "short" });
+}
+
+// saveField() maskerar personnummer innan skrivning (se activity-log.ts),
+// men den här masken skyddar även äldre loggrader som skrevs innan den
+// fixen fanns — annars skulle historiska rader fortfarande visa klartext.
+function displayValue(field: string, value: string | null): string | null {
+  if (value == null) return null;
+  const sub = field.includes(".") ? field.split(".")[1] : field;
+  return sub === "personnummer" ? maskPersonnummer(value) : value;
 }
 
 // Skrivskyddad audit-logg — se supabase/schema.sql, activity_log har
@@ -91,10 +101,10 @@ export function CustomerActivityTab({ customerId }: { customerId: string }) {
                 {r.old_value != null && (
                   <>
                     {" "}
-                    från <span className="text-slate">{r.old_value}</span>
+                    från <span className="text-slate">{displayValue(r.field, r.old_value)}</span>
                   </>
                 )}{" "}
-                till <span className="font-medium">{r.new_value ?? "–"}</span>
+                till <span className="font-medium">{displayValue(r.field, r.new_value) ?? "–"}</span>
               </div>
               <span className="text-xs text-slate flex-none whitespace-nowrap">{formatDateTime(r.created_at)}</span>
             </div>
