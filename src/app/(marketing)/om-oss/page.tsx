@@ -1,12 +1,13 @@
 import type { Metadata } from "next";
 import Image from "next/image";
 import { FileX, Heart, Lightbulb, ShieldCheck } from "lucide-react";
+import { pageMetadata } from "@/lib/seo";
 
-export const metadata: Metadata = {
+export const metadata: Metadata = pageMetadata({
   title: "Om oss",
   description:
     "Buddy hjälper dig samla, jämföra, säga upp och hålla koll på allt du betalar för — försäkring, mobil, kreditkort och el — på ett ställe.",
-};
+});
 
 const VALUES = [
   {

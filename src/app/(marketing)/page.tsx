@@ -15,7 +15,6 @@ import {
   ShieldCheck,
   Sparkles,
   Star,
-  UserPlus,
   Users,
 } from "lucide-react";
 import { FaqAccordion } from "@/components/marketing/FaqAccordion";
@@ -27,16 +26,17 @@ import { FAQ_ITEMS } from "@/lib/faq";
 import { GUIDES } from "@/lib/guides";
 import { NEWS_ARTICLES } from "@/lib/news";
 import { TOP_LIST } from "@/lib/top-list";
+import { pageMetadata } from "@/lib/seo";
 
 function formatDate(iso: string) {
   return new Date(iso).toLocaleDateString("sv-SE", { year: "numeric", month: "long", day: "numeric" });
 }
 
-export const metadata: Metadata = {
+export const metadata: Metadata = pageMetadata({
   title: "Allt du betalar för, på ett ställe",
   description:
     "Försäkring, mobil & bredband, kreditkort, el — Buddy samlar allt på ett ställe, hjälper dig jämföra, säger upp det gamla åt dig, och finns kvar när något händer.",
-};
+});
 
 const PILLARS = [
   {
@@ -92,7 +92,7 @@ const TESTIMONIALS = [
 
 const STEPS = [
   {
-    icon: UserPlus,
+    n: "1",
     title: "Skapa ditt konto",
     desc: "Registrera dig med e-post och lösenord, sen hämtar du in allt du redan har med BankID — eller lägger till för hand.",
   },
@@ -249,7 +249,7 @@ export default function MarketingHome() {
               {STEPS.map((s) => (
                 <div key={s.title} className="text-center">
                   <div className="w-10 h-10 rounded-full flex items-center justify-center mx-auto mb-4 bd-display text-white bg-forest">
-                    {s.icon ? <s.icon size={17} /> : s.n}
+                    {s.n}
                   </div>
                   <div className="font-semibold text-[15px] mb-1.5">{s.title}</div>
                   <p className="text-sm text-slate">{s.desc}</p>

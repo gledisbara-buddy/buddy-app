@@ -1,10 +1,11 @@
 import type { Metadata } from "next";
 import { LegalPage } from "@/components/marketing/LegalPage";
+import { pageMetadata } from "@/lib/seo";
 
-export const metadata: Metadata = {
+export const metadata: Metadata = pageMetadata({
   title: "Cookies",
   description: "Hur Buddy använder cookies.",
-};
+});
 
 export default function CookiesPage() {
   return (

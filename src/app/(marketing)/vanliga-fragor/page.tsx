@@ -1,11 +1,12 @@
 import type { Metadata } from "next";
 import { FaqAccordion } from "@/components/marketing/FaqAccordion";
 import { FAQ_ITEMS } from "@/lib/faq";
+import { pageMetadata } from "@/lib/seo";
 
-export const metadata: Metadata = {
+export const metadata: Metadata = pageMetadata({
   title: "Vanliga frågor",
   description: "Kort svar på de vanligaste frågorna om Buddy och hur tjänsten fungerar.",
-};
+});
 
 const FAQ_JSON_LD = {
   "@context": "https://schema.org",

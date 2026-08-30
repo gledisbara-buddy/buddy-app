@@ -27,7 +27,7 @@ export const GUIDES: Guide[] = [
     slug: "ratt-hemforsakring",
     title: "Så väljer du rätt hemförsäkring",
     excerpt: "Boyta, boendeform och vad du äger avgör vilket skydd som faktiskt är rätt för dig.",
-    readMinutes: 7,
+    readMinutes: 3,
     category: "forsakring",
     sections: [
       {
@@ -64,7 +64,7 @@ export const GUIDES: Guide[] = [
     slug: "vad-tacker-bilforsakring",
     title: "Det här täcker en bilförsäkring",
     excerpt: "Trafik-, halv- och helförsäkring låter snarlika men skiljer sig rejält åt.",
-    readMinutes: 6,
+    readMinutes: 2,
     category: "forsakring",
     sections: [
       {
@@ -100,7 +100,7 @@ export const GUIDES: Guide[] = [
     slug: "behover-du-olycksfallsforsakring",
     title: "Behöver du en olycksfallsförsäkring?",
     excerpt: "Arbetsgivare och fackförbund täcker mer än du tror — men inte allt, och inte alltid på fritiden.",
-    readMinutes: 5,
+    readMinutes: 2,
     category: "forsakring",
     sections: [
       {
@@ -135,7 +135,7 @@ export const GUIDES: Guide[] = [
     slug: "sa-fungerar-sjalvrisk",
     title: "Så fungerar självrisk",
     excerpt: "En lägre premie betyder oftast en högre självrisk — här är avvägningen du faktiskt gör.",
-    readMinutes: 5,
+    readMinutes: 2,
     category: "forsakring",
     sections: [
       {
@@ -167,7 +167,7 @@ export const GUIDES: Guide[] = [
     slug: "ratt-mobilabonnemang",
     title: "Så väljer du rätt mobilabonnemang",
     excerpt: "Datamängd, bindningstid och nätverkstäckning på din adress spelar större roll än priset på appen.",
-    readMinutes: 6,
+    readMinutes: 2,
     category: "mobil-bredband",
     sections: [
       {
@@ -199,7 +199,7 @@ export const GUIDES: Guide[] = [
     slug: "dolda-kostnader-prenumerationer",
     title: "Dolda kostnader i dina prenumerationer",
     excerpt: "Streamingtjänster, bredband och appabonnemang som glidit in i bakgrunden är den vanligaste läckan i hushållsekonomin.",
-    readMinutes: 5,
+    readMinutes: 2,
     category: "mobil-bredband",
     sections: [
       {
@@ -234,7 +234,7 @@ export const GUIDES: Guide[] = [
     slug: "ratt-kreditkort",
     title: "Så väljer du rätt kreditkort",
     excerpt: "Årsavgift, ränta och bonussystem drar åt olika håll beroende på hur du faktiskt använder kortet.",
-    readMinutes: 5,
+    readMinutes: 2,
     category: "ekonomi",
     sections: [
       {
@@ -266,7 +266,7 @@ export const GUIDES: Guide[] = [
     slug: "sa-fungerar-elavtal",
     title: "Så fungerar elavtal — rörligt vs. fast pris",
     excerpt: "Rörligt pris följer marknaden timme för timme. Fast pris är en försäkring mot att marknaden rör sig fel väg.",
-    readMinutes: 5,
+    readMinutes: 2,
     category: "ekonomi",
     sections: [
       {
@@ -301,7 +301,7 @@ export const GUIDES: Guide[] = [
     slug: "sa-raknas-trygghetspoangen",
     title: "Så räknas din trygghetspoäng",
     excerpt: "Trygghetspoängen är inte ett kreditbetyg — det är en checklista över vad du faktiskt har skydd för, omvandlad till en siffra.",
-    readMinutes: 4,
+    readMinutes: 2,
     category: "buddy",
     sections: [
       {
@@ -337,7 +337,7 @@ export const GUIDES: Guide[] = [
     slug: "sa-fungerar-bankid-importen",
     title: "Så fungerar BankID-importen",
     excerpt: "Vad Buddy faktiskt ser när du loggar in med BankID — och vad appen aldrig får tillgång till.",
-    readMinutes: 4,
+    readMinutes: 2,
     category: "buddy",
     sections: [
       {
@@ -369,7 +369,7 @@ export const GUIDES: Guide[] = [
     slug: "fullmakt-forklarat",
     title: "Fullmakt förklarat — vad du faktiskt skriver under på",
     excerpt: "En fullmakt låter Buddy prata med dina bolag åt dig. Här är exakt vad det innebär, och vad det inte gör.",
-    readMinutes: 4,
+    readMinutes: 2,
     category: "buddy",
     sections: [
       {

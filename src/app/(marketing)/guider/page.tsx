@@ -2,11 +2,12 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { Clock } from "lucide-react";
 import { GUIDE_CATEGORY_LABELS, GUIDES, type GuideCategory } from "@/lib/guides";
+import { pageMetadata } from "@/lib/seo";
 
-export const metadata: Metadata = {
+export const metadata: Metadata = pageMetadata({
   title: "Guider",
   description: "Genomgångar av hur försäkring, mobil, kreditkort, el och Buddy själv faktiskt fungerar, utan krångligt språk.",
-};
+});
 
 const CATEGORY_ORDER: GuideCategory[] = ["forsakring", "mobil-bredband", "ekonomi", "buddy"];
 

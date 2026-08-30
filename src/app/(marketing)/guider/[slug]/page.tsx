@@ -1,8 +1,9 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ArrowLeft, ArrowRight, Check, Clock } from "lucide-react";
+import { ArrowRight, Check, Clock } from "lucide-react";
 import { GUIDE_CATEGORY_LABELS, getGuideBySlug, GUIDES } from "@/lib/guides";
+import { pageMetadata } from "@/lib/seo";
 
 export function generateStaticParams() {
   return GUIDES.map((g) => ({ slug: g.slug }));
@@ -12,7 +13,7 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   const { slug } = await params;
   const guide = getGuideBySlug(slug);
   if (!guide) return {};
-  return { title: guide.title, description: guide.excerpt };
+  return pageMetadata({ title: guide.title, description: guide.excerpt });
 }
 
 export default async function GuidePage({ params }: { params: Promise<{ slug: string }> }) {
@@ -22,11 +23,37 @@ export default async function GuidePage({ params }: { params: Promise<{ slug: st
 
   const related = GUIDES.filter((g) => g.category === guide.category && g.slug !== guide.slug).slice(0, 2);
 
+  const jsonLd = {
+    "@context": "https://schema.org",
+    "@type": "Article",
+    headline: guide.title,
+    description: guide.excerpt,
+    articleSection: GUIDE_CATEGORY_LABELS[guide.category],
+    author: { "@type": "Organization", name: "Buddy" },
+  };
+  const breadcrumbJsonLd = {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    itemListElement: [
+      { "@type": "ListItem", position: 1, name: "Hem", item: "https://www.minbuddy.se/" },
+      { "@type": "ListItem", position: 2, name: "Guider", item: "https://www.minbuddy.se/guider" },
+      { "@type": "ListItem", position: 3, name: guide.title },
+    ],
+  };
+
   return (
     <div className="max-w-2xl mx-auto px-5 md:px-10 py-16 bd-fade">
-      <Link href="/guider" className="flex items-center gap-1.5 text-sm mb-8 opacity-60 hover:opacity-100">
-        <ArrowLeft size={15} /> Alla guider
-      </Link>
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd) }} />
+      <nav aria-label="Brödsmulor" className="flex items-center gap-1.5 text-sm mb-8 opacity-60">
+        <Link href="/" className="hover:opacity-100 hover:underline">
+          Hem
+        </Link>
+        <span aria-hidden="true">/</span>
+        <Link href="/guider" className="hover:opacity-100 hover:underline">
+          Guider
+        </Link>
+      </nav>
       <div className="flex items-center gap-3 text-xs mb-4 text-slate">
         <span className="px-2.5 py-1 rounded-full bg-frost-2 text-forest font-medium">
           {GUIDE_CATEGORY_LABELS[guide.category]}

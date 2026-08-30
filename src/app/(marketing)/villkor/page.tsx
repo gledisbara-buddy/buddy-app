@@ -1,10 +1,11 @@
 import type { Metadata } from "next";
 import { LegalPage } from "@/components/marketing/LegalPage";
+import { pageMetadata } from "@/lib/seo";
 
-export const metadata: Metadata = {
+export const metadata: Metadata = pageMetadata({
   title: "Allmänna villkor",
   description: "Villkoren för att använda Buddy.",
-};
+});
 
 export default function VillkorPage() {
   return (

@@ -38,6 +38,16 @@ export const metadata: Metadata = {
   },
 };
 
+// Håll medvetet minimal — bara fält vi faktiskt vet stämmer. Bolagsnamn,
+// org.nr och adress läggs till här när det finns en riktig juridisk person
+// bakom tjänsten (se villkor/integritetspolicy, som har samma lucka).
+const ORGANIZATION_JSON_LD = {
+  "@context": "https://schema.org",
+  "@type": "Organization",
+  name: "Buddy",
+  url: "https://www.minbuddy.se",
+};
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -49,6 +59,7 @@ export default function RootLayout({
       className={`${inter.variable} ${ibmPlexMono.variable} h-full antialiased`}
     >
       <body className="font-sans min-h-full flex flex-col">
+        <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(ORGANIZATION_JSON_LD) }} />
         <BuddyProvider>{children}</BuddyProvider>
       </body>
     </html>

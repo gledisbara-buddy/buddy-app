@@ -1,10 +1,11 @@
 import type { Metadata } from "next";
 import { LegalPage } from "@/components/marketing/LegalPage";
+import { pageMetadata } from "@/lib/seo";
 
-export const metadata: Metadata = {
+export const metadata: Metadata = pageMetadata({
   title: "Integritetspolicy",
   description: "Hur Buddy samlar in, använder och skyddar dina uppgifter.",
-};
+});
 
 export default function IntegritetspolicyPage() {
   return (
