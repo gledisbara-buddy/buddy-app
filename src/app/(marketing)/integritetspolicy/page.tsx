@@ -28,7 +28,7 @@ export default function IntegritetspolicyPage() {
         },
         {
           heading: "Vem hos Buddy kan se mina uppgifter?",
-          body: "Anställda hos Buddy kan se och vid behov rätta dina kontouppgifter för att kunna hjälpa dig, t.ex. vid ett supportärende. Varje sådan ändring loggas automatiskt med vem som gjorde den, när, och vad som ändrades — den loggen är inte synlig för dig, men finns för spårbarhet. Interna anteckningar som en anställd gör om ditt ärende är aldrig synliga för dig som kund.",
+          body: "Anställda hos Buddy kan se och vid behov rätta dina kontouppgifter för att kunna hjälpa dig, t.ex. vid ett supportärende. Varje sådan ändring loggas automatiskt med vem som gjorde den, när, och vad som ändrades, för spårbarhet. Den loggen och interna anteckningar om ditt ärende visas inte löpande i appen, men omfattas av din rätt att begära ett utdrag av dina uppgifter — se \"Dina rättigheter\" nedan.",
         },
         {
           heading: "Delar vi uppgifter med andra?",

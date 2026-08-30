@@ -186,7 +186,11 @@ export default function MarketingHome() {
           <div>
             <ProductPreview />
             <p className="text-xs text-center mt-3 text-slate">
-              Skiss av översikten, inte ditt riktiga konto.
+              Skiss av översikten, inte ditt riktiga konto. Siffran 86 är ett exempel —{" "}
+              <Link href="/guider/sa-raknas-trygghetspoangen" className="underline hover:text-ink">
+                så räknas trygghetspoängen
+              </Link>
+              .
             </p>
           </div>
         </div>
@@ -311,7 +315,7 @@ export default function MarketingHome() {
               <span className="bd-eyebrow">Topplista</span>
               <h2 className="bd-display text-3xl mt-3">Så rankar vi bolagen i vår försäkringsjämförelse</h2>
             </div>
-            <Link href="/jamfor" className="text-sm font-semibold flex items-center gap-1 text-forest">
+            <Link href="/jamfor#sa-rankar-vi" className="text-sm font-semibold flex items-center gap-1 text-forest">
               Så jämför vi <ArrowRight size={14} />
             </Link>
           </div>

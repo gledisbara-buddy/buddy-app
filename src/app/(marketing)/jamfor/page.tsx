@@ -6,6 +6,7 @@ import {
   Headset,
   LayoutGrid,
   Quote,
+  ShieldCheck,
   Sparkles,
   Star,
   Unlock,
@@ -297,6 +298,36 @@ export default function JamforPage() {
       {ITEM_GROUPS.map((group, i) => (
         <GroupSection key={group.id} group={group} index={i} />
       ))}
+
+      <section id="sa-rankar-vi" className="max-w-4xl mx-auto px-5 md:px-10 py-16 border-t border-line">
+        <div className="text-center mb-10">
+          <span className="bd-eyebrow">Så jämför vi</span>
+          <h2 className="bd-display text-3xl mt-3">Ingen betalar sig till en högre placering</h2>
+        </div>
+        <div className="grid md:grid-cols-3 gap-6">
+          <div className="text-center">
+            <BadgeCheck size={22} className="text-forest mx-auto mb-3" />
+            <div className="font-semibold text-[15px] mb-1.5">Samma formel för alla</div>
+            <p className="text-sm text-slate">
+              Vår rekommendation väger normaliserat betyg och pris — 60/40 — och räknas likadant för varje bolag i
+              listan, oavsett vilket det är.
+            </p>
+          </div>
+          <div className="text-center">
+            <ShieldCheck size={22} className="text-forest mx-auto mb-3" />
+            <div className="font-semibold text-[15px] mb-1.5">Ingen betald placering</div>
+            <p className="text-sm text-slate">Vi rankar aldrig ett bolag högre för att de betalar mer för platsen.</p>
+          </div>
+          <div className="text-center">
+            <Sparkles size={22} className="text-forest mx-auto mb-3" />
+            <div className="font-semibold text-[15px] mb-1.5">Billigast ≠ vår rekommendation</div>
+            <p className="text-sm text-slate">
+              Du ser alltid både det billigaste alternativet och vår viktade rekommendation separat, så du kan välja
+              själv.
+            </p>
+          </div>
+        </div>
+      </section>
 
       <section className="py-16 border-t border-line bg-frost-2">
         <div className="max-w-5xl mx-auto px-5 md:px-10">
