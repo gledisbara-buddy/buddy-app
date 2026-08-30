@@ -53,7 +53,7 @@ export function MarketingNav() {
           <ProfileMenu />
         ) : (
           <Link
-            href="/kom-igang"
+            href="/login?type=privat&mode=login"
             className="bd-btn px-4 py-2 rounded-full text-sm font-semibold text-white bg-forest flex-none"
           >
             Logga in

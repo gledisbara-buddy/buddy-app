@@ -14,9 +14,17 @@ import type { UserType } from "@/lib/types";
 
 type Mode = "login" | "signup";
 
-export function AuthForm({ userType, initialReferralCode }: { userType: UserType; initialReferralCode?: string }) {
+export function AuthForm({
+  userType,
+  initialReferralCode,
+  initialMode,
+}: {
+  userType: UserType;
+  initialReferralCode?: string;
+  initialMode?: Mode;
+}) {
   const router = useRouter();
-  const [mode, setMode] = useState<Mode>("signup");
+  const [mode, setMode] = useState<Mode>(initialMode ?? "signup");
   const [name, setName] = useState("");
   const [lastName, setLastName] = useState("");
   const [email, setEmail] = useState("");
