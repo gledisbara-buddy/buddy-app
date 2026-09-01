@@ -6,37 +6,20 @@ import { CalendarDays, Send } from "lucide-react";
 import { TopBar } from "@/components/TopBar";
 import { HelperAvatar } from "@/components/HelperAvatar";
 import { useBuddy } from "@/lib/buddy-context";
-import { CHAT_SUGGESTIONS, getCannedReply, randomDelay, type ChatMessage } from "@/lib/chat";
+import { CHAT_SUGGESTIONS } from "@/lib/chat";
+import { useBuddyChat } from "@/lib/use-buddy-chat";
 
 export function ChatScreen() {
   const router = useRouter();
-  const { userType, loading: authLoading, profile } = useBuddy();
+  const { userType, loading: authLoading } = useBuddy();
 
   useEffect(() => {
     if (!authLoading && !userType) router.replace("/kom-igang");
   }, [authLoading, userType, router]);
 
-  const [messages, setMessages] = useState<ChatMessage[]>([
-    { role: "assistant", content: `Hej ${profile?.name || "där"}. Vad kan jag hjälpa dig med?` },
-  ]);
+  const { messages, loading, send } = useBuddyChat();
   const [input, setInput] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [syncedAuthLoading, setSyncedAuthLoading] = useState(authLoading);
   const scrollRef = useRef<HTMLDivElement>(null);
-
-  // profile laddas asynkront — hälsningen (satt vid mount) hinner ibland
-  // före, så den uppdateras en gång när laddningen är klar. Justeras under
-  // rendering (samma mönster som NeedsAnalysis.tsx), inte i en effekt.
-  if (authLoading !== syncedAuthLoading) {
-    setSyncedAuthLoading(authLoading);
-    if (!authLoading) {
-      setMessages((prev) =>
-        prev.length === 1 && prev[0].role === "assistant"
-          ? [{ role: "assistant", content: `Hej ${profile?.name || "där"}. Vad kan jag hjälpa dig med?` }]
-          : prev
-      );
-    }
-  }
 
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
@@ -44,22 +27,16 @@ export function ChatScreen() {
 
   if (authLoading || !userType) return null;
 
-  const send = (text?: string) => {
-    const content = (text ?? input).trim();
-    if (!content || loading) return;
-    setMessages((prev) => [...prev, { role: "user", content }]);
-    setInput("");
-    setLoading(true);
-    setTimeout(() => {
-      setMessages((prev) => [...prev, { role: "assistant", content: getCannedReply(content) }]);
-      setLoading(false);
-    }, randomDelay(700, 1200));
+  const submit = (text?: string) => {
+    const content = text ?? input;
+    send(content);
+    if (content.trim()) setInput("");
   };
 
   const onKey = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
-      send();
+      submit();
     }
   };
 
@@ -121,7 +98,7 @@ export function ChatScreen() {
           {CHAT_SUGGESTIONS.map((s) => (
             <button
               key={s}
-              onClick={() => send(s)}
+              onClick={() => submit(s)}
               disabled={loading}
               className="whitespace-nowrap text-xs px-3.5 py-2 rounded-full border border-line bg-white flex-none disabled:opacity-50"
             >
@@ -142,7 +119,7 @@ export function ChatScreen() {
             style={{ maxHeight: 120 }}
           />
           <button
-            onClick={() => send()}
+            onClick={() => submit()}
             disabled={loading || !input.trim()}
             className="bd-btn w-10 h-10 rounded-xl flex items-center justify-center flex-none bg-forest disabled:opacity-40"
           >
