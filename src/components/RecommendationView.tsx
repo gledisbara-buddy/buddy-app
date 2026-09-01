@@ -29,7 +29,7 @@ export function RecommendationView() {
       <div className="max-w-2xl mx-auto px-5 md:px-10 py-10 bd-fade">
         <span className="bd-eyebrow">Din rekommendation</span>
         <h1 className="bd-display text-3xl mt-2 mb-5">{rec.headline}</h1>
-        <HelperTip role="advisor" dismissible={false} className="mb-8">
+        <HelperTip dismissible={false} className="mb-8">
           {rec.intro}
         </HelperTip>
 

@@ -936,7 +936,7 @@ export function CompareFlow({ itemId }: { itemId: string }) {
           <div className="flex-1 flex items-start justify-center px-5 pt-4 pb-16">
             <div className="w-full max-w-lg bd-fade">
               <div className="flex items-center gap-3 mb-6">
-                <HelperAvatar role="confirm" size={44} />
+                <HelperAvatar size={44} />
                 <div>
                   <div className="font-semibold text-[15px]">Klart — {signedQuote.name} är valt</div>
                   <div className="text-xs text-slate">{label}</div>

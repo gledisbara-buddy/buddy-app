@@ -354,8 +354,13 @@ export function Dashboard({ showIntro: initialShowIntro }: { showIntro?: boolean
       )}
       <TopBar right={<ProfileMenu />} showTabs />
       <div className="max-w-4xl mx-auto px-5 md:px-10 py-10 bd-fade">
-        <span className="bd-eyebrow">Din översikt</span>
-        <h1 className="bd-display text-3xl mt-2 mb-1">Hej {profile?.name || "där"} 👋</h1>
+        <div className="flex items-center gap-4 mb-1">
+          <HelperAvatar size={72} />
+          <div>
+            <span className="bd-eyebrow">Din översikt</span>
+            <h1 className="bd-display text-3xl mt-1">Hej {profile?.name || "där"} 👋</h1>
+          </div>
+        </div>
         <p className="text-sm mb-8 text-slate">Här är läget på dina saker.</p>
 
         {trustScore && (
@@ -933,9 +938,9 @@ export function Dashboard({ showIntro: initialShowIntro }: { showIntro?: boolean
         </div>
 
         <div className="rounded-2xl border border-line p-5 flex items-start gap-3 bg-frost-2">
-          <HelperAvatar role="idea" size={36} />
+          <HelperAvatar size={44} />
           <div className="flex-1">
-            <div className="text-xs font-semibold text-forest mb-1">Idégivaren</div>
+            <div className="text-xs font-semibold text-forest mb-1">Buddy</div>
             <p className="text-sm mb-3 text-ink">
               {items.length === 0
                 ? "du har inte lagt in något än — börja med det som känns viktigast, t.ex. ditt boende eller din bil."

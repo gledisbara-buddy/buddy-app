@@ -894,7 +894,7 @@ export function Onboarding({
 
             {addMode === "choice" && (
               <>
-                <HelperTip role="guide" className="mb-4">
+                <HelperTip className="mb-4">
                   Har du redan {meta.label.toLowerCase()}? Jag hjälper dig hämta det automatiskt, eller så fyller du
                   i själv — du väljer.
                 </HelperTip>
@@ -924,7 +924,7 @@ export function Onboarding({
             )}
 
             {addMode === "manual" && (
-              <HelperTip role="planner" className="mb-5">
+              <HelperTip className="mb-5">
                 Fyll i det du vet — resten kan du alltid komplettera senare.
               </HelperTip>
             )}
