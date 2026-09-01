@@ -6,6 +6,7 @@ import { ArrowLeft, Info, Loader2, PhoneCall } from "lucide-react";
 import { Logo } from "@/components/Logo";
 import { Overlay } from "@/components/Overlay";
 import { PageSkeleton } from "@/components/PageSkeleton";
+import { HelperTip } from "@/components/HelperTip";
 import { AutoFetchStep } from "@/components/onboarding/AutoFetchStep";
 import { BoendeForm } from "@/components/onboarding/BoendeForm";
 import { TelekomForm } from "@/components/onboarding/TelekomForm";
@@ -893,9 +894,10 @@ export function Onboarding({
 
             {addMode === "choice" && (
               <>
-                <p className="text-sm mb-4 text-slate">
-                  Har du redan det här? Hämta uppgifterna automatiskt från ditt bolag, eller fyll i själv.
-                </p>
+                <HelperTip role="guide" className="mb-4">
+                  Har du redan {meta.label.toLowerCase()}? Jag hjälper dig hämta det automatiskt, eller så fyller du
+                  i själv — du väljer.
+                </HelperTip>
                 <div className="flex flex-col gap-3">
                   <button
                     onClick={() => setAddMode("auto")}
@@ -919,6 +921,12 @@ export function Onboarding({
                 onDone={(item, quote) => handleItemAdded(item, quote)}
                 onBack={() => setAddMode("choice")}
               />
+            )}
+
+            {addMode === "manual" && (
+              <HelperTip role="planner" className="mb-5">
+                Fyll i det du vet — resten kan du alltid komplettera senare.
+              </HelperTip>
             )}
 
             {addMode === "manual" && activeCategory === "telekom" && (

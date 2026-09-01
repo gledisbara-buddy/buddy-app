@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { ArrowLeft, ArrowRight, Check, CircleDot, Loader2, ShieldCheck, Star, Zap } from "lucide-react";
 import { Logo } from "@/components/Logo";
+import { HelperAvatar } from "@/components/HelperAvatar";
 import { NeedsAnalysis } from "@/components/NeedsAnalysis";
 import { Overlay } from "@/components/Overlay";
 import { FullmaktSigning } from "@/components/FullmaktSigning";
@@ -935,9 +936,7 @@ export function CompareFlow({ itemId }: { itemId: string }) {
           <div className="flex-1 flex items-start justify-center px-5 pt-4 pb-16">
             <div className="w-full max-w-lg bd-fade">
               <div className="flex items-center gap-3 mb-6">
-                <div className="w-11 h-11 rounded-full flex items-center justify-center flex-none bg-forest">
-                  <Check size={20} color="white" />
-                </div>
+                <HelperAvatar role="confirm" size={44} />
                 <div>
                   <div className="font-semibold text-[15px]">Klart — {signedQuote.name} är valt</div>
                   <div className="text-xs text-slate">{label}</div>

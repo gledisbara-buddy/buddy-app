@@ -20,12 +20,12 @@ import {
   ShieldCheck,
   Smartphone,
   Sparkles,
-  Star,
   Trash2,
 } from "lucide-react";
 import { ConfirmDialog, Overlay } from "@/components/Overlay";
 import { TopBar } from "@/components/TopBar";
 import { ProfileMenu } from "@/components/ProfileMenu";
+import { HelperAvatar } from "@/components/HelperAvatar";
 import { PageSkeleton } from "@/components/PageSkeleton";
 import { useBuddy } from "@/lib/buddy-context";
 import { createClient } from "@/lib/supabase/client";
@@ -933,10 +933,10 @@ export function Dashboard({ showIntro: initialShowIntro }: { showIntro?: boolean
         </div>
 
         <div className="rounded-2xl border border-line p-5 flex items-start gap-3 bg-frost-2">
-          <Star size={16} className="mt-0.5 flex-none text-amber-deep" />
+          <HelperAvatar role="idea" size={36} />
           <div className="flex-1">
+            <div className="text-xs font-semibold text-forest mb-1">Idégivaren</div>
             <p className="text-sm mb-3 text-ink">
-              <b>Tips från Buddy:</b>{" "}
               {items.length === 0
                 ? "du har inte lagt in något än — börja med det som känns viktigast, t.ex. ditt boende eller din bil."
                 : !readyToCompare

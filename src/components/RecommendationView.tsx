@@ -6,6 +6,7 @@ import { ArrowRight, PhoneCall, Sparkles } from "lucide-react";
 import { TopBar } from "@/components/TopBar";
 import { ProfileMenu } from "@/components/ProfileMenu";
 import { PageSkeleton } from "@/components/PageSkeleton";
+import { HelperTip } from "@/components/HelperTip";
 import { useBuddy } from "@/lib/buddy-context";
 import { buildRecommendation } from "@/lib/recommendation";
 
@@ -27,8 +28,10 @@ export function RecommendationView() {
       <TopBar onBack={() => router.push("/dashboard")} right={<ProfileMenu />} />
       <div className="max-w-2xl mx-auto px-5 md:px-10 py-10 bd-fade">
         <span className="bd-eyebrow">Din rekommendation</span>
-        <h1 className="bd-display text-3xl mt-2 mb-2">{rec.headline}</h1>
-        <p className="text-sm mb-8 text-slate">{rec.intro}</p>
+        <h1 className="bd-display text-3xl mt-2 mb-5">{rec.headline}</h1>
+        <HelperTip role="advisor" dismissible={false} className="mb-8">
+          {rec.intro}
+        </HelperTip>
 
         {rec.bullets.length > 0 && (
           <div className="flex flex-col gap-3 mb-6">

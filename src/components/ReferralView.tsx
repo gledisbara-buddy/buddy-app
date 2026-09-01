@@ -2,10 +2,11 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Check, Copy, Link2, ShieldCheck, Sparkles } from "lucide-react";
+import { Check, Copy, Link2 } from "lucide-react";
 import { TopBar } from "@/components/TopBar";
 import { ProfileMenu } from "@/components/ProfileMenu";
 import { PageSkeleton } from "@/components/PageSkeleton";
+import { HelperTip } from "@/components/HelperTip";
 import { useBuddy } from "@/lib/buddy-context";
 import { generateCode } from "@/lib/referral";
 
@@ -132,26 +133,16 @@ export function ReferralView() {
         </div>
 
         {hasClaimPerk ? (
-          <div className="rounded-2xl border border-line p-5 mb-8 flex items-start gap-3 bg-frost-2">
-            <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-none bg-white">
-              <ShieldCheck size={15} className="text-forest" />
-            </div>
-            <p className="text-sm text-ink">
-              <b>Du har uppnått {GOAL} värvningar!</b> Du har nu kostnadsfri hjälp av en specialist
-              vid skadereglering, oavsett vad som händer.
-            </p>
-          </div>
+          <HelperTip role="confirm" dismissible={false} className="mb-8">
+            <b>Du har uppnått {GOAL} värvningar!</b> Du har nu kostnadsfri hjälp av en specialist
+            vid skadereglering, oavsett vad som händer.
+          </HelperTip>
         ) : (
-          <div className="bg-white rounded-2xl border border-dashed border-line p-5 mb-8 flex items-start gap-3">
-            <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-none bg-frost-2">
-              <Sparkles size={15} className="text-forest" />
-            </div>
-            <p className="text-sm text-slate">
-              {qualified === 0
-                ? `Dela din kod — vid ${GOAL} kvalificerade värvningar låser du upp kostnadsfri hjälp vid skadereglering.`
-                : `${GOAL - qualified} kvalificerad${GOAL - qualified === 1 ? "" : "e"} värvning${GOAL - qualified === 1 ? "" : "ar"} kvar till kostnadsfri hjälp vid skadereglering.`}
-            </p>
-          </div>
+          <HelperTip role="cheer" dismissible={false} className="mb-8">
+            {qualified === 0
+              ? `Dela din kod — vid ${GOAL} kvalificerade värvningar låser du upp kostnadsfri hjälp vid skadereglering.`
+              : `${GOAL - qualified} kvalificerad${GOAL - qualified === 1 ? "" : "e"} värvning${GOAL - qualified === 1 ? "" : "ar"} kvar till kostnadsfri hjälp vid skadereglering.`}
+          </HelperTip>
         )}
       </div>
     </div>
