@@ -327,6 +327,11 @@ export default function JamforPage() {
             </p>
           </div>
         </div>
+        <p className="text-sm text-slate text-center mt-10 max-w-xl mx-auto">
+          Så tjänar vi pengar: när du tecknar en försäkring via Buddy får vi provision från försäkringsbolaget —
+          aldrig av dig. Den provisionen ligger aldrig till grund för vilka bolag vi visar eller hur vi rankar dem;
+          det avgörs alltid av samma formel som ovan.
+        </p>
       </section>
 
       <section className="py-16 border-t border-line bg-frost-2">

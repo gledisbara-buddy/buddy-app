@@ -17,6 +17,11 @@ export const FAQ_ITEMS: FaqItem[] = [
       "Vi utgår från vad du berättar om det du äger, samt vad du säger är viktigast för dig (t.ex. lägre pris eller bättre skydd), och väger ihop det med de alternativ som finns.",
   },
   {
+    question: "Hur tjänar Buddy pengar?",
+    answer:
+      "Genom provision från försäkringsbolagen när du tecknar via oss — aldrig av dig. Provisionen påverkar aldrig vilket bolag vi rekommenderar; rangordningen bygger alltid på samma formel (betyg och pris), oavsett vilket bolag som betalar mest.",
+  },
+  {
     question: "Vad händer om jag behöver anmäla en skada?",
     answer:
       "Öppna \"Anmäl skada\" i din översikt. Buddy ställer några följdfrågor, du laddar upp foton, och anmälan skickas in direkt.",
