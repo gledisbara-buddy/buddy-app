@@ -25,7 +25,7 @@ import {
 import { ConfirmDialog, Overlay } from "@/components/Overlay";
 import { TopBar } from "@/components/TopBar";
 import { ProfileMenu } from "@/components/ProfileMenu";
-import { HelperAvatar } from "@/components/HelperAvatar";
+import Buddy from "@/components/Buddy";
 import { PageSkeleton } from "@/components/PageSkeleton";
 import { useBuddy } from "@/lib/buddy-context";
 import { createClient } from "@/lib/supabase/client";
@@ -355,7 +355,7 @@ export function Dashboard({ showIntro: initialShowIntro }: { showIntro?: boolean
       <TopBar right={<ProfileMenu />} showTabs />
       <div className="max-w-4xl mx-auto px-5 md:px-10 py-10 bd-fade">
         <div className="flex items-center gap-4 mb-1">
-          <HelperAvatar size={72} />
+          <Buddy emotion="halsar" size={72} />
           <div>
             <span className="bd-eyebrow">Din översikt</span>
             <h1 className="bd-display text-3xl mt-1">Hej {profile?.name || "där"} 👋</h1>
@@ -938,7 +938,7 @@ export function Dashboard({ showIntro: initialShowIntro }: { showIntro?: boolean
         </div>
 
         <div className="rounded-2xl border border-line p-5 flex items-start gap-3 bg-frost-2">
-          <HelperAvatar size={44} />
+          <Buddy emotion="vilar" size={44} />
           <div className="flex-1">
             <div className="text-xs font-semibold text-forest mb-1">Buddy</div>
             <p className="text-sm mb-3 text-ink">

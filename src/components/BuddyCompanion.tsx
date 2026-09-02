@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { Maximize2, Send, X } from "lucide-react";
-import { HelperAvatar } from "./HelperAvatar";
+import Buddy from "./Buddy";
 import { CHAT_SUGGESTIONS } from "@/lib/chat";
 import { useBuddyChat } from "@/lib/use-buddy-chat";
 
@@ -47,7 +47,7 @@ function ChatPopup({ onClose }: { onClose: () => void }) {
       style={{ boxShadow: "0 8px 32px rgba(51,70,92,.22)" }}
     >
       <div className="flex items-center gap-2.5 px-4 py-3 border-b border-line flex-none">
-        <HelperAvatar size={30} />
+        <Buddy emotion="halsar" size={30} />
         <span className="text-sm font-semibold flex-1">Buddy</span>
         <span className="text-[11px] font-medium px-2 py-1 rounded-full bg-frost-2 text-forest whitespace-nowrap">
           Demo-läge
@@ -67,7 +67,7 @@ function ChatPopup({ onClose }: { onClose: () => void }) {
       <div ref={scrollRef} className="bd-scroll flex-1 overflow-y-auto px-4 py-4 flex flex-col gap-3">
         {messages.map((m, i) => (
           <div key={i} className={`flex items-end gap-2 bd-fade ${m.role === "user" ? "flex-row-reverse" : ""}`}>
-            {m.role !== "user" && <HelperAvatar size={24} />}
+            {m.role !== "user" && <Buddy emotion="halsar" size={24} />}
             <div
               className="max-w-[80%] px-3.5 py-2.5 text-[13.5px] leading-relaxed whitespace-pre-wrap"
               style={{
@@ -84,7 +84,7 @@ function ChatPopup({ onClose }: { onClose: () => void }) {
         ))}
         {loading && (
           <div className="flex items-end gap-2 bd-fade">
-            <HelperAvatar size={24} />
+            <Buddy emotion="halsar" size={24} />
             <div className="bg-frost rounded-2xl rounded-bl-sm px-3.5 py-2.5 flex items-center gap-1">
               <span className="w-1.5 h-1.5 rounded-full bd-dot bg-slate" />
               <span className="w-1.5 h-1.5 rounded-full bd-dot bg-slate" />
@@ -180,7 +180,7 @@ export function BuddyCompanion() {
             <X size={22} className="text-slate" />
           </div>
         ) : (
-          <HelperAvatar size={56} />
+          <Buddy emotion="vilar" size={56} />
         )}
       </button>
     </div>

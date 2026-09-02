@@ -72,7 +72,7 @@ export function GenericNeedsForm({
       </button>
       <span className="bd-eyebrow">Behovsanalys</span>
       <h1 className="bd-display text-2xl mt-3 mb-2">Vad är viktigt för dig?</h1>
-      <HelperTip dismissible={false} className="mb-6">
+      <HelperTip dismissible={false} emotion="nyfiken" className="mb-6">
         Svara på det som stämmer för dig — resten kan du hoppa över. Det hjälper oss ge dig en mer rättvisande
         jämförelse.
       </HelperTip>

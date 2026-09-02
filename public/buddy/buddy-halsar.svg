@@ -1,0 +1,33 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" width="200" height="200" role="img" aria-label="Buddy – halsar">
+  <title>Buddy – halsar</title>
+  <style>
+    @keyframes breathe{0%,100%{transform:translateY(0) scale(1)}50%{transform:translateY(-2.5px) scale(1.014)}}
+    @keyframes blink{0%,94%,100%{transform:scaleY(1)}97%{transform:scaleY(.08)}}
+    @keyframes wave{0%,100%{transform:rotate(-16deg)}50%{transform:rotate(18deg)}}
+    @keyframes bob{0%,100%{transform:translateY(0);opacity:.45}50%{transform:translateY(-6px);opacity:1}}
+    @keyframes twinkle{0%,100%{transform:scale(.6);opacity:.35}50%{transform:scale(1.1);opacity:1}}
+    @keyframes ripple{0%{transform:scale(.85);opacity:.5}100%{transform:scale(1.25);opacity:0}}
+    .body-g{animation:breathe 4.2s ease-in-out infinite;transform-box:fill-box;transform-origin:50% 88%}
+    .blink{animation:blink 5.4s ease-in-out infinite;transform-box:fill-box;transform-origin:50% 50%}
+    .hand{animation:wave 1s ease-in-out infinite;transform-box:fill-box;transform-origin:30% 80%}
+    .dot{animation:bob 1.2s ease-in-out infinite;transform-box:fill-box;transform-origin:50% 50%}
+    .d2{animation-delay:.15s}.d3{animation-delay:.3s}
+    .spark{animation:twinkle 1.6s ease-in-out infinite;transform-box:fill-box;transform-origin:50% 50%}
+    .ring{animation:ripple 2.6s ease-out infinite;transform-box:fill-box;transform-origin:50% 50%}
+    .r2{animation-delay:1.3s}
+    @media(prefers-reduced-motion:reduce){*{animation:none}}
+  </style>
+  <defs>
+    <linearGradient id="bd" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#FFD46B"/><stop offset="1" stop-color="#F2A93B"/>
+    </linearGradient>
+  </defs>
+  
+  <g class="body-g">
+    <path d="M100 44V14" stroke="#F2A93B" stroke-width="7" stroke-linecap="round"/><circle cx="100" cy="8" r="8" fill="#1E8F6E"/><rect x="4" y="92" width="22" height="42" rx="10" fill="#F2A93B"/><rect x="174" y="92" width="22" height="42" rx="10" fill="#F2A93B"/>
+    <path d="M56 40H144A34 34 0 0 1 178 74V138A34 34 0 0 1 144 172H56A34 34 0 0 1 22 138V74A34 34 0 0 1 56 40Z" fill="url(#bd)" stroke="rgba(22,35,58,.13)" stroke-width="2.5"/>
+    <path d="M48 56Q52 22 100 22Q148 22 152 56Z" fill="#16233A"/><path d="M42 54H156Q174 54 174 61Q174 68 156 68H42Q38 68 38 61Q38 54 42 54Z" fill="#16233A"/><text x="100" y="50" text-anchor="middle" font-size="22" font-weight="800" fill="#FFD46B" font-family="system-ui, sans-serif">B</text>
+    <g class="hand"><ellipse cx="185" cy="152" rx="13" ry="15" fill="#F2A93B"/></g>
+    <g transform="translate(100 108)"><path d="M-33 4Q-24 -10 -15 4" stroke="#16233A" stroke-width="6" fill="none" stroke-linecap="round"/><path d="M15 4Q24 -10 33 4" stroke="#16233A" stroke-width="6" fill="none" stroke-linecap="round"/><ellipse cx="-40" cy="13" rx="8.5" ry="5.2" fill="#EF8199" opacity=".5"/><ellipse cx="40" cy="13" rx="8.5" ry="5.2" fill="#EF8199" opacity=".5"/><path d="M-18 26Q0 45 18 26" stroke="#16233A" stroke-width="6" fill="none" stroke-linecap="round"/></g>
+  </g>
+</svg>

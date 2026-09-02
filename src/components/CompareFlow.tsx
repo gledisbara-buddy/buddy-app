@@ -2,9 +2,10 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, ArrowRight, Check, CircleDot, Loader2, ShieldCheck, Star, Zap } from "lucide-react";
+import { ArrowLeft, ArrowRight, Check, CircleDot, ShieldCheck, Star, Zap } from "lucide-react";
 import { Logo } from "@/components/Logo";
-import { HelperAvatar } from "@/components/HelperAvatar";
+import { BuddyStage } from "@/components/BuddyStage";
+import type { BuddyEmotion } from "@/components/Buddy";
 import { NeedsAnalysis } from "@/components/NeedsAnalysis";
 import { Overlay } from "@/components/Overlay";
 import { FullmaktSigning } from "@/components/FullmaktSigning";
@@ -413,6 +414,31 @@ export function CompareFlow({ itemId }: { itemId: string }) {
   const needsHalsodeklaration =
     item.kind === "person" && item.onskatSkydd.some((s) => HALSODEKLARATION_SKYDD.includes(s));
 
+  // Buddy-avatarens humör, styrt av flödets tillstånd — se BUDDY-SPEC.md.
+  // "En faktisk besparing" återanvänder samma definition som redan finns
+  // för spara-mejlet nedan (current = en auto-hämtad, inte jämförd offert),
+  // inte en ny egen tröskel — annars kan "firar" och mejlet säga olika saker.
+  const isSaving = !!(current && winner.price < current.price);
+  const isSignedSaving = !!(signedQuote && current && signedQuote.price < current.price);
+  const emotion: BuddyEmotion =
+    phase === "fork"
+      ? "halsar" // kunden landar i jämförelseflödet
+      : phase === "needs"
+        ? "nyfiken" // Buddy ställer en fråga i formuläret
+        : phase === "loading"
+          ? "raknar" // vi hämtar priser
+          : phase === "results"
+            ? isSaving
+              ? "firar" // en faktisk besparing — inte varje resultat
+              : "vilar"
+            : phase === "checkout" || phase === "cancellation"
+              ? "nyfiken" // fler frågor innan tecknandet är klart
+              : phase === "signed"
+                ? isSignedSaving
+                  ? "firar"
+                  : "vilar"
+                : "vilar";
+
   const handleSign = (quote: Quote) => {
     setPendingQuote(quote);
     setPhase("checkout");
@@ -502,6 +528,7 @@ export function CompareFlow({ itemId }: { itemId: string }) {
               <button onClick={() => router.push("/dashboard")} className="flex items-center gap-1.5 text-sm mb-5 opacity-60 hover:opacity-100">
                 <ArrowLeft size={15} /> Tillbaka
               </button>
+              <BuddyStage emotion={emotion} size={64} className="mb-4" />
               <span className="bd-eyebrow">{label}</span>
               <h1 className="bd-display text-2xl mt-3 mb-6">Vill du jämföra bara den här saken, eller hela din lösning?</h1>
               <div className="flex flex-col gap-3">
@@ -533,6 +560,7 @@ export function CompareFlow({ itemId }: { itemId: string }) {
           </div>
           <div className="flex items-center justify-center px-5">
             <div className="w-full max-w-lg bd-fade">
+              <BuddyStage emotion={emotion} size={64} className="mb-4" />
               <NeedsAnalysis
                 kind={item.kind as NeedsKind}
                 item={item}
@@ -553,9 +581,12 @@ export function CompareFlow({ itemId }: { itemId: string }) {
 
       {phase === "loading" && (
         <div className="min-h-screen flex flex-col items-center justify-center gap-5">
-          <div className="w-14 h-14 rounded-2xl flex items-center justify-center bg-forest">
-            <Loader2 size={24} color="white" className="bd-spin" />
-          </div>
+          <BuddyStage
+            emotion={emotion}
+            size={96}
+            className="flex flex-col items-center text-center"
+            timeoutMessage="Det tar ovanligt lång tid just nu — prova gärna igen om en liten stund."
+          />
           <div className="text-center">
             <div className="bd-display text-xl mb-1">Buddy jämför läget…</div>
             <div className="text-sm text-slate">Väger pris, självrisk och skydd</div>
@@ -574,6 +605,7 @@ export function CompareFlow({ itemId }: { itemId: string }) {
 
           {hasThreeColumnLayout ? (
             <div className="max-w-5xl mx-auto px-5 md:px-10 pb-14 bd-fade">
+              <BuddyStage emotion={emotion} size={64} className="mb-4" />
               <span className="bd-eyebrow">Din jämförelse</span>
               <h1 className="bd-display text-3xl mt-2 mb-2">Så ser dina alternativ ut</h1>
               <p className="text-sm mb-5 text-slate">
@@ -765,6 +797,7 @@ export function CompareFlow({ itemId }: { itemId: string }) {
             </div>
           ) : (
             <div className="max-w-2xl mx-auto px-5 md:px-10 pb-14 bd-fade">
+              <BuddyStage emotion={emotion} size={64} className="mb-4" />
               <span className="bd-eyebrow">Din jämförelse</span>
               <h1 className="bd-display text-3xl mt-2 mb-2">Det här passar dig bäst</h1>
               <p className="text-sm mb-8 text-slate">
@@ -859,6 +892,7 @@ export function CompareFlow({ itemId }: { itemId: string }) {
           </div>
           <div className="flex-1 flex items-start justify-center px-5 pb-16">
             <div className="w-full max-w-md bd-fade">
+              <BuddyStage emotion={emotion} size={56} className="mb-4" />
               {!profile?.fullmaktSignedAt ? (
                 <FullmaktSigning name={checkoutName || undefined} onDone={() => {}} />
               ) : (
@@ -902,6 +936,7 @@ export function CompareFlow({ itemId }: { itemId: string }) {
           </div>
           <div className="flex-1 flex items-center justify-center px-5 pb-16">
             <div className="w-full max-w-md bd-fade">
+              <BuddyStage emotion={emotion} size={56} className="mb-4" />
               <span className="bd-eyebrow">Nästan klart</span>
               <h1 className="bd-display text-2xl mt-3 mb-2">
                 Vill du att Buddy hjälper dig säga upp {oldBolag.trim() || "din nuvarande försäkring"}?
@@ -938,7 +973,7 @@ export function CompareFlow({ itemId }: { itemId: string }) {
           <div className="flex-1 flex items-start justify-center px-5 pt-4 pb-16">
             <div className="w-full max-w-lg bd-fade">
               <div className="flex items-center gap-3 mb-6">
-                <HelperAvatar size={44} />
+                <BuddyStage emotion={emotion} size={48} />
                 <div>
                   <div className="font-semibold text-[15px]">Klart — {signedQuote.name} är valt</div>
                   <div className="text-xs text-slate">{label}</div>

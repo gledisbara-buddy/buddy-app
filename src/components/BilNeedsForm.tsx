@@ -241,7 +241,7 @@ export function BilNeedsForm({
         </button>
         <span className="bd-eyebrow">Behovsanalys</span>
         <h1 className="bd-display text-2xl mt-3 mb-4">Vill du utgå från ditt nuvarande avtal?</h1>
-        <HelperTip dismissible={false} className="mb-5">
+        <HelperTip dismissible={false} emotion="nyfiken" className="mb-5">
           Jag kan förifylla det mesta utifrån ditt avtal hos {currentPolicy!.name} — du kollar igenom och ändrar det
           som inte stämmer. Eller så svarar du på allt själv, till exempel om dina behov har ändrats.
         </HelperTip>
@@ -301,7 +301,7 @@ export function BilNeedsForm({
         <BoolPill value={ombyggd} onChange={setOmbyggd} />
       </Field>
       {ombyggd && (
-        <HelperTip dismissible={false} className="mb-4" size={32}>
+        <HelperTip dismissible={false} emotion="nyfiken" className="mb-4" size={32}>
           En ombyggd bil kan innebära avslag eller särskild prövning hos vissa bolag — bra att veta innan du jämför.
         </HelperTip>
       )}
@@ -322,7 +322,7 @@ export function BilNeedsForm({
         <PillGroup options={ANVANDNING_OPTIONS} labels={ANVANDNING_LABELS} value={anvandning} onChange={setAnvandning} />
       </Field>
       {anvandning === "yrkesmassig_trafik" && (
-        <HelperTip dismissible={false} className="mb-4" size={32}>
+        <HelperTip dismissible={false} emotion="nyfiken" className="mb-4" size={32}>
           Yrkesmässig trafik (taxi, bud m.m.) kräver en annan produkt än vanlig bilförsäkring — jag flaggar det åt
           dig så du inte jämför fel produkt.
         </HelperTip>
@@ -342,7 +342,7 @@ export function BilNeedsForm({
         <BoolPill value={underXAr} onChange={setUnderXAr} />
       </Field>
       {underXAr && (
-        <HelperTip dismissible={false} className="mb-4" size={32}>
+        <HelperTip dismissible={false} emotion="nyfiken" className="mb-4" size={32}>
           Unga förare är en klassisk premiehöjare — bolagen väger in det olika mycket, så det kan löna sig att
           jämföra extra noga här.
         </HelperTip>
@@ -363,7 +363,7 @@ export function BilNeedsForm({
           max={10}
         />
       </Field>
-      <HelperTip dismissible={false} className="mb-4" size={32}>
+      <HelperTip dismissible={false} emotion="nyfiken" className="mb-4" size={32}>
         Dina skadefria år (bonus) flyttar med dig till det nya bolaget — glöm inte att fylla i dem.
       </HelperTip>
       <Field label="Har du haft några skador de senaste 3–5 åren?">
@@ -379,7 +379,7 @@ export function BilNeedsForm({
       <Field label="Vilken omfattning vill du ha?">
         <PillGroup options={OMFATTNING_OPTIONS} labels={OMFATTNING_LABELS} value={omfattning} onChange={setOmfattning} />
       </Field>
-      <HelperTip dismissible={false} className="mb-4" size={32}>
+      <HelperTip dismissible={false} emotion="nyfiken" className="mb-4" size={32}>
         Trafikförsäkring är lagkrav på ett påställt fordon — den ingår alltid, oavsett vilken nivå du väljer ovan.
       </HelperTip>
       <Field label="Vilken självrisk vill du ha?">
@@ -392,7 +392,7 @@ export function BilNeedsForm({
         <BoolPill value={andraForsakringarSammaBolag} onChange={setAndraForsakringarSammaBolag} />
       </Field>
       {andraForsakringarSammaBolag && (
-        <HelperTip dismissible={false} className="mb-4" size={32}>
+        <HelperTip dismissible={false} emotion="nyfiken" className="mb-4" size={32}>
           Bra att veta — samlingsrabatt ger ofta 10–20 % lägre pris när flera försäkringar ligger hos samma bolag.
         </HelperTip>
       )}

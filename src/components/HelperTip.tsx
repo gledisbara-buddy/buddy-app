@@ -2,17 +2,19 @@
 
 import { useState, type ReactNode } from "react";
 import { X } from "lucide-react";
-import { HelperAvatar } from "./HelperAvatar";
+import Buddy, { type BuddyEmotion } from "@/components/Buddy";
 
 export function HelperTip({
   children,
   dismissible = true,
   size = 48,
+  emotion = "vilar",
   className = "",
 }: {
   children: ReactNode;
   dismissible?: boolean;
   size?: number;
+  emotion?: BuddyEmotion;
   className?: string;
 }) {
   const [dismissed, setDismissed] = useState(false);
@@ -20,7 +22,7 @@ export function HelperTip({
 
   return (
     <div className={`flex items-start gap-3 bd-fade ${className}`}>
-      <HelperAvatar size={size} />
+      <Buddy emotion={emotion} size={size} />
       <div className="relative flex-1 bg-white border border-line rounded-2xl rounded-tl-sm px-4 py-3">
         <div className="text-xs font-semibold text-forest mb-0.5">Buddy</div>
         <div className="text-sm text-ink leading-snug">{children}</div>

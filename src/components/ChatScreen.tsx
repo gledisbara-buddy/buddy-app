@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { CalendarDays, Send } from "lucide-react";
 import { TopBar } from "@/components/TopBar";
-import { HelperAvatar } from "@/components/HelperAvatar";
+import Buddy from "@/components/Buddy";
 import { useBuddy } from "@/lib/buddy-context";
 import { CHAT_SUGGESTIONS } from "@/lib/chat";
 import { useBuddyChat } from "@/lib/use-buddy-chat";
@@ -65,7 +65,7 @@ export function ChatScreen() {
               key={i}
               className={`flex items-end gap-2 bd-fade ${m.role === "user" ? "flex-row-reverse" : ""}`}
             >
-              {m.role !== "user" && <HelperAvatar size={28} />}
+              {m.role !== "user" && <Buddy emotion="halsar" size={28} />}
               <div
                 className="max-w-[78%] px-4 py-3 text-[14.5px] leading-relaxed whitespace-pre-wrap"
                 style={{
@@ -83,7 +83,7 @@ export function ChatScreen() {
           ))}
           {loading && (
             <div className="flex items-end gap-2 bd-fade">
-              <HelperAvatar size={28} />
+              <Buddy emotion="halsar" size={28} />
               <div className="bg-white border border-line rounded-2xl rounded-bl-sm px-4 py-3 flex items-center gap-1">
                 <span className="w-1.5 h-1.5 rounded-full bd-dot bg-slate" />
                 <span className="w-1.5 h-1.5 rounded-full bd-dot bg-slate" />
