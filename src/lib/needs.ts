@@ -119,6 +119,28 @@ const BIL_QUESTIONS: NeedQuestion[] = [
     type: "yesno",
     prompt: "Har bilen dyra tillbehör, till exempel eftermonterade fälgar eller ljudanläggning?",
   },
+  // Tillägg via BilNeedsForm.tsx:s Omfattning/Tillval-sektion, inte via
+  // stegvisa frågeguiden ovan — bara här för att återanvända
+  // label-/id-uppslagning (NEED_LABELS, getAvailableNeedIds) som redan
+  // används av resultat-/rekommendationsvyn.
+  {
+    id: "djurkollision",
+    label: "Djurkollisionsskydd",
+    type: "yesno",
+    prompt: "Vill du ha skydd om du kolliderar med ett djur, till exempel en älg?",
+  },
+  {
+    id: "maskinskydd",
+    label: "Maskinskydd",
+    type: "yesno",
+    prompt: "Vill du ha maskinskydd för motor, växellåda och andra mekaniska delar?",
+  },
+  {
+    id: "utokad_glas",
+    label: "Utökad glasförsäkring",
+    type: "yesno",
+    prompt: "Vill du ha utökad glasförsäkring, till exempel för vindrutan?",
+  },
 ];
 
 const OVRIGT_FORDON_QUESTIONS: NeedQuestion[] = [

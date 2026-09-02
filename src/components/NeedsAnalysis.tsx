@@ -2,133 +2,51 @@
 
 import { useState } from "react";
 import { ArrowLeft, Check, ListChecks, Loader2, Sparkles } from "lucide-react";
-import { BoolPill, MultiPillGroup, PillGroup } from "@/components/onboarding/shared";
-import type { ComparableItem } from "@/lib/items";
-import {
-  getAvailableNeedIds,
-  getNeedQuestions,
-  matchNeedsFromFreeText,
-  NEED_LABELS,
-  type NeedQuestion,
-  type NeedsKind,
-} from "@/lib/needs";
+import { BilNeedsForm } from "@/components/BilNeedsForm";
+import { GenericNeedsForm } from "@/components/GenericNeedsForm";
+import type { BilItem, ComparableItem } from "@/lib/items";
+import { getAvailableNeedIds, matchNeedsFromFreeText, NEED_LABELS, type NeedsKind } from "@/lib/needs";
+import type { Quote } from "@/lib/quote";
 
 type Phase = "choice" | "freetext" | "freetext-loading" | "questions" | "confirm";
-
-type HistoryEntry = { question: NeedQuestion; addedIds: string[]; answerLabel: string };
-
-function AssistantBubble({ children }: { children: React.ReactNode }) {
-  return (
-    <div className="flex items-end gap-2 bd-fade mb-3">
-      <div className="w-7 h-7 rounded-full flex items-center justify-center flex-none bg-forest">
-        <span className="text-white text-[11px] font-semibold bd-display">B</span>
-      </div>
-      <div
-        className="max-w-[85%] px-4 py-3 text-[14.5px] leading-relaxed bg-white border border-line"
-        style={{ borderRadius: 16, borderBottomLeftRadius: 4 }}
-      >
-        {children}
-      </div>
-    </div>
-  );
-}
-
-function UserBubble({ children }: { children: React.ReactNode }) {
-  return (
-    <div className="flex items-end justify-end gap-2 bd-fade mb-4">
-      <div
-        className="max-w-[85%] px-4 py-3 text-[14.5px] leading-relaxed text-white bg-forest"
-        style={{ borderRadius: 16, borderBottomRightRadius: 4 }}
-      >
-        {children}
-      </div>
-    </div>
-  );
-}
 
 export function NeedsAnalysis({
   kind,
   item,
+  currentPolicy,
   onDone,
+  onItemUpdate,
   onBack,
   initialConfirmed,
 }: {
   kind: NeedsKind;
   item: ComparableItem;
+  // Bara relevant för kind "bil" — styr "matcha nuvarande avtal"-genvägen i
+  // BilNeedsForm.tsx.
+  currentPolicy?: Quote;
   onDone: (needs: string[]) => void;
+  // Bara satt/använd för kind "bil" — BilNeedsForm samlar in fält som hör
+  // till saken själv (t.ex. önskad omfattning/självrisk), inte bara
+  // behovs-id:n, och de sparas via samma updateItem som redigering av
+  // saken redan använder.
+  onItemUpdate?: (item: ComparableItem) => void;
   onBack: () => void;
   // Tidigare sparade (och redan omvaliderade) behov för den här saken — om
   // satt hoppar guiden direkt till bekräfta-skärmen förifylld, istället för
   // att tvinga en omgång genom hela frågebatteriet igen.
   initialConfirmed?: string[];
 }) {
-  const [phase, setPhase] = useState<Phase>(initialConfirmed && initialConfirmed.length > 0 ? "confirm" : "choice");
+  // Bil hoppar aldrig direkt till bekräfta-chipsen — BilNeedsForm.tsx har
+  // sin egen förifyllning direkt från saken (item), inte från en
+  // needs-id-lista, så genvägen nedan gäller bara övriga produkter.
+  const [phase, setPhase] = useState<Phase>(
+    kind !== "bil" && initialConfirmed && initialConfirmed.length > 0 ? "confirm" : "choice"
+  );
   const [freeText, setFreeText] = useState("");
-  const [history, setHistory] = useState<HistoryEntry[]>([]);
   const [confirmed, setConfirmed] = useState<string[]>(initialConfirmed ?? []);
 
-  const allQuestions = getNeedQuestions(kind, item);
-  // Uppföljningsfrågor med dependsOn syns bara när det behovet redan lagts
-  // till av ett tidigare svar — annars skulle t.ex. "hur ofta reser du?"
-  // dyka upp även för den som svarat nej på reseskydd.
-  const questions = allQuestions.filter(
-    (q) => !q.dependsOn || history.some((h) => h.addedIds.includes(q.dependsOn!.needId))
-  );
   const availableIds = getAvailableNeedIds(kind, item);
   const labels = NEED_LABELS[kind];
-  const currentIndex = history.length;
-  const currentQuestion: NeedQuestion | undefined = questions[currentIndex];
-
-  const [multiDraft, setMultiDraft] = useState<string[]>([]);
-  const [seenIndex, setSeenIndex] = useState(currentIndex);
-  if (currentIndex !== seenIndex) {
-    setSeenIndex(currentIndex);
-    setMultiDraft([]);
-  }
-
-  const finishQuestions = (finalHistory: HistoryEntry[]) => {
-    setConfirmed(finalHistory.flatMap((h) => h.addedIds));
-    setPhase("confirm");
-  };
-
-  const answerYesNo = (yes: boolean) => {
-    if (!currentQuestion || currentQuestion.type !== "yesno") return;
-    const entry: HistoryEntry = {
-      question: currentQuestion,
-      addedIds: yes ? [currentQuestion.id] : [],
-      answerLabel: yes ? "Ja" : "Nej",
-    };
-    const next = [...history, entry];
-    setHistory(next);
-    if (next.length >= questions.length) finishQuestions(next);
-  };
-
-  const answerChoice = (id: string) => {
-    if (!currentQuestion || currentQuestion.type !== "choice") return;
-    const opt = currentQuestion.options.find((o) => o.id === id);
-    const entry: HistoryEntry = { question: currentQuestion, addedIds: [id], answerLabel: opt?.label ?? id };
-    const next = [...history, entry];
-    setHistory(next);
-    if (next.length >= questions.length) finishQuestions(next);
-  };
-
-  const answerMulti = () => {
-    if (!currentQuestion || currentQuestion.type !== "multi") return;
-    const selectedLabels = currentQuestion.options.filter((o) => multiDraft.includes(o.id)).map((o) => o.label);
-    const entry: HistoryEntry = {
-      question: currentQuestion,
-      addedIds: multiDraft,
-      answerLabel: selectedLabels.length > 0 ? selectedLabels.join(", ") : "Inget av detta",
-    };
-    const next = [...history, entry];
-    setHistory(next);
-    if (next.length >= questions.length) finishQuestions(next);
-  };
-
-  const goBackQuestion = () => {
-    if (history.length === 0) setPhase("choice");
-    else setHistory((h) => h.slice(0, -1));
-  };
 
   const submitFreeText = () => {
     if (!freeText.trim()) return;
@@ -145,7 +63,6 @@ export function NeedsAnalysis({
 
   const restart = () => {
     setFreeText("");
-    setHistory([]);
     setPhase("choice");
   };
 
@@ -182,7 +99,7 @@ export function NeedsAnalysis({
             </div>
             <div>
               <div className="font-semibold text-[15px] mb-1">Svara på några frågor</div>
-              <div className="text-xs text-slate">{questions.length} korta frågor, en i taget.</div>
+              <div className="text-xs text-slate">Några korta frågor om det som är viktigast.</div>
             </div>
           </button>
         </div>
@@ -230,56 +147,36 @@ export function NeedsAnalysis({
   }
 
   if (phase === "questions") {
-    if (!currentQuestion) return null;
+    if (kind === "bil") {
+      return (
+        <BilNeedsForm
+          item={item as BilItem}
+          currentPolicy={currentPolicy}
+          onBack={() => setPhase("choice")}
+          onDone={(updatedItem, needs) => {
+            onItemUpdate?.(updatedItem);
+            onDone(needs);
+          }}
+        />
+      );
+    }
     return (
-      <>
-        <div className="flex items-center justify-between mb-5">
-          <button onClick={goBackQuestion} className="flex items-center gap-1.5 text-sm opacity-60 hover:opacity-100">
-            <ArrowLeft size={15} /> Tillbaka
-          </button>
-          <span className="text-xs text-slate">
-            Fråga {currentIndex + 1} av {questions.length}
-          </span>
-        </div>
-        <div className="bd-scroll max-h-[55vh] overflow-y-auto pr-1 mb-4">
-          {history.map((h, i) => (
-            <div key={i}>
-              <AssistantBubble>{h.question.prompt}</AssistantBubble>
-              <UserBubble>{h.answerLabel}</UserBubble>
-            </div>
-          ))}
-          <AssistantBubble>{currentQuestion.prompt}</AssistantBubble>
-        </div>
-        {currentQuestion.type === "yesno" ? (
-          <BoolPill value={null} onChange={answerYesNo} />
-        ) : currentQuestion.type === "choice" ? (
-          <PillGroup
-            options={currentQuestion.options.map((o) => o.id)}
-            labels={Object.fromEntries(currentQuestion.options.map((o) => [o.id, o.label]))}
-            value={null}
-            onChange={answerChoice}
-          />
-        ) : (
-          <>
-            <MultiPillGroup
-              options={currentQuestion.options.map((o) => o.id)}
-              labels={Object.fromEntries(currentQuestion.options.map((o) => [o.id, o.label]))}
-              value={multiDraft}
-              onChange={setMultiDraft}
-            />
-            <button
-              onClick={answerMulti}
-              className="bd-btn w-full flex items-center justify-center gap-2 py-3.5 rounded-full font-semibold text-white text-[15px] bg-forest"
-            >
-              Nästa
-            </button>
-          </>
-        )}
-      </>
+      <GenericNeedsForm
+        kind={kind}
+        item={item}
+        initialNeeds={confirmed}
+        onBack={() => setPhase("choice")}
+        onDone={(needs) => {
+          setConfirmed(needs);
+          setPhase("confirm");
+        }}
+      />
     );
   }
 
-  // phase === "confirm"
+  // phase === "confirm" — bara för fritext-vägen (frågeguiden för Bil
+  // avslutas direkt via onDone ovan; övriga produkters frågeformulär går
+  // också hit via samma setPhase("confirm") ovan, som förut).
   return (
     <>
       <button onClick={restart} className="flex items-center gap-1.5 text-sm mb-5 opacity-60 hover:opacity-100">

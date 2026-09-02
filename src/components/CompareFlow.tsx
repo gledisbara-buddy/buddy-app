@@ -330,7 +330,7 @@ function ComparisonTable({
 
 export function CompareFlow({ itemId }: { itemId: string }) {
   const router = useRouter();
-  const { items, policies, setPolicy, itemNeeds, saveItemNeeds, profile } = useBuddy();
+  const { items, policies, setPolicy, updateItem, itemNeeds, saveItemNeeds, profile } = useBuddy();
   const found = items.find((i) => i.id === itemId);
   const item = found && isComparableItem(found) ? found : undefined;
 
@@ -536,8 +536,10 @@ export function CompareFlow({ itemId }: { itemId: string }) {
               <NeedsAnalysis
                 kind={item.kind as NeedsKind}
                 item={item}
+                currentPolicy={policies[item.id]}
                 onBack={() => router.push("/dashboard")}
                 initialConfirmed={initialNeeds.length > 0 ? initialNeeds : undefined}
+                onItemUpdate={updateItem}
                 onDone={(result) => {
                   setNeeds(result);
                   saveItemNeeds(item.id, result);

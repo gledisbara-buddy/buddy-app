@@ -185,6 +185,18 @@ export type BoendeItem =
   | AndrahandsuthyrningItem
   | StudentItem;
 
+export type BilAgarstatus = "ager" | "ska_kopa" | "nyligen_kopt";
+export type BilFinansiering = "kontant" | "avbetalning" | "kredit" | "leasing";
+export type BilDrivmedel = "bensin" | "diesel" | "el" | "laddhybrid" | "hybrid" | "etanol" | "gas";
+export type BilLarm = "nej" | "larm_klass_1_3" | "sparsandare";
+export type BilAnvandning = "privat" | "tjanst" | "yrkesmassig_trafik" | "uthyrning";
+export type BilParkering = "garage" | "carport" | "egen_tomt" | "gata" | "parkeringshus";
+export type BilPremietyp = "fast" | "kilometerbaserad";
+export type BilKorkortslangd = "under_1_ar" | "1_3_ar" | "3_5_ar" | "over_5_ar";
+export type BilOnskadOmfattning = "trafik" | "halv" | "hel";
+export type BilOnskadSjalvrisk = 3000 | 5000 | 8000;
+export type BilTillval = "hyrbil" | "assistans" | "djurkollision" | "maskinskydd" | "utokad_glas";
+
 export type BilItem = {
   id: string;
   kind: "bil";
@@ -193,6 +205,31 @@ export type BilItem = {
   arsmodell?: number;
   arligKorstracka?: number;
   forvaring?: "garage" | "uppfart" | "gata";
+  // Insamlat i den utökade behovsanalysen (BilNeedsForm.tsx), inte vid
+  // tilläggstillfället — se produkttrad-fragespec (BIL01-BIL30). Frågorna
+  // ska ligga till grund för rekommendationen som förklaring, inte ändra
+  // själva pris-/betygsräkningen i item-quotes.ts.
+  agarstatus?: BilAgarstatus;
+  finansiering?: BilFinansiering;
+  langivare?: string;
+  extrautrustning?: boolean;
+  extrautrustningVarde?: number;
+  ombyggd?: boolean;
+  drivmedel?: BilDrivmedel;
+  laddboxHemma?: boolean;
+  larm?: BilLarm;
+  anvandning?: BilAnvandning;
+  natparkering?: BilParkering;
+  premietyp?: BilPremietyp;
+  underXAr?: boolean;
+  korkortslangd?: BilKorkortslangd;
+  skadefriaAr?: number;
+  skadorSenaste5Ar?: boolean;
+  skadorAntal?: number;
+  onskadOmfattning?: BilOnskadOmfattning;
+  onskadSjalvrisk?: BilOnskadSjalvrisk;
+  onskadeTillval?: BilTillval[];
+  andraForsakringarSammaBolag?: boolean;
 };
 
 export type BatMotorTyp = "inombordare" | "utombordare" | "segel" | "ingen";
