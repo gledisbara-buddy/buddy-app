@@ -559,8 +559,11 @@ export function CompareFlow({ itemId }: { itemId: string }) {
             <div className="w-6" />
           </div>
           <div className="flex items-center justify-center px-5">
-            <div className="w-full max-w-lg bd-fade">
-              <BuddyStage emotion={emotion} size={64} className="mb-4" />
+            {/* Bredare än övriga faser — QuestionFlow (i BilNeedsForm/
+                GenericNeedsForm) lägger själv ett tvåkolumns-max-w-4xl,
+                ingen egen BuddyStage här (QuestionFlow visar redan Buddy
+                per fråga, en till hade blivit dubblerat). */}
+            <div className="w-full bd-fade">
               <NeedsAnalysis
                 kind={item.kind as NeedsKind}
                 item={item}
@@ -767,7 +770,7 @@ export function CompareFlow({ itemId }: { itemId: string }) {
                     <ComparisonTable
                       quotes={quotes}
                       current={current}
-                      winnerId={winnerId}
+                      winnerId={winner.id}
                       cheapestId={cheapest.id}
                       detailLevel={detailLevel}
                       needLabels={NEED_LABELS[item.kind as NeedsKind]}
@@ -867,7 +870,7 @@ export function CompareFlow({ itemId }: { itemId: string }) {
                   <div className="mt-4 bg-white rounded-3xl border border-line p-5 bd-fade">
                     <ComparisonTable
                       quotes={quotes}
-                      winnerId={winnerId}
+                      winnerId={winner.id}
                       cheapestId={cheapest.id}
                       detailLevel="enkel"
                       needLabels={NEED_LABELS[item.kind as NeedsKind]}

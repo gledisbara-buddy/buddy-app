@@ -71,7 +71,8 @@ export function effectiveQuote(quote: Quote): Quote {
 // "Bästa helhetsvärde" — väger ihop betyg och pris istället för att bara
 // välja billigast, så rekommendationen kan skilja sig från det billigaste
 // alternativet (annars blir de två alltid identiska).
-export function pickWinner(quotes: Quote[]): string {
+export function pickWinner(quotes: Quote[]): string | undefined {
+  if (quotes.length === 0) return undefined;
   const prices = quotes.map((q) => q.price);
   const ratings = quotes.map((q) => q.rating ?? 0);
   const minPrice = Math.min(...prices);

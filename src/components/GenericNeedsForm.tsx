@@ -1,17 +1,72 @@
 "use client";
 
-import { useState } from "react";
-import { ArrowLeft, ArrowRight } from "lucide-react";
-import { HelperTip } from "@/components/HelperTip";
-import { BoolPill, Field, MultiPillGroup, PillGroup } from "@/components/onboarding/shared";
+import { QuestionFlow } from "@/components/QuestionFlow";
+import type { QuestionStep } from "@/lib/question-flow";
 import { getNeedQuestions, type NeedsKind } from "@/lib/needs";
 import type { ComparableItem } from "@/lib/items";
 
-// Samma frågeinnehåll som tidigare (needs.ts, oförändrat), men som EN
-// scrollbar sektion istället för en fråga-i-taget-guide — samma visuella
-// mönster som BilNeedsForm.tsx, så behovsanalysen känns likadan oavsett
-// produkt. Fråge-/svarslogiken (dependsOn, matchade behovs-id:n) är
-// densamma som den gamla NeedsAnalysis-stegvyn hade.
+// Ett kort, sakligt tips per fråga — id:t matchar exakt needs.ts:s
+// fråge-id:n, så samma innehåll (needs.ts, oförändrat) återanvänds för
+// både frågetext och den behovs-id-lista som redan går till
+// computeItemQuotes/matchedNeeds. Bara "bil" saknas här — den har sitt
+// eget, mycket rikare frågebatteri i BilNeedsForm.tsx.
+const TIPS: Record<string, string> = {
+  // Boende
+  vardefulla_saker: "Grundskyddet har ofta ett takbelopp per sak — värdefulla saker kan behöva ett tillägg.",
+  resa: "De flesta hemförsäkringar har ett grundläggande reseskydd, ofta 45 dagar.",
+  resa_langd: "Reser du längre än grundskyddets gräns kan ett förstärkt reseskydd löna sig.",
+  drulle: "Drulle/allrisk är sällan med i grundpriset, men täcker precis den typen av små olyckor.",
+  hemmakontor: "Gränsen för dyr kontorsutrustning hemma kan vara lägre än du tror.",
+  andrahand: "Andrahandsuthyrning kräver ofta ett eget tillägg — grundförsäkringen räcker sällan.",
+  // Övrigt fordon
+  sasongsforvaring: "Var fordonet förvaras utanför säsong påverkar både pris och stöldrisk.",
+  stold: "Högre värde eller förhöjd stöldrisk kan göra ett stöldskydd värt att jämföra.",
+  sparning_installerad: "Ett installerat larm eller GPS-spårare ger ofta rabatt hos flera bolag.",
+  transport: "Utan transport-/bogseringsskydd kan en långväga bärgning bli dyr.",
+  tillbehor: "Dyr extrautrustning täcks inte alltid av grundskyddet.",
+  bogserar: "Drar du en trailer regelbundet bör försäkringen matcha den användningen.",
+  // Person
+  reser: "Reser du ofta kan ett reseskydd i personförsäkringen vara värt att se över.",
+  risksport: "Riskfyllda hobbies undantas ibland helt, eller kräver ett eget tillägg.",
+  risksport_typ: "Extremsport och motorsport bedöms ofta olika av bolagen.",
+  dubbelskydd: "Har du redan skydd via jobbet kan du slippa betala dubbelt för samma sak.",
+  barnIHushall: "Barn behöver oftast en egen barnförsäkring — vuxenförsäkringar täcker sällan sjukdom hos barn.",
+  hogriskyrke: "Ett fysiskt krävande yrke kan påverka både pris och vad som ingår.",
+  // Djur
+  liv: "En livförsäkring ger ersättning om djuret dör eller måste avlivas — separat från veterinärvårdskostnaden.",
+  tavling: "Tävling eller avel kräver ofta ett eget tillägg hos djurförsäkringsbolagen.",
+  kronisk: "Kroniska sjukdomar eller hög ålder kan påverka både pris och vad som täcks.",
+  kronisk_diagnostiserad: "En redan diagnostiserad sjukdom kan vara undantagen hos nya bolag.",
+  rasbetingad: "Vissa raser har högre premie på grund av kända ärftliga sjukdomsrisker.",
+  flerdjurshushall: "Flera djur i hushållet ger ofta en samlingsrabatt.",
+  // Telekom
+  utomlands: "Roamingvillkoren skiljer sig mycket mellan operatörer.",
+  storforbrukare: "Mycket streaming eller nedladdning gör att en högre databudget lönar sig.",
+  data_niva: "Obegränsat är ofta bara marginellt dyrare än en hög men begränsad databudget.",
+  hemarbete: "Jobbar du hemifrån är stabiliteten ofta viktigare än toppfarten.",
+  flera_anvandare: "Delar ni abonnemanget kan en familjeplan bli billigare per person.",
+  familjerabatt: "Flera operatörer ger rabatt om ni tecknar era abonnemang tillsammans — den missas ofta.",
+  bindningstid: "Utan bindningstid kan priset vara något högre, men du kan byta när du vill.",
+  // Kreditkort
+  utlandsresor: "Växlingsavgifter vid utlandsköp skiljer sig mycket mellan kort.",
+  stora_kop: "Köpskydd och förlängd garanti kan vara värt mer än en låg årsavgift.",
+  stora_kop_elektronik: "Elektronik och resor är de vanligaste köpskydds-kategorierna.",
+  kontantuttag: "Uttagsavgifter kan äta upp fördelen med ett annars bra kort.",
+  delat_kort: "Ett extrakort till familjen delar samma kreditgräns.",
+  poang: "Bonusprogram skiljer sig mest i hur stor andel av köpet du får tillbaka.",
+  // El
+  elbil: "Elbilar drar mycket ström — ett avtal anpassat för det kan spara pengar.",
+  elbil_nattladdning: "Laddar du mest nattetid kan ett timprisavtal bli klart billigare än fast pris.",
+  fastpris_trygghet: "Fast pris ger ett förutsägbart pris, även om rörligt ofta är billigare i snitt.",
+  miljo: "Märkt förnybar el kostar sällan mer, men inte alla bolag erbjuder det.",
+  hog_forbrukning: "Hög förbrukning gör att skillnaden mellan avtal syns tydligare på räkningen.",
+  forbrukning_typ: "Värmepump och elbilsladdning drar mest, och styr vilket avtal som passar bäst.",
+  solceller: "Vill du sälja överskottsel behöver elbolaget erbjuda det.",
+};
+
+// Samma frågeinnehåll som tidigare (needs.ts, oförändrat) men som en
+// fråga-i-taget-guide med tips och en växande sammanfattning, samma
+// mönster som BilNeedsForm.tsx. "bil" hanteras inte här.
 export function GenericNeedsForm({
   kind,
   item,
@@ -27,82 +82,47 @@ export function GenericNeedsForm({
 }) {
   const questions = getNeedQuestions(kind, item);
 
-  const [yesno, setYesno] = useState<Record<string, boolean | null>>(() => {
-    const init: Record<string, boolean | null> = {};
-    for (const q of questions) if (q.type === "yesno") init[q.id] = initialNeeds.includes(q.id) ? true : null;
-    return init;
-  });
-  const [choice, setChoice] = useState<Record<string, string | null>>(() => {
-    const init: Record<string, string | null> = {};
-    for (const q of questions)
-      if (q.type === "choice") init[q.id] = q.options.find((o) => initialNeeds.includes(o.id))?.id ?? null;
-    return init;
-  });
-  const [multi, setMulti] = useState<Record<string, string[]>>(() => {
-    const init: Record<string, string[]> = {};
-    for (const q of questions)
-      if (q.type === "multi") init[q.id] = q.options.filter((o) => initialNeeds.includes(o.id)).map((o) => o.id);
-    return init;
-  });
+  const steps: QuestionStep[] = questions.map((q) => ({
+    id: q.id,
+    prompt: q.prompt,
+    tip: TIPS[q.id] ?? "Svara på det som stämmer för dig — resten kan du hoppa över.",
+    type: q.type === "yesno" ? "bool" : q.type === "choice" ? "pill" : "multipill",
+    options: q.type === "yesno" ? undefined : q.options.map((o) => ({ value: o.id, label: o.label })),
+    show: q.dependsOn ? (answers) => answers[q.dependsOn!.needId] === true : undefined,
+  }));
 
-  // Vilka behovs-id:n som är "aktiva" just nu — styr dependsOn-frågornas
-  // synlighet, samma effekt som addedIds hade i den gamla stegvyn.
-  const activeIds = new Set<string>();
+  const initialAnswers: Record<string, unknown> = {};
   for (const q of questions) {
-    if (q.type === "yesno" && yesno[q.id]) activeIds.add(q.id);
-    if (q.type === "choice" && choice[q.id]) activeIds.add(choice[q.id]!);
-    if (q.type === "multi") for (const id of multi[q.id] ?? []) activeIds.add(id);
+    if (q.type === "yesno") {
+      if (initialNeeds.includes(q.id)) initialAnswers[q.id] = true;
+    } else if (q.type === "choice") {
+      const picked = q.options.find((o) => initialNeeds.includes(o.id));
+      if (picked) initialAnswers[q.id] = picked.id;
+    } else {
+      const picked = q.options.filter((o) => initialNeeds.includes(o.id)).map((o) => o.id);
+      if (picked.length > 0) initialAnswers[q.id] = picked;
+    }
   }
-  const visibleQuestions = questions.filter((q) => !q.dependsOn || activeIds.has(q.dependsOn.needId));
 
-  const submit = () => {
+  const handleDone = (answers: Record<string, unknown>) => {
     const needs: string[] = [];
-    for (const q of visibleQuestions) {
-      if (q.type === "yesno" && yesno[q.id]) needs.push(q.id);
-      if (q.type === "choice" && choice[q.id]) needs.push(choice[q.id]!);
-      if (q.type === "multi") needs.push(...(multi[q.id] ?? []));
+    for (const q of questions) {
+      const v = answers[q.id];
+      if (q.type === "yesno" && v === true) needs.push(q.id);
+      else if (q.type === "choice" && typeof v === "string") needs.push(v);
+      else if (q.type === "multi" && Array.isArray(v)) needs.push(...(v as string[]));
     }
     onDone(needs);
   };
 
   return (
-    <>
-      <button onClick={onBack} className="flex items-center gap-1.5 text-sm mb-5 opacity-60 hover:opacity-100">
-        <ArrowLeft size={15} /> Tillbaka
-      </button>
-      <span className="bd-eyebrow">Behovsanalys</span>
-      <h1 className="bd-display text-2xl mt-3 mb-2">Vad är viktigt för dig?</h1>
-      <HelperTip dismissible={false} emotion="nyfiken" className="mb-6">
-        Svara på det som stämmer för dig — resten kan du hoppa över. Det hjälper oss ge dig en mer rättvisande
-        jämförelse.
-      </HelperTip>
-      {visibleQuestions.map((q) => (
-        <Field key={q.id} label={q.prompt}>
-          {q.type === "yesno" ? (
-            <BoolPill value={yesno[q.id] ?? null} onChange={(v) => setYesno((p) => ({ ...p, [q.id]: v }))} />
-          ) : q.type === "choice" ? (
-            <PillGroup
-              options={q.options.map((o) => o.id)}
-              labels={Object.fromEntries(q.options.map((o) => [o.id, o.label]))}
-              value={choice[q.id] ?? null}
-              onChange={(v) => setChoice((p) => ({ ...p, [q.id]: v }))}
-            />
-          ) : (
-            <MultiPillGroup
-              options={q.options.map((o) => o.id)}
-              labels={Object.fromEntries(q.options.map((o) => [o.id, o.label]))}
-              value={multi[q.id] ?? []}
-              onChange={(v) => setMulti((p) => ({ ...p, [q.id]: v }))}
-            />
-          )}
-        </Field>
-      ))}
-      <button
-        onClick={submit}
-        className="bd-btn w-full mt-2 flex items-center justify-center gap-2 py-3.5 rounded-full font-semibold text-white text-[15px] bg-forest"
-      >
-        Visa min jämförelse <ArrowRight size={16} />
-      </button>
-    </>
+    <QuestionFlow
+      eyebrow="Behovsanalys"
+      title="Vad är viktigt för dig?"
+      steps={steps}
+      initialAnswers={initialAnswers}
+      onDone={handleDone}
+      onBack={onBack}
+    />
   );
 }
