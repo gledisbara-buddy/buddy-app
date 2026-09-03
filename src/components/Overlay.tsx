@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
+import { createPortal } from "react-dom";
 
 export function Overlay({ children, onClose }: { children: React.ReactNode; onClose: () => void }) {
   useEffect(() => {
@@ -11,7 +12,12 @@ export function Overlay({ children, onClose }: { children: React.ReactNode; onCl
     return () => document.removeEventListener("keydown", onKey);
   }, [onClose]);
 
-  return (
+  // Porterad till document.body: en förälder högre upp kan ha en
+  // bd-fade-animation (transform: translateY(...), fill-mode both), vilket
+  // enligt CSS-spec gör den till "fixed"-barnens positioneringskontext
+  // istället för viewporten — se QuestionFlow.tsx för samma bugg, redan
+  // hittad och fixad där.
+  return createPortal(
     <div
       className="bd-scrim fixed inset-0 z-50 flex items-center justify-center p-5"
       style={{ background: "var(--color-scrim)" }}
@@ -23,7 +29,8 @@ export function Overlay({ children, onClose }: { children: React.ReactNode; onCl
       >
         {children}
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }
 
