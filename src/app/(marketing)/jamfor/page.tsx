@@ -13,7 +13,9 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import { CategoryCta } from "@/components/marketing/CategoryCta";
+import { Reveal } from "@/components/marketing/Reveal";
 import { StartCta } from "@/components/marketing/StartCta";
+import { StickyMiniCta } from "@/components/marketing/StickyMiniCta";
 import { ITEM_CATEGORIES, ITEM_GROUPS, type ItemGroupId, type ItemKind } from "@/lib/items";
 import { pageMetadata } from "@/lib/seo";
 
@@ -172,6 +174,7 @@ function GroupSection({ group, index }: { group: (typeof ITEM_GROUPS)[number]; i
   const alt = index % 2 === 1;
 
   return (
+    <Reveal>
     <section id={group.id} className={`py-16 border-t border-line ${alt ? "bg-frost-2" : ""}`}>
       <div className="max-w-6xl mx-auto px-5 md:px-10">
         <div className={`flex flex-col lg:flex-row items-center gap-10 lg:gap-16 mb-12 ${alt ? "lg:flex-row-reverse" : ""}`}>
@@ -222,13 +225,19 @@ function GroupSection({ group, index }: { group: (typeof ITEM_GROUPS)[number]; i
         </div>
       </div>
     </section>
+    </Reveal>
   );
 }
 
 export default function JamforPage() {
   return (
-    <div className="bd-fade">
-      <section className="max-w-6xl mx-auto px-5 md:px-10 pt-16 pb-14">
+    // Ingen bd-fade på själva ytterdiven (till skillnad från tidigare) —
+    // StickyMiniCta.tsx är "fixed" och en förälder med en bd-fade-animation
+    // (transform, fill-mode both) blir annars dess positioneringskontext
+    // istället för viewporten, samma bugg som fixades i QuestionFlow.tsx.
+    // Hero-sektionen har sin egen bd-fade nedan, precis som startsidan.
+    <div>
+      <section className="max-w-6xl mx-auto px-5 md:px-10 pt-16 pb-14 bd-fade">
         <div className="grid md:grid-cols-2 gap-10 md:gap-14 items-center mb-14">
           <div className="text-center md:text-left">
             <span className="bd-eyebrow inline-block px-3 py-1.5 rounded-full bg-frost-2">Jämför</span>
@@ -266,6 +275,9 @@ export default function JamforPage() {
         <p className="text-xs mt-4 text-center text-slate">Siffrorna ovan är påhittade, inte verklig statistik än.</p>
       </section>
 
+      <StickyMiniCta />
+
+      <Reveal>
       <section className="border-t border-y border-line bg-white">
         <div className="max-w-5xl mx-auto px-5 md:px-10 py-6 grid grid-cols-2 md:grid-cols-4 gap-6">
           {BENEFITS.map((b) => (
@@ -276,7 +288,9 @@ export default function JamforPage() {
           ))}
         </div>
       </section>
+      </Reveal>
 
+      <Reveal>
       <section className="max-w-4xl mx-auto px-5 md:px-10 py-16">
         <div className="text-center mb-10">
           <span className="bd-eyebrow">Så funkar det</span>
@@ -294,11 +308,13 @@ export default function JamforPage() {
           ))}
         </div>
       </section>
+      </Reveal>
 
       {ITEM_GROUPS.map((group, i) => (
         <GroupSection key={group.id} group={group} index={i} />
       ))}
 
+      <Reveal>
       <section id="sa-rankar-vi" className="max-w-4xl mx-auto px-5 md:px-10 py-16 border-t border-line">
         <div className="text-center mb-10">
           <span className="bd-eyebrow">Så jämför vi</span>
@@ -333,7 +349,9 @@ export default function JamforPage() {
           det avgörs alltid av samma formel som ovan.
         </p>
       </section>
+      </Reveal>
 
+      <Reveal>
       <section className="py-16 border-t border-line bg-frost-2">
         <div className="max-w-5xl mx-auto px-5 md:px-10">
           <div className="text-center mb-10">
@@ -360,7 +378,9 @@ export default function JamforPage() {
           </p>
         </div>
       </section>
+      </Reveal>
 
+      <Reveal>
       <section className="max-w-4xl mx-auto px-5 md:px-10 py-20 text-center border-t border-line">
         <Sparkles size={22} className="mx-auto mb-4 text-amber-deep" />
         <h2 className="bd-display text-2xl md:text-3xl mb-3">Redo att se vad du kan spara?</h2>
@@ -369,6 +389,7 @@ export default function JamforPage() {
         </p>
         <StartCta className="bd-btn inline-flex items-center gap-2 px-6 py-3.5 rounded-full font-semibold text-white text-[15px] bg-forest" />
       </section>
+      </Reveal>
     </div>
   );
 }

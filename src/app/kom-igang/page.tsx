@@ -32,21 +32,28 @@ export default function KomIgangPage() {
               </div>
               <ChevronRight size={18} className="text-slate" />
             </Link>
-            <Link
-              href="/login?type=foretag"
-              className="bd-card w-full text-left p-5 rounded-2xl border border-line bg-white flex items-center gap-4"
+            {/* Inaktiverad tills det finns ett riktigt företagsflöde (org.nr,
+                företagsnamn) — fram tills dess leder den inte till ett
+                registreringsformulär som bara låtsas vara för företag. */}
+            <div
+              aria-disabled="true"
+              className="w-full text-left p-5 rounded-2xl border border-line bg-white flex items-center gap-4 opacity-50 cursor-not-allowed"
             >
               <div className="w-11 h-11 rounded-xl flex items-center justify-center flex-none bg-frost-2">
                 <Building2 size={20} className="text-forest" />
               </div>
               <div className="flex-1">
-                <div className="font-semibold text-[15px]">Företag</div>
+                <div className="font-semibold text-[15px] flex items-center gap-2">
+                  Företag
+                  <span className="text-[11px] font-medium px-2 py-0.5 rounded-full bg-frost-2 text-forest whitespace-nowrap">
+                    Kommer snart
+                  </span>
+                </div>
                 <div className="text-sm text-slate">
                   Företagsförsäkring och dedikerad rådgivare
                 </div>
               </div>
-              <ChevronRight size={18} className="text-slate" />
-            </Link>
+            </div>
           </div>
         </div>
       </div>

@@ -10,6 +10,7 @@ import { ConfirmDialog } from "@/components/Overlay";
 import { Field, PillGroup, inputClass } from "@/components/onboarding/shared";
 import { useBuddy } from "@/lib/buddy-context";
 import { HOUSEHOLD_RELATION_LABELS, type HouseholdRelation } from "@/lib/household";
+import { isValidPersonnummer } from "@/lib/personnummer";
 import { createClient } from "@/lib/supabase/client";
 import { ITEM_CATEGORIES, ITEM_GROUPS, itemSummary, itemTitle, type InsuranceItem, type ItemKind } from "@/lib/items";
 import type { Quote } from "@/lib/quote";
@@ -114,7 +115,7 @@ export function HouseholdView() {
   };
 
   const handleInvite = async () => {
-    if (invitePersonnummer.trim().length < 6 || !inviteRelation) return;
+    if (!isValidPersonnummer(invitePersonnummer) || !inviteRelation) return;
     setInviting(true);
     setInviteError(null);
     // Alltid samma respons oavsett om personnumret matchade en befintlig
@@ -319,7 +320,7 @@ export function HouseholdView() {
               {inviteError && <p className="text-sm text-red-600 mb-3">{inviteError}</p>}
               <button
                 onClick={handleInvite}
-                disabled={inviting || invitePersonnummer.trim().length < 6 || !inviteRelation}
+                disabled={inviting || !isValidPersonnummer(invitePersonnummer) || !inviteRelation}
                 className="bd-btn w-full flex items-center justify-center gap-2 py-3.5 rounded-full font-semibold text-white text-[15px] bg-forest disabled:opacity-40"
               >
                 {inviteSent ? (

@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { ArrowLeft, CalendarPlus, Check, Clock, Phone, Video } from "lucide-react";
 import { Logo } from "@/components/Logo";
+import { HelperTip } from "@/components/HelperTip";
 import { ProgressDots } from "@/components/ProgressDots";
 import { useBuddy } from "@/lib/buddy-context";
 import { buildIcsFile, FIXED_TOPICS, MONTHS, nextWeekdays, TIME_SLOTS, WEEKDAYS } from "@/lib/booking";
@@ -116,6 +117,9 @@ export function BookSpecialist({ initialTopic }: { initialTopic?: string } = {})
               <span className="bd-eyebrow">Boka specialist</span>
               <h1 className="bd-display text-2xl md:text-3xl mt-3 mb-2">Vad gäller samtalet?</h1>
               <p className="text-sm mb-6 text-slate">Välj det som stämmer — du kan välja flera.</p>
+              <HelperTip emotion="nyfiken" size={36} className="mb-5">
+                Ju mer du berättar här, desto bättre förberedd är rådgivaren när ni hörs.
+              </HelperTip>
               <div className="flex flex-col gap-2 mb-5">
                 {items.map((item) => {
                   const active = topics.includes(item.id);

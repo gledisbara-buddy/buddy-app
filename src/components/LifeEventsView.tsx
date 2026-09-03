@@ -8,6 +8,7 @@ import { ProfileMenu } from "@/components/ProfileMenu";
 import { PageSkeleton } from "@/components/PageSkeleton";
 import { useBuddy } from "@/lib/buddy-context";
 import { getSysselsattningTips, LIFE_EVENTS, type LifeEventId } from "@/lib/life-events";
+import { ITEM_CATEGORIES } from "@/lib/items";
 
 const EVENT_ICONS: Record<LifeEventId, typeof Truck> = { flytt: Truck, barn: Baby, fordon: Car, djur: PawPrint };
 
@@ -15,6 +16,7 @@ export function LifeEventsView({ initialEvent }: { initialEvent?: LifeEventId })
   const router = useRouter();
   const { userType, loading, items } = useBuddy();
   const [event, setEvent] = useState<LifeEventId | null>(initialEvent ?? null);
+  const [showAllCategories, setShowAllCategories] = useState(false);
 
   useEffect(() => {
     if (!loading && !userType) router.replace("/kom-igang");
@@ -75,7 +77,7 @@ export function LifeEventsView({ initialEvent }: { initialEvent?: LifeEventId })
           <div key="none" className="bd-fade">
             <h1 className="bd-display text-3xl mt-2 mb-2">Något på gång i livet?</h1>
             <p className="text-sm mb-6 text-slate">Välj det som stämmer, så guidar vi dig genom vad som är bra att tänka på.</p>
-            <div className="grid sm:grid-cols-2 gap-3 mb-8">
+            <div className="grid sm:grid-cols-2 gap-3 mb-4">
               {(Object.keys(LIFE_EVENTS) as LifeEventId[]).map((id) => {
                 const Icon = EVENT_ICONS[id];
                 return (
@@ -92,6 +94,31 @@ export function LifeEventsView({ initialEvent }: { initialEvent?: LifeEventId })
                 );
               })}
             </div>
+            <button
+              onClick={() => setShowAllCategories((v) => !v)}
+              className="text-sm font-semibold text-forest mb-4"
+            >
+              {showAllCategories ? "Dölj alla kategorier" : "Inget av detta — visa alla kategorier jag kan lägga till"}
+            </button>
+            {showAllCategories && (
+              <div className="grid sm:grid-cols-2 gap-3 mb-8 bd-fade">
+                {ITEM_CATEGORIES.map((cat) => {
+                  const Icon = cat.icon;
+                  return (
+                    <button
+                      key={cat.kind}
+                      onClick={() => router.push(`/onboarding?kind=${cat.kind}`)}
+                      className="bd-card bg-white rounded-2xl border border-line p-4 flex items-center gap-3 text-left"
+                    >
+                      <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-none bg-frost-2">
+                        <Icon size={16} className="text-forest" />
+                      </div>
+                      <div className="text-sm font-semibold">{cat.label}</div>
+                    </button>
+                  );
+                })}
+              </div>
+            )}
           </div>
         )}
 

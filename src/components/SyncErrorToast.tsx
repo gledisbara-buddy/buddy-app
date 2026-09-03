@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect } from "react";
-import { AlertCircle, X } from "lucide-react";
+import { X } from "lucide-react";
+import Buddy from "@/components/Buddy";
 import { useBuddy } from "@/lib/buddy-context";
 
 // Monterad en gång i BuddyProvider (buddy-context.tsx) så den syns oavsett
@@ -25,7 +26,7 @@ export function SyncErrorToast() {
         role="alert"
         className="bd-fade pointer-events-auto w-full max-w-sm bg-white rounded-2xl border border-line shadow-lg p-4 flex items-start gap-3"
       >
-        <AlertCircle size={18} className="text-red-600 flex-none mt-0.5" />
+        <Buddy emotion="beklagar" size={32} className="flex-none" />
         <p className="text-sm text-ink flex-1">{syncError}</p>
         <button onClick={dismissSyncError} aria-label="Stäng felmeddelandet" className="flex-none opacity-50 hover:opacity-100">
           <X size={16} />

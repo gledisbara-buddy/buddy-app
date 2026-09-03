@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { ArrowLeft, ArrowRight, CalendarPlus, Download, Pencil, Trash2 } from "lucide-react";
 import { Logo } from "@/components/Logo";
 import { ConfirmDialog } from "@/components/Overlay";
+import { HelperTip } from "@/components/HelperTip";
 import { getCancelTarget } from "@/components/Dashboard";
 import { useBuddy } from "@/lib/buddy-context";
 import {
@@ -38,7 +39,7 @@ function formatHistoryDate(iso: string): string {
 // om det faktiskt finns rader — en ny post har ingen historik än.
 export function ItemDetail({ itemId }: { itemId: string }) {
   const router = useRouter();
-  const { items, policies, removeItem, household, setPolicy } = useBuddy();
+  const { items, policies, removeItem, household, setPolicy, readyToCompare } = useBuddy();
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [confirmCancel, setConfirmCancel] = useState(false);
   const [history, setHistory] = useState<HistoryRow[]>([]);
@@ -294,13 +295,18 @@ export function ItemDetail({ itemId }: { itemId: string }) {
             <div className="text-xs font-semibold mb-3 text-amber-deep">Uppsägning pågår hos Buddy</div>
           )}
 
-          {isComparableItem(item) && (
-            <button
-              onClick={() => router.push(`/compare/${item.id}`)}
-              className="bd-btn w-full flex items-center justify-center gap-2 py-3.5 rounded-full font-semibold text-white text-[15px] bg-forest"
-            >
-              Jämför <ArrowRight size={16} />
-            </button>
+          {isComparableItem(item) && readyToCompare && (
+            <>
+              <HelperTip emotion="nyfiken" size={36} className="mb-4">
+                Marknaden ändras hela tiden — värt att jämföra igen, även om du kollade nyligen.
+              </HelperTip>
+              <button
+                onClick={() => router.push(`/compare/${item.id}`)}
+                className="bd-btn w-full flex items-center justify-center gap-2 py-3.5 rounded-full font-semibold text-white text-[15px] bg-forest"
+              >
+                Jämför <ArrowRight size={16} />
+              </button>
+            </>
           )}
 
           {(cancelTarget || canClaim) && !rawQuote?.cancellationPending && (

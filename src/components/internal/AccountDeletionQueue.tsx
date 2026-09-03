@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { ArrowRight, Check, UserX } from "lucide-react";
+import { ConfirmDialog } from "@/components/Overlay";
 import { createClient } from "@/lib/supabase/client";
 import { saveField } from "@/lib/activity-log";
 
@@ -32,6 +33,7 @@ export function AccountDeletionQueue({
   const [profilesById, setProfilesById] = useState<Record<string, ProfileLookup>>({});
   const [loading, setLoading] = useState(true);
   const [handlingId, setHandlingId] = useState<string | null>(null);
+  const [confirmRow, setConfirmRow] = useState<RequestRow | null>(null);
 
   useEffect(() => {
     const supabase = createClient();
@@ -77,6 +79,18 @@ export function AccountDeletionQueue({
 
   return (
     <div className="flex flex-col gap-3">
+      {confirmRow && (
+        <ConfirmDialog
+          title="Bekräfta att kontot är raderat?"
+          body={`Det här markerar begäran från ${profilesById[confirmRow.user_id]?.name || profilesById[confirmRow.user_id]?.email || confirmRow.user_id} som klar. Använd bara knappen efter att auth-kontot faktiskt raderats i Supabase Studio — det går inte att ångra härifrån.`}
+          confirmLabel="Ja, kontot är raderat"
+          onConfirm={() => {
+            markHandled(confirmRow);
+            setConfirmRow(null);
+          }}
+          onCancel={() => setConfirmRow(null)}
+        />
+      )}
       {requests.map((row) => {
         const customer = profilesById[row.user_id];
         return (
@@ -96,7 +110,7 @@ export function AccountDeletionQueue({
               </button>
               {canApprove && (
                 <button
-                  onClick={() => markHandled(row)}
+                  onClick={() => setConfirmRow(row)}
                   disabled={handlingId === row.id}
                   className="flex items-center gap-1.5 px-4 py-2 rounded-full text-sm font-semibold text-white bg-forest disabled:opacity-40"
                 >

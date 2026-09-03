@@ -18,6 +18,7 @@ import {
   Users,
 } from "lucide-react";
 import { FaqAccordion } from "@/components/marketing/FaqAccordion";
+import { HeroDek } from "@/components/marketing/HeroDek";
 import { ProductPreview } from "@/components/marketing/ProductPreview";
 import { Reveal } from "@/components/marketing/Reveal";
 import { StartCta } from "@/components/marketing/StartCta";
@@ -169,10 +170,7 @@ export default function MarketingHome() {
               <br />
               på ett ställe.
             </h1>
-            <p className="text-base md:text-lg mb-9 max-w-xl mx-auto md:mx-0 text-slate">
-              Skapa ett konto och hämta in allt med BankID på under en minut. Jämför, säg upp det gamla och
-              få hjälp direkt om något händer — allt på ett ställe.
-            </p>
+            <HeroDek className="text-base md:text-lg mb-9 max-w-xl mx-auto md:mx-0 text-slate" />
             <div className="flex flex-col sm:flex-row gap-3 justify-center md:justify-start">
               <StartCta className="bd-btn px-6 py-3.5 rounded-full font-semibold text-white text-[15px] bg-forest flex items-center justify-center gap-2" />
               <Link

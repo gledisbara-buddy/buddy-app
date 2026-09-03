@@ -5,6 +5,7 @@ import { ArrowLeft, Check, Loader2, Smartphone } from "lucide-react";
 import { inputClass } from "@/components/onboarding/shared";
 import { useBuddy } from "@/lib/buddy-context";
 import type { ComparableItem } from "@/lib/items";
+import { isValidPersonnummer } from "@/lib/personnummer";
 import { EL_BOLAG, FORSAKRINGSBOLAG, itemSummary, itemTitle, KREDITKORT_UTGIVARE } from "@/lib/items";
 import { fetchExistingPolicy, type FetchableKind } from "@/lib/policy-fetch";
 import type { Quote } from "@/lib/quote";
@@ -53,7 +54,7 @@ export function AutoFetchStep({
   const [result, setResult] = useState<{ item: ComparableItem; quote: Quote } | null>(null);
 
   const startBankId = () => {
-    if (personnummer.trim().length < 6) return;
+    if (!isValidPersonnummer(personnummer)) return;
     setPhase("bankid-waiting");
     setTimeout(() => {
       setPhase("fetching");
@@ -107,7 +108,7 @@ export function AutoFetchStep({
         />
         <button
           onClick={startBankId}
-          disabled={personnummer.trim().length < 6}
+          disabled={!isValidPersonnummer(personnummer)}
           className="bd-btn w-full flex items-center justify-center gap-2 py-3.5 rounded-full font-semibold text-white text-[15px] bg-forest disabled:opacity-50"
         >
           <Smartphone size={17} /> Starta Mobilt BankID

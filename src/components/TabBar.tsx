@@ -136,7 +136,14 @@ export function TabBar() {
   return (
     <nav
       data-no-swipe-nav
-      className="flex items-center justify-center gap-1 overflow-x-auto px-3 md:px-8 border-b border-line"
+      // justify-start (inte justify-center) på mobilen — annars centrerar
+      // flexboxen innehållet symmetriskt över hela raden, vilket klipper
+      // bort BÖRJAN av den skrollbara raden redan innan man rört vid den
+      // (scrollLeft börjar på 0, men det som visas där är inte radens
+      // faktiska start). Skärmen är bred nog för att rymma allt från
+      // md och uppåt, så centrering är bara ett problem när raden faktiskt
+      // överflödar.
+      className="flex items-center justify-start md:justify-center gap-1 overflow-x-auto px-3 md:px-8 border-b border-line"
       style={{ background: "var(--color-frost-90)" }}
     >
       {NAV_ITEMS.map((item) => {

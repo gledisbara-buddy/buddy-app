@@ -10,6 +10,7 @@ import { CustomerActivityTab } from "@/components/internal/CustomerActivityTab";
 import { CustomerDocumentsTab } from "@/components/internal/CustomerDocumentsTab";
 import { PillGroup } from "@/components/onboarding/shared";
 import { createClient } from "@/lib/supabase/client";
+import { saveField } from "@/lib/activity-log";
 import type { CustomerSegment, CustomerStatus, InternalCustomerProfile } from "@/components/InternalView";
 
 type Tab = "saker" | "arenden" | "dokument" | "anteckningar" | "aktivitet";
@@ -75,9 +76,22 @@ export function CustomerWorkspace({
   }, [customer.id]);
 
   const saveNotifyPref = async (field: "notify_email" | "notify_sms", value: boolean) => {
-    const supabase = createClient();
-    const { error } = await supabase.from("profiles").update({ [field]: value }).eq("id", customer.id);
-    if (!error) {
+    const oldValue = field === "notify_email" ? customerNotifyEmail : customerNotifySms;
+    // Går via saveField — precis som personnummer/telefon/adress och
+    // status/segment/taggar — så en anställd som ändrar en kunds
+    // avi-inställning lämnar samma spår i Aktivitet-fliken som allt annat
+    // som redigeras här, istället för att skriva förbi loggen.
+    const ok = await saveField(createClient(), {
+      table: "profiles",
+      idColumn: "id",
+      id: customer.id,
+      targetUserId: customer.id,
+      actorEmail,
+      field,
+      oldValue,
+      newValue: value,
+    });
+    if (ok) {
       if (field === "notify_email") setCustomerNotifyEmail(value);
       else setCustomerNotifySms(value);
     }

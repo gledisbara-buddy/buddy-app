@@ -83,7 +83,7 @@ export function ChatScreen() {
           ))}
           {loading && (
             <div className="flex items-end gap-2 bd-fade">
-              <Buddy emotion="halsar" size={28} />
+              <Buddy emotion="raknar" size={28} />
               <div className="bg-white border border-line rounded-2xl rounded-bl-sm px-4 py-3 flex items-center gap-1">
                 <span className="w-1.5 h-1.5 rounded-full bd-dot bg-slate" />
                 <span className="w-1.5 h-1.5 rounded-full bd-dot bg-slate" />

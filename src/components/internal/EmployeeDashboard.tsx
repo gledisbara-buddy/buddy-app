@@ -94,6 +94,7 @@ const QUICK_LINKS: { tab: "forfragningar" | "uppsagningar" | "saknade" | "raderi
   { tab: "forfragningar", label: "Förfrågningar" },
   { tab: "kundsok", label: "Kundsök" },
   { tab: "saknade", label: "Saknade försäkringar" },
+  { tab: "uppsagningar", label: "Uppsägningar" },
   { tab: "radering", label: "Kontoradering" },
 ];
 

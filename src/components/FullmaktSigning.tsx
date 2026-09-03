@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import SignaturePad from "signature_pad";
 import { Check, Eraser, Loader2, ShieldAlert } from "lucide-react";
+import Buddy from "@/components/Buddy";
 import { useBuddy } from "@/lib/buddy-context";
 import { createClient } from "@/lib/supabase/client";
 import { FULLMAKT_DRAFT_NOTICE, FULLMAKT_PARAGRAPHS, buildFullmaktPdf } from "@/lib/fullmakt";
@@ -133,7 +134,12 @@ export function FullmaktSigning({
         <Eraser size={13} /> Rensa signatur
       </button>
 
-      {error && <p className="text-sm text-red-600 mb-4">{error}</p>}
+      {error && (
+        <div className="flex items-start gap-2.5 mb-4">
+          <Buddy emotion="beklagar" size={32} className="flex-none" />
+          <p className="text-sm text-red-600 pt-1">{error}</p>
+        </div>
+      )}
 
       <button
         onClick={handleSign}

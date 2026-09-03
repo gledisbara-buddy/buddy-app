@@ -29,7 +29,11 @@ export function RecommendationView() {
       <div className="max-w-2xl mx-auto px-5 md:px-10 py-10 bd-fade">
         <span className="bd-eyebrow">Din rekommendation</span>
         <h1 className="bd-display text-3xl mt-2 mb-5">{rec.headline}</h1>
-        <HelperTip dismissible={false} emotion={rec.uppskattadBesparing > 0 ? "firar" : "vilar"} className="mb-8">
+        {/* "Firar" är reserverat för en faktisk, uträknad besparing (som i
+            CompareFlow) — uppskattadBesparing här är ett exempeltal (se
+            lib/recommendation.ts), inte en riktig uträkning, så "nyfiken"
+            passar bättre än att fira en siffra som inte är på riktigt. */}
+        <HelperTip dismissible={false} emotion={rec.uppskattadBesparing > 0 ? "nyfiken" : "vilar"} className="mb-8">
           {rec.intro}
         </HelperTip>
 

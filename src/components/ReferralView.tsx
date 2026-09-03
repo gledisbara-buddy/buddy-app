@@ -133,12 +133,12 @@ export function ReferralView() {
         </div>
 
         {hasClaimPerk ? (
-          <HelperTip dismissible={false} className="mb-8">
+          <HelperTip dismissible={false} emotion="halsar" className="mb-8">
             <b>Du har uppnått {GOAL} värvningar!</b> Du har nu kostnadsfri hjälp av en specialist
             vid skadereglering, oavsett vad som händer.
           </HelperTip>
         ) : (
-          <HelperTip dismissible={false} className="mb-8">
+          <HelperTip dismissible={false} emotion="nyfiken" className="mb-8">
             {qualified === 0
               ? `Dela din kod — vid ${GOAL} kvalificerade värvningar låser du upp kostnadsfri hjälp vid skadereglering.`
               : `${GOAL - qualified} kvalificerad${GOAL - qualified === 1 ? "" : "e"} värvning${GOAL - qualified === 1 ? "" : "ar"} kvar till kostnadsfri hjälp vid skadereglering.`}

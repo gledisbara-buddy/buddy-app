@@ -78,7 +78,7 @@ const EMPTY_GROUP_LABEL: Record<ItemGroupId, string> = {
 };
 
 const STATUS_CONFIG: Record<ItemStatus, { label: string; color: string }> = {
-  saved: { label: "Sparad — jämförelse kommer snart", color: "var(--color-slate)" },
+  saved: { label: "Sparad", color: "var(--color-slate)" },
   added: { label: "Tillagd", color: "var(--color-slate)" },
   uncompared: { label: "Ej jämförd ännu", color: "var(--color-amber-deep)" },
   compared: { label: "Tecknad", color: "var(--color-forest)" },
@@ -627,7 +627,7 @@ export function Dashboard({ showIntro: initialShowIntro }: { showIntro?: boolean
                           ● {g.signedCount} av {g.comparableCount} jämförda
                         </span>
                       ) : (
-                        <span className="text-slate">● Sparade — jämförelse kommer snart</span>
+                        <span className="text-slate">● Sparade</span>
                       )}
                     </div>
                   )}

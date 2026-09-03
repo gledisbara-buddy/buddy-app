@@ -84,7 +84,7 @@ function ChatPopup({ onClose }: { onClose: () => void }) {
         ))}
         {loading && (
           <div className="flex items-end gap-2 bd-fade">
-            <Buddy emotion="halsar" size={24} />
+            <Buddy emotion="raknar" size={24} />
             <div className="bg-frost rounded-2xl rounded-bl-sm px-3.5 py-2.5 flex items-center gap-1">
               <span className="w-1.5 h-1.5 rounded-full bd-dot bg-slate" />
               <span className="w-1.5 h-1.5 rounded-full bd-dot bg-slate" />

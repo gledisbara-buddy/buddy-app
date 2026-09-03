@@ -18,6 +18,7 @@ export function BankIdImport() {
   const { addItems, setPolicy } = useBuddy();
   const [phase, setPhase] = useState<Phase>("idle");
   const [found, setFound] = useState<{ item: ComparableItem; quote: Quote }[]>([]);
+  const [checked, setChecked] = useState<Set<string>>(new Set());
 
   const finish = () => router.push("/dashboard?imported=1");
 
@@ -27,16 +28,27 @@ export function BankIdImport() {
       setPhase("fetching");
       fetchMultiplePolicies().then((data) => {
         setFound(data);
+        setChecked(new Set(data.map((d) => d.item.id)));
         setPhase("result");
       });
     }, 1800);
   };
 
-  const addAllAndContinue = async () => {
+  const toggle = (id: string) => {
+    setChecked((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
+  const addSelectedAndContinue = async () => {
+    const selected = found.filter((f) => checked.has(f.item.id));
     // items måste committas innan policies sätts — policies.item_id har en
     // foreign key mot items.id, se addItems i buddy-context.tsx.
-    await addItems(found.map((f) => f.item));
-    found.forEach((f) => setPolicy(f.item.id, f.quote));
+    await addItems(selected.map((f) => f.item));
+    selected.forEach((f) => setPolicy(f.item.id, f.quote));
     setPhase("flag-missing");
   };
 
@@ -130,25 +142,46 @@ export function BankIdImport() {
             </div>
             <p className="text-xs mb-4 text-slate">Simulerad identifiering i den här prototypen — bolag och priser nedan är exempeldata.</p>
             <div className="flex flex-col gap-3 mb-6">
-              {found.map(({ item, quote }) => (
-                <div key={item.id} className="bg-white rounded-2xl border border-line p-5">
-                  <div className="font-semibold text-[15px] mb-1">{itemTitle(item)}</div>
-                  <div className="text-xs mb-4 text-slate">{itemSummary(item)}</div>
-                  <div className="pt-4 border-t border-line flex items-center justify-between">
-                    <div className="font-semibold text-sm">{quote.name}</div>
-                    <div className="text-right">
-                      <div className="bd-display text-lg text-forest">{quote.price} kr</div>
-                      <div className="text-xs text-slate">per månad</div>
+              {found.map(({ item, quote }) => {
+                const active = checked.has(item.id);
+                return (
+                  <button
+                    key={item.id}
+                    type="button"
+                    onClick={() => toggle(item.id)}
+                    className="w-full text-left bg-white rounded-2xl border p-5"
+                    style={{ borderColor: active ? "var(--color-forest)" : "var(--color-line)" }}
+                  >
+                    <div className="flex items-start justify-between gap-3 mb-1">
+                      <div className="font-semibold text-[15px]">{itemTitle(item)}</div>
+                      <div
+                        className="w-5 h-5 rounded-md border flex items-center justify-center flex-none"
+                        style={{
+                          borderColor: active ? "var(--color-forest)" : "var(--color-line)",
+                          background: active ? "var(--color-forest)" : "white",
+                        }}
+                      >
+                        {active && <Check size={13} color="white" />}
+                      </div>
                     </div>
-                  </div>
-                </div>
-              ))}
+                    <div className="text-xs mb-4 text-slate">{itemSummary(item)}</div>
+                    <div className="pt-4 border-t border-line flex items-center justify-between">
+                      <div className="font-semibold text-sm">{quote.name}</div>
+                      <div className="text-right">
+                        <div className="bd-display text-lg text-forest">{quote.price} kr</div>
+                        <div className="text-xs text-slate">per månad</div>
+                      </div>
+                    </div>
+                  </button>
+                );
+              })}
             </div>
             <button
-              onClick={addAllAndContinue}
-              className="bd-btn w-full flex items-center justify-center gap-2 py-3.5 rounded-full font-semibold text-white text-[15px] bg-forest"
+              onClick={addSelectedAndContinue}
+              disabled={checked.size === 0}
+              className="bd-btn w-full flex items-center justify-center gap-2 py-3.5 rounded-full font-semibold text-white text-[15px] bg-forest disabled:opacity-50"
             >
-              Lägg till alla och fortsätt <ArrowRight size={16} />
+              Lägg till {checked.size} markerade och fortsätt <ArrowRight size={16} />
             </button>
           </div>
         </div>
@@ -164,7 +197,7 @@ export function BankIdImport() {
         </div>
         <div className="flex-1 flex items-start justify-center px-5 pb-16">
           <div className="w-full max-w-md bd-fade">
-            <span className="bd-eyebrow">Steg 2 av 3</span>
+            <span className="bd-eyebrow">Kompletterande uppgifter</span>
             <MissingInsuranceFlagger
               title="Är det något som saknas?"
               intro="Har du fler försäkringar som inte dök upp? Berätta vilken typ så hämtar Buddy in den åt dig."

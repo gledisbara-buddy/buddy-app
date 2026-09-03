@@ -1,12 +1,21 @@
 "use client";
 
-import { useState } from "react";
+import { createContext, useContext, useState, type ReactNode } from "react";
 import { useBuddy } from "@/lib/buddy-context";
 import { getCannedReply, randomDelay, type ChatMessage } from "@/lib/chat";
 
-// Delad mellan ChatScreen (helsida, /chat) och BuddyCompanion (popup) så
-// de två aldrig kan råka ha olika svarslogik eller olika hälsningstext.
-export function useBuddyChat() {
+type BuddyChatValue = {
+  messages: ChatMessage[];
+  loading: boolean;
+  send: (text: string) => void;
+};
+
+const BuddyChatContext = createContext<BuddyChatValue | null>(null);
+
+// Delad kontext (inte lokal state) mellan ChatScreen (helsida, /chat) och
+// BuddyCompanion (popup) — så "öppna i helskärm" fortsätter samma samtal
+// istället för att tappa allt kunden redan skrivit i popupen.
+export function BuddyChatProvider({ children }: { children: ReactNode }) {
   const { loading: authLoading, profile } = useBuddy();
 
   const [messages, setMessages] = useState<ChatMessage[]>([
@@ -40,5 +49,11 @@ export function useBuddyChat() {
     }, randomDelay(700, 1200));
   };
 
-  return { messages, loading, send };
+  return <BuddyChatContext.Provider value={{ messages, loading, send }}>{children}</BuddyChatContext.Provider>;
+}
+
+export function useBuddyChat() {
+  const ctx = useContext(BuddyChatContext);
+  if (!ctx) throw new Error("useBuddyChat must be used within BuddyChatProvider");
+  return ctx;
 }

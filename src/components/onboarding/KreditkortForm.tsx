@@ -49,9 +49,6 @@ export function KreditkortForm({
             </button>
           </div>
         </Field>
-        <button onClick={onCancel} className="text-sm font-semibold py-2 text-slate">
-          Avbryt
-        </button>
       </>
     );
   }

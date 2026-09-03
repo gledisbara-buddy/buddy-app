@@ -2,9 +2,10 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Camera, Check, CircleDot, Receipt, Send, ShieldCheck, Sparkles, X } from "lucide-react";
+import { ArrowRight, Camera, Check, CircleDot, Receipt, Send, ShieldCheck, Sparkles, X } from "lucide-react";
 import { ConfirmDialog } from "@/components/Overlay";
 import { TopBar } from "@/components/TopBar";
+import Buddy from "@/components/Buddy";
 import { useBuddy } from "@/lib/buddy-context";
 import { buildClassification, getIntakeReply, type Classification, type ChatMessage } from "@/lib/claim";
 import { randomDelay } from "@/lib/chat";
@@ -156,11 +157,7 @@ export function ClaimFlow({ initialItemTitle }: { initialItemTitle?: string } = 
                   key={i}
                   className={`flex items-end gap-2 bd-fade ${m.role === "user" ? "flex-row-reverse" : ""}`}
                 >
-                  {m.role !== "user" && (
-                    <div className="w-7 h-7 rounded-full flex items-center justify-center flex-none bg-forest">
-                      <span className="text-white text-[11px] font-semibold bd-display">B</span>
-                    </div>
-                  )}
+                  {m.role !== "user" && <Buddy emotion="nyfiken" size={28} className="flex-none" />}
                   <div
                     className="max-w-[78%] px-4 py-3 text-[14.5px] leading-relaxed whitespace-pre-wrap"
                     style={{
@@ -178,9 +175,7 @@ export function ClaimFlow({ initialItemTitle }: { initialItemTitle?: string } = 
               ))}
               {loading && (
                 <div className="flex items-end gap-2 bd-fade">
-                  <div className="w-7 h-7 rounded-full flex items-center justify-center flex-none bg-forest">
-                    <span className="text-white text-[11px] font-semibold bd-display">B</span>
-                  </div>
+                  <Buddy emotion="raknar" size={28} className="flex-none" />
                   <div className="bg-white border border-line rounded-2xl rounded-bl-sm px-4 py-3 flex items-center gap-1">
                     <span className="w-1.5 h-1.5 rounded-full bd-dot bg-slate" />
                     <span className="w-1.5 h-1.5 rounded-full bd-dot bg-slate" />
@@ -293,9 +288,7 @@ export function ClaimFlow({ initialItemTitle }: { initialItemTitle?: string } = 
 
       {phase === "submitting" && (
         <div className="flex-1 flex flex-col items-center justify-center gap-5">
-          <div className="w-14 h-14 rounded-2xl flex items-center justify-center bg-forest">
-            <Send size={22} color="white" />
-          </div>
+          <Buddy emotion="raknar" size={64} />
           <div className="text-center">
             <div className="bd-display text-xl mb-1">Skickar in din anmälan…</div>
             <div className="text-sm text-slate">Buddy sammanställer det du berättat</div>
@@ -372,13 +365,19 @@ export function ClaimFlow({ initialItemTitle }: { initialItemTitle?: string } = 
                 </div>
               ))}
             </div>
-            <div className="rounded-2xl p-5 flex items-start gap-3 bg-frost-2">
+            <div className="rounded-2xl p-5 flex items-start gap-3 bg-frost-2 mb-6">
               <Sparkles size={16} className="mt-0.5 flex-none text-amber-deep" />
               <p className="text-xs text-ink">
                 Du kan fråga Buddy om status när som helst, eller boka in ett samtal med en
                 specialist.
               </p>
             </div>
+            <button
+              onClick={() => router.push("/mina-arenden")}
+              className="bd-btn w-full flex items-center justify-center gap-2 py-3.5 rounded-full font-semibold text-white text-[15px] bg-forest"
+            >
+              Till mina ärenden <ArrowRight size={16} />
+            </button>
           </div>
         </div>
       )}

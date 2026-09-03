@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Inter, IBM_Plex_Mono } from "next/font/google";
 import { BuddyProvider } from "@/lib/buddy-context";
+import { BuddyChatProvider } from "@/lib/use-buddy-chat";
 import { BuddyCompanion } from "@/components/BuddyCompanion";
 import "./globals.css";
 
@@ -62,8 +63,10 @@ export default function RootLayout({
       <body className="font-sans min-h-full flex flex-col">
         <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(ORGANIZATION_JSON_LD) }} />
         <BuddyProvider>
-          {children}
-          <BuddyCompanion />
+          <BuddyChatProvider>
+            {children}
+            <BuddyCompanion />
+          </BuddyChatProvider>
         </BuddyProvider>
       </body>
     </html>

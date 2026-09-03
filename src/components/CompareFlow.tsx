@@ -431,13 +431,15 @@ export function CompareFlow({ itemId }: { itemId: string }) {
             ? isSaving
               ? "firar" // en faktisk besparing — inte varje resultat
               : "vilar"
-            : phase === "checkout" || phase === "cancellation"
+            : phase === "checkout"
               ? "nyfiken" // fler frågor innan tecknandet är klart
-              : phase === "signed"
-                ? isSignedSaving
-                  ? "firar"
-                  : "vilar"
-                : "vilar";
+              : phase === "cancellation"
+                ? "lugnar" // att lämna sitt gamla bolag är det känsligaste steget i flödet
+                : phase === "signed"
+                  ? isSignedSaving
+                    ? "firar"
+                    : "vilar"
+                  : "vilar";
 
   const handleSign = (quote: Quote) => {
     setPendingQuote(quote);
